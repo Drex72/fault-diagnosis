@@ -19,6 +19,13 @@ Baseline, simulation only (results/20261026-114057, 10 trials per scenario):
 
 These match the numbers in the README from the earlier development run.
 
+## Phase 1: local model benchmark (done 26 Oct 2026)
+
+- Shortlist on this Mac (48 GiB): llama3.2:3b, qwen3:8b, qwen3.5:9b on Ollama 0.32.1, and the 1-bit Bonsai-8B GGUF on llama.cpp (it runs). Benchmarked as the hybrid's planner on 7 scenarios x 3 seeds, paired.
+- Result (final run, agent at `30dffe4`): qwen3:8b 33%, Bonsai-8B 19%, llama3.2:3b 0%; the engine alone scores 52% on the same sessions. **qwen3:8b chosen**; no model beat the engine. qwen3.5:9b was left out on speed (median reply 27.8 s). Full tables, setup and caveats: `docs/model-benchmark.md`.
+- Handling: server down (clear error, exit 2) and model not pulled (exit 3, the others still run), both checked by running the script on 26 Oct; in `tests/test_agent.py`: reply timeout (invalid call, fall back to the engine), plain-text reply instead of a tool call (parsed and counted), an unreachable server stopping the run, and, found during the benchmark, a malformed tool call the server cannot parse (invalid call, fall back; it had stopped the first run).
+- Found and fixed during the benchmark: the first run stopped on that malformed call; run records were stamped with the wrong commit when commits landed mid-run; and the Phase 2 context trimming cut qwen3:8b from 38% to 19% until it was fixed. All three are in `CHANGELOG.md`.
+
 ## Phase 3: hardware (software done 26 Oct 2026; hardware runs waiting on the owner)
 
 Done and tested without a board:

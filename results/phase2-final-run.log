@@ -1,0 +1,27 @@
+21:35:54 INFO    faultdiag.methods: method llm: model qwen3:8b on http://localhost:11434/v1, request extras {'reasoning_effort': 'none'}
+21:35:54 INFO    faultdiag.methods: method hybrid: model qwen3:8b on http://localhost:11434/v1, request extras {'reasoning_effort': 'none'}
+21:35:54 INFO    faultdiag.harness: fixed  healthy   seed=0   diagnosed    got=[] truth=[] cost=10 OK
+21:35:54 INFO    faultdiag.harness: tree   healthy   seed=0   diagnosed    got=[] truth=[] cost=8 OK
+21:35:54 INFO    faultdiag.harness: bayes  healthy   seed=0   diagnosed    got=[] truth=[] cost=6 OK
+21:36:24 INFO    faultdiag.agent: submitted ['ground_return'], evidence: The voltage between 'ret' and 'neg' is 0.0357 V, which is above the expected 0 V. Additionally, the battery's voltage drop during the pulse test indicates some internal resistance or wiring issues.
+21:36:24 INFO    faultdiag.harness: llm    healthy   seed=0   diagnosed    got=['ground_return'] truth=[] cost=19 WRONG
+21:37:03 INFO    faultdiag.agent: submitted ['lamp_connection'], evidence: The lamp voltage reading is slightly higher than expected, and the current measurements align with a potential intermittent connection in the lamp circuit.
+21:37:03 INFO    faultdiag.harness: hybrid healthy   seed=0   diagnosed    got=['lamp_connection'] truth=[] cost=9 WRONG
+21:37:03 INFO    faultdiag.harness: fixed  healthy   seed=1   diagnosed    got=[] truth=[] cost=10 OK
+21:37:03 INFO    faultdiag.harness: tree   healthy   seed=1   diagnosed    got=[] truth=[] cost=8 OK
+21:37:04 INFO    faultdiag.harness: bayes  healthy   seed=1   diagnosed    got=[] truth=[] cost=6 OK
+21:37:23 INFO    faultdiag.agent: submitted ['ground_return'], evidence: The voltage between 'ret' and 'neg' is non-zero, suggesting a fault in the ground return connection.
+21:37:23 INFO    faultdiag.harness: llm    healthy   seed=1   diagnosed    got=['ground_return'] truth=[] cost=16 WRONG
+21:38:04 INFO    faultdiag.agent: submitted ['lamp_connection'], evidence: The lamp voltage and current readings are slightly below expected values, indicating a potential intermittent connection in the lamp circuit.
+21:38:04 INFO    faultdiag.harness: hybrid healthy   seed=1   diagnosed    got=['lamp_connection'] truth=[] cost=9 WRONG
+21:38:04 INFO    faultdiag.harness: fixed  healthy   seed=2   diagnosed    got=[] truth=[] cost=10 OK
+21:38:04 INFO    faultdiag.harness: tree   healthy   seed=2   diagnosed    got=[] truth=[] cost=8 OK
+21:38:04 INFO    faultdiag.harness: bayes  healthy   seed=2   diagnosed    got=[] truth=[] cost=7 OK
+21:38:28 INFO    faultdiag.agent: submitted ['ground_return'], evidence: The voltage between 'ret' and 'neg' is 0.0302 V, which is slightly above zero, suggesting a ground return fault. Additionally, the battery's ohmic drop during the pulse test is consistent with a healt
+21:38:28 INFO    faultdiag.harness: llm    healthy   seed=2   diagnosed    got=['ground_return'] truth=[] cost=19 WRONG
+21:39:00 WARNING faultdiag.agent: invalid call (attempt 1): submit_diagnosis {'faults': [{'element': 'none'}], 'confidence': 0.973, 'evidence': 'All measurements align with expected values, and the Bayesian model indicates a high probability of no faults.'} -> ["args.faults[0].element: 'none' not one of ['battery', 'main_wiring', 'motor_connection', 'motor', 'lamp_connection', 'lamp', 'load_connection', 'load', 'ground_return', 'unmonitored_load', 'sensor_src', 'sensor_bus', 'sensor_motor', 'sensor_lamp', 'sensor_load', 'current_sensor_src', 'current_sensor_motor']"]
+21:39:04 INFO    faultdiag.agent: submitted [], evidence: All measurements align with expected values, and the Bayesian model indicates a high probability of no faults.
+21:39:04 INFO    faultdiag.harness: hybrid healthy   seed=2   diagnosed    got=[] truth=[] cost=7 OK
+21:39:04 INFO    faultdiag.harness: fixed  healthy   seed=3   diagnosed    got=[] truth=[] cost=10 OK
+21:39:04 INFO    faultdiag.harness: tree   healthy   seed=3   diagnosed    got=[] truth=[] cost=8 OK
+21:39:05 INFO    faultdiag.harness: bayes  healthy   seed=3   diagnosed    got=[] truth=[] cost=7 OK

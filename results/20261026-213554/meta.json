@@ -1,0 +1,47 @@
+{
+  "source": "sim",
+  "commit": "cd32167b4f8443b1a3f234f78f81bd92dcebcd5d",
+  "policy_hash": "88b28c1f4c8a",
+  "started": "2026-10-26T21:35:54+01:00",
+  "methods": [
+    "fixed",
+    "tree",
+    "bayes",
+    "llm",
+    "hybrid"
+  ],
+  "scenarios": [
+    "healthy",
+    "F1",
+    "F1b",
+    "F2",
+    "F3",
+    "F4",
+    "F5@motor",
+    "F5@lamp",
+    "F5@load",
+    "C1",
+    "C2",
+    "H1",
+    "H2",
+    "TF1",
+    "TF2",
+    "H3",
+    "H4"
+  ],
+  "trials": 10,
+  "seed0": 0,
+  "method_meta": {
+    "llm": {
+      "model": "qwen3:8b",
+      "think": false,
+      "model_version": "500a1f067a9f"
+    },
+    "hybrid": {
+      "model": "qwen3:8b",
+      "think": false,
+      "model_version": "500a1f067a9f"
+    }
+  },
+  "final": true
+}
