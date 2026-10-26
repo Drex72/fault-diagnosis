@@ -56,3 +56,10 @@ Every change to existing code, with the reason. Newest first within a phase.
 - `README.md`: rewritten as a quick start for a new person (tests, a simulated experiment, the dashboard, local models, the mock hardware path), with the current layout and scenario sets. The old status table and early results moved out: current results live in `docs/PROGRESS.md`.
 - `docs/ARCHITECTURE.md`, `docs/RUNBOOK.md` (new).
 - `.github/workflows/ci.yml` (new): pytest on every push and pull request, Python 3.12, simulation and mock devices only.
+
+## Phase 1 model benchmark (26 Oct 2026)
+
+- `faultdiag/agent.py`: new `LLMBadOutput`. An HTTP 5xx whose body says the server could not parse the model's reply (Ollama: "XML syntax error ... element <function> closed by </parameter>") now raises `LLMBadOutput` instead of `LLMUnavailable`; `Agent` counts it as an invalid call (`server_parse_errors`) and falls back to the engine at once, as for a timeout. Any other HTTP error is still fatal. Reason: the first benchmark run (`results/model-bench/20261026-144203`) stopped after 51 of 63 sessions when qwen3.5:9b wrote a malformed tool call in scenario H1: one bad answer from the model ended the whole run, and would have ended a long Phase 2 run the same way. The traceback in the terminal was the record of the old behaviour.
+- `scripts/bench_models.py`: the summary and the printed table count these replies ("Unparseable").
+- `gui/static/app.js`: the live session's model statistics show the count when it is not zero.
+- New tests in `tests/test_agent.py` (2): the parse-error reply raises `LLMBadOutput` while another HTTP 500 is still `LLMUnavailable`; an agent run counts it and falls back without crashing.

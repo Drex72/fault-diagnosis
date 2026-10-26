@@ -5,7 +5,8 @@
         --models bonsai-8b --model-version <sha256 prefix of the GGUF>
 
 Reports, per model: diagnosis accuracy on a fixed scenario set, invalid
-tool-call rate, replies parsed from plain text, timeouts, engine fallbacks,
+tool-call rate, replies parsed from plain text, timeouts, replies the server
+could not parse (malformed tool calls), engine fallbacks,
 per-call latency (median, p95) and peak memory. Peak memory is sampled from
 Ollama's /api/ps (the data `ollama ps` prints) or, for llama.cpp, from the
 resident size of the llama-server process.
@@ -150,6 +151,7 @@ def bench_model(model, args, policy, engine, out_f) -> dict:
         "content_parsed": sum(s["content_parsed"] for s in stats),
         "no_call": sum(s.get("no_call", 0) for s in stats),
         "timeouts": sum(s.get("timeouts", 0) for s in stats),
+        "server_parse_errors": sum(s.get("server_parse_errors", 0) for s in stats),
         "fallbacks": sum(s["fallbacks"] for s in stats),
         "submitted": sum("evidence" in r["diagnosis"] for r in recs),
         "median_latency_s": statistics.median(lat) if lat else float("nan"),
@@ -198,12 +200,12 @@ def main():
             (out / "summary.json").write_text(json.dumps(rows, indent=2))
 
     print("\nMODEL BENCHMARK (simulated bench, hybrid planner)\n")
-    print("| Model | Version | Accuracy | Invalid call rate | Plain-text parsed | Timeouts | Fallbacks | "
+    print("| Model | Version | Accuracy | Invalid call rate | Plain-text parsed | Timeouts | Unparseable | Fallbacks | "
           "Median latency (s) | p95 latency (s) | Peak memory (GB) | Crashes |")
-    print("|---|---|---|---|---|---|---|---|---|---|---|")
+    print("|---|---|---|---|---|---|---|---|---|---|---|---|")
     for r in rows:
         print(f"| {r['model']} | {r['model_version']} | {r['accuracy']:.0%} | {r['invalid_rate']:.1%} | "
-              f"{r['content_parsed']} | {r['timeouts']} | {r['fallbacks']} | {r['median_latency_s']:.2f} | "
+              f"{r['content_parsed']} | {r['timeouts']} | {r['server_parse_errors']} | {r['fallbacks']} | {r['median_latency_s']:.2f} | "
               f"{r['p95_latency_s']:.2f} | {r['peak_memory_gb']:.1f} | {r['crashes']} |")
     print(f"\nSaved to {out}")
     if missing:

@@ -74,6 +74,15 @@ class LLMUnavailable(ConnectionError):
     """The model server cannot be reached. Fatal for the run, unlike a timeout."""
 
 
+class LLMBadOutput(ValueError):
+    """The server is up but could not parse the model's own reply (e.g. Ollama's HTTP 500
+    "XML syntax error" on a malformed tool call). A bad answer, not a dead server."""
+
+
+# Ollama and llama-server error texts for a reply they could not parse into a tool call.
+_PARSE_ERROR = re.compile(r"syntax error|failed to parse|parsing|unmarshal|invalid character", re.I)
+
+
 class OpenAICompatLLM:
     def __init__(self, base_url: str, model: str, timeout_s: float = 180, temperature: float = 0.0,
                  extra: dict | None = None):
@@ -91,7 +100,10 @@ class OpenAICompatLLM:
             with urllib.request.urlopen(req, timeout=self.timeout_s) as resp:
                 return json.loads(resp.read())["choices"][0]["message"]
         except urllib.error.HTTPError as exc:  # server up, request refused (e.g. model not pulled)
-            raise LLMUnavailable(f"{self.url} returned HTTP {exc.code}: {exc.read()[:200]!r}") from exc
+            detail = exc.read()[:300].decode("utf-8", "replace")
+            if exc.code >= 500 and _PARSE_ERROR.search(detail):
+                raise LLMBadOutput(f"{self.url} could not parse the model's reply (HTTP {exc.code}): {detail}") from exc
+            raise LLMUnavailable(f"{self.url} returned HTTP {exc.code}: {detail}") from exc
         except urllib.error.URLError as exc:
             if isinstance(exc.reason, TimeoutError):
                 raise TimeoutError(f"no reply from {self.model} within {self.timeout_s} s") from exc
@@ -181,6 +193,13 @@ class Agent:
                 stats["timeouts"] += 1
                 log.warning("model timed out (attempt %d): %s", attempt + 1, exc)
                 return None
+            except LLMBadOutput as exc:  # same reply again at temperature 0, so fall back at once
+                stats["latency_s"].append(round(time.perf_counter() - t0, 3))
+                stats["llm_calls"] += 1
+                stats["invalid"] += 1
+                stats["server_parse_errors"] += 1
+                log.warning("server rejected the model's reply (attempt %d): %s", attempt + 1, exc)
+                return None
             stats["latency_s"].append(round(time.perf_counter() - t0, 3))
             stats["llm_calls"] += 1
             assistant = {"role": "assistant", "content": msg.get("content") or ""}
@@ -223,7 +242,7 @@ class Agent:
         if self.engine is not None:
             self.engine.reset(seed)
         stats = {"llm_calls": 0, "invalid": 0, "fallbacks": 0, "content_parsed": 0, "no_call": 0, "timeouts": 0,
-                 "loop_detected": False, "trimmed_turns": 0, "max_context_chars": 0, "latency_s": []}
+                 "server_parse_errors": 0, "loop_detected": False, "trimmed_turns": 0, "max_context_chars": 0, "latency_s": []}
         prompt = SYSTEM_PROMPT if self.engine is not None else LLM_ONLY_PROMPT
         messages = [{"role": "system", "content": prompt}, {"role": "user", "content": self._state(guard)}]
         state_idx, calls, turns = 1, [], []

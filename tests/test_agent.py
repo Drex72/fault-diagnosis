@@ -11,7 +11,7 @@ import pytest
 ROOT = Path(__file__).resolve().parent.parent
 sys.path.insert(0, str(ROOT))
 
-from faultdiag.agent import Agent, LLMUnavailable, OpenAICompatLLM  # noqa: E402
+from faultdiag.agent import Agent, LLMBadOutput, LLMUnavailable, OpenAICompatLLM  # noqa: E402
 from faultdiag.engine import BayesEngine  # noqa: E402
 from faultdiag.guard import PolicyGuard, load_policy  # noqa: E402
 from faultdiag.harness import make_bench, run_trial  # noqa: E402
@@ -37,6 +37,13 @@ class _Handler(BaseHTTPRequestHandler):
             self.end_headers()
             self.wfile.write(b'{"error": "model not found"}')
             return
+        if self.mode in ("xml500", "crash500"):  # Ollama's replies, as seen with qwen3.5:9b on 26 Oct 2026
+            msg = ("XML syntax error on line 8: element <function> closed by </parameter>" if self.mode == "xml500"
+                   else "llama runner process has terminated: signal: killed")
+            self.send_response(500)
+            self.end_headers()
+            self.wfile.write(json.dumps({"error": {"message": msg, "type": "api_error"}}).encode())
+            return
         reply = {"choices": [{"message": {"role": "assistant", "content": "I think the motor is fine."}}]}
         self.send_response(200)
         self.end_headers()
@@ -59,6 +66,21 @@ def _llm(srv, mode, timeout=5.0):
 def test_http_error_is_llm_unavailable(server):
     with pytest.raises(LLMUnavailable, match="HTTP 404"):
         _llm(server, "404")([{"role": "user", "content": "x"}], [])
+
+
+def test_unparseable_model_output_is_bad_output_not_unavailable(server):
+    with pytest.raises(LLMBadOutput, match="XML syntax error") as exc:
+        _llm(server, "xml500")([{"role": "user", "content": "x"}], [])
+    assert not isinstance(exc.value, ConnectionError)  # must not stop the run
+    with pytest.raises(LLMUnavailable, match="HTTP 500"):  # any other server error still does
+        _llm(server, "crash500")([{"role": "user", "content": "x"}], [])
+
+
+def test_bad_output_counts_invalid_and_falls_back(server, engine):
+    g = PolicyGuard(make_bench("F2", 1))
+    d = Agent(_llm(server, "xml500"), engine, max_steps=2).run(g, seed=1)
+    s = d["agent_stats"]
+    assert s["server_parse_errors"] == 2 and s["invalid"] == 2 and s["fallbacks"] == 2 and len(g.history) == 2
 
 
 def test_unreachable_server_is_llm_unavailable():

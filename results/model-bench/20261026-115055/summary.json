@@ -1,0 +1,29 @@
+[
+  {
+    "model": "llama3.2:3b",
+    "model_version": "a80c4f17acd5",
+    "server": "ollama",
+    "think": false,
+    "date": "2026-10-26T11:57:05+01:00",
+    "commit": "f4745c470037361b0a5442758c22f94830b247d4+dirty",
+    "policy_hash": "88b28c1f4c8a",
+    "sessions": 2,
+    "llm_calls": 50,
+    "accuracy": 0.0,
+    "invalid_rate": 0.26,
+    "content_parsed": 0,
+    "no_call": 0,
+    "timeouts": 0,
+    "fallbacks": 3,
+    "submitted": 0,
+    "median_latency_s": 7.2305,
+    "p95_latency_s": 12.445,
+    "peak_memory_gb": 4.21,
+    "load_s": 3.4,
+    "crashes": 0,
+    "per_scenario": {
+      "F2": 0.0,
+      "H1": 0.0
+    }
+  }
+]

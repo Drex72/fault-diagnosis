@@ -453,7 +453,7 @@ function renderDiag(L) {
     if (end.agent_stats) {
       const a = end.agent_stats, lat = (a.latency_s || []).slice().sort((p, q) => p - q);
       kids.push(h("p", { class: "small" }, `Model calls ${a.llm_calls}, invalid ${a.invalid}, plain-text replies parsed ${a.content_parsed}, ` +
-        `no call ${a.no_call}, timeouts ${a.timeouts}, fallbacks ${a.fallbacks}` +
+        `no call ${a.no_call}, timeouts ${a.timeouts}, ` + (a.server_parse_errors ? `unparseable replies ${a.server_parse_errors}, ` : "") + `fallbacks ${a.fallbacks}` +
         (lat.length ? `, median latency ${lat[Math.floor(lat.length / 2)]} s` : "") + (a.loop_detected ? ", loop detected" : "")));
     }
   } else {
