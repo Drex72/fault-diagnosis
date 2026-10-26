@@ -1,0 +1,13 @@
+.venv/
+.pio-venv/
+__pycache__/
+*.pyc
+.pytest_cache/
+*.sqlite-journal
+*.sqlite-wal
+*.sqlite-shm
+*.db-journal
+.DS_Store
+firmware/*/.pio/
+gui/data/
+results/**/*.raw.log
