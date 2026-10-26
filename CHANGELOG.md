@@ -25,3 +25,19 @@ Every change to existing code, with the reason. Newest first within a phase.
 
 - `faultdiag/agent.py`: loop detection (the same call three times in a row with no new information ends the session; the model then gets one turn in which only `submit_diagnosis` is offered), context trimming (above 8000 characters the model gets the system prompt, a compact one-line-per-call history of every call, and the latest state with the latest engine report), evidence check on submission, and a per-turn `turns` log (reply text, call, validity) in the result for the GUI drill-down. Reason: Phase 2 requirements. Logging added first (context size per call, repeated calls, submitted evidence) showed, with a scripted model, the context growing about 1.6k characters per turn, six identical calls in a row going unnoticed, and evidence citing a tap that was never read and a probe that was never made being accepted.
 - `faultdiag/evidence.py` (new): `check_evidence(evidence, history)`.
+
+## Phase 3 (26 Oct 2026)
+
+- `firmware/bench/` (new): PlatformIO project. `lib/benchcore` holds the protocol and every safety limit with no Arduino dependency; `src/main.cpp` is the board glue (ADS1115 behind the multiplexer, two INA226, test-load switch, NVS calibration, task watchdog, I2C bus recovery). 18 native unit tests (`pio test -e native`).
+- `firmware/injector/` (new): fault-injection controller (11 relays, all-or-nothing `set`, at most 3 faults, random F4 slots, faults cleared after 10 s of host silence). 4 native unit tests.
+- `faultdiag/serialbench.py` (new): `SerialBench` with the `SimBench.execute()` interface, `SerialLink` (pyserial), `cli_prober` for the human probe, `ToolFailures` for TF1 and TF2 on hardware.
+- `faultdiag/mockdevice.py` (new): mock bench and injector firmware, `MockLink`.
+- `faultdiag/injector.py` (new): `InjectorClient` and the scenario-to-relay map `HW_FAULTS`.
+- `faultdiag/calib.py` (new): calibration fit, records, freshness check.
+- `faultdiag/hwrun.py` (new): the hardware evaluation loop and grading, shared with the GUI.
+- `faultdiag/methods.py` (new): builds methods A to E by name; the thinking-off request fields that `bench_models.py` used inline now live here too.
+- `faultdiag/harness.py`: added `state_for_faults`, `run_blind_session`, `grade` and `scenario_table`. Existing functions unchanged. Reason: blind hardware sessions graded after the run, and the per-scenario breakdown Phase 2 asks for.
+- `scripts/run_experiment.py`: methods built by `faultdiag/methods.py`; new flags `--server`, `--think`, `--timeout`, `--model-version`. Reason: the Phase 2 run must use the same thinking-off setting as the benchmark. Before the change the script sent no extra request fields (read from the code); `methods.py` now logs the request fields for every LLM method at the start of a run. Smoke run after the change: `results/20261026-152027` (2 scenarios, 1 trial, fixed/tree/bayes).
+- `scripts/run_hardware.py`, `scripts/calibrate.py`, `scripts/fw_selftest.py`, `scripts/injector_check.py`, `scripts/refit_noise.py` (new). `FAULTDIAG_RESULTS_DIR` overrides where they write (used by the tests).
+- `requirements.txt`: `pyserial==3.5`.
+- New tests: `tests/test_serialbench.py` (19), `tests/test_hardware_scripts.py` (8).

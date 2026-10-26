@@ -103,6 +103,63 @@ def run_trial(name: str, method: str, fn, seed: int, policy: dict, meta: dict | 
     return rec
 
 
+def state_for_faults(faults, rng):
+    """Fault state for a set of injector relays (mock injector only). F1 on
+    hardware is one series resistor, which sits in the 'degraded' range."""
+    atoms = [f for f in faults if not f.startswith("H")]
+    state = apply_atoms(sample_healthy(rng), atoms, rng, f1_severity="degraded")
+    for h in (f for f in faults if f.startswith("H")):
+        hs = apply_heldout(state.params, h, rng)
+        state.params = hs.params
+        state.current_gain.update(hs.current_gain)
+    return state
+
+
+def run_blind_session(method: str, fn, seed: int, policy: dict, meta: dict, bench, session_id: str) -> dict:
+    """One hardware session. The record holds no scenario and no truth: those
+    live in a separate truth file and are joined by grade() after the run."""
+    from .serialbench import BenchInterrupted
+
+    guard = PolicyGuard(bench, policy)
+    started = lagos_now()
+    t0 = time.perf_counter()
+    error = None
+    try:
+        diag = fn(guard, seed=seed)
+    except BenchInterrupted as exc:
+        log.error("session %s/%s interrupted: %s", session_id, method, exc)
+        diag, error = {"status": "interrupted", "elements": []}, str(exc)
+    except ConnectionError:
+        log.error("session %s/%s: model server unreachable, stopping the run", session_id, method)
+        raise
+    except Exception as exc:  # surface the failure, keep the run going
+        log.exception("session %s/%s crashed", session_id, method)
+        diag, error = {"status": "crashed", "elements": []}, repr(exc)
+    rec = {
+        **meta, "timestamp": started, "session_id": session_id, "method": method, "seed": seed,
+        "elements": diag.get("elements", []), "status": diag["status"],
+        "cost": guard.spent, "actions": len(guard.history), "rejections": len(guard.rejections),
+        "wall_s": round(time.perf_counter() - t0, 3), "error": error,
+        "agent_stats": diag.get("agent_stats"), "history": guard.history,
+        "diagnosis": {k: v for k, v in diag.items() if k not in ("agent_stats",)},
+    }
+    log.info("%-6s session %s %-12s got=%s cost=%d", method, session_id, diag["status"], rec["elements"], guard.spent)
+    return rec
+
+
+def grade(sessions: list[dict], truth_rows: list[dict]) -> list[dict]:
+    """Join blind session records with the truth file (by session_id)."""
+    truth = {t["session_id"]: t for t in truth_rows}
+    out = []
+    for r in sessions:
+        t = truth.get(r["session_id"])
+        if t is None:
+            raise ValueError(f"no truth row for session {r['session_id']}")
+        out.append({**r, "scenario": t["scenario"], "set": SCENARIOS[t["scenario"]]["set"], "truth": t["truth"],
+                    "correct": r["status"] == "diagnosed" and sorted(r["elements"]) == t["truth"]})
+    return out
+
+
 def run_all(methods: dict, scenarios, trials: int, out_dir: Path | None = None, seed0: int = 0,
             policy: dict | None = None, method_meta: dict | None = None, final: bool = False) -> list[dict]:
     """method_meta: per-method extras such as {"hybrid": {"model": ..., "model_version": ...}}.
@@ -174,4 +231,23 @@ def summary_table(records: list[dict]) -> str:
     for r in summarise(records):
         lines.append(f"| {r['set']} | {r['method']} | {r['n']} | {r['accuracy']:.0%} | {r['wrong']:.0%} | "
                      f"{r['inconclusive']:.0%} | {r['out_of_model']:.0%} | {r['mean_cost']:.1f} | {r['mean_cost_correct']:.1f} |")
+    return "\n".join(lines) + "\n"
+
+
+def scenario_table(records: list[dict]) -> str:
+    """Per-scenario breakdown: correct/n and mean cost for each method."""
+    sources = sorted({r.get("source", "sim") for r in records})
+    if len(sources) > 1:
+        raise ValueError(f"refusing to summarise mixed sources {sources}: report sim and hardware separately")
+    methods = sorted({r["method"] for r in records})
+    order = {n: i for i, n in enumerate(SCENARIOS)}
+    lines = [f"Source: {sources[0] if sources else 'sim'}", "",
+             "| Scenario | Set | " + " | ".join(methods) + " |", "|---|---|" + "---|" * len(methods)]
+    for name in sorted({r["scenario"] for r in records}, key=lambda n: order.get(n, 999)):
+        cells = []
+        for m in methods:
+            rs = [r for r in records if r["scenario"] == name and r["method"] == m]
+            cells.append(f"{sum(r['correct'] for r in rs)}/{len(rs)} (cost {np.mean([r['cost'] for r in rs]):.1f})"
+                         if rs else "-")
+        lines.append(f"| {name} | {SCENARIOS[name]['set']} | " + " | ".join(cells) + " |")
     return "\n".join(lines) + "\n"

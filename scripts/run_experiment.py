@@ -1,7 +1,7 @@
 """Run the comparison in simulation.
 
     python scripts/run_experiment.py --trials 10
-    python scripts/run_experiment.py --methods fixed,tree,bayes,hybrid --model qwen2.5:7b
+    python scripts/run_experiment.py --methods fixed,tree,bayes,llm,hybrid --model qwen3:8b --trials 10 --final
 
 Results go to results/<timestamp>/ (summary.md and sessions.jsonl).
 Simulation results are for development only; report them separately from hardware runs.
@@ -14,11 +14,9 @@ from pathlib import Path
 ROOT = Path(__file__).resolve().parent.parent
 sys.path.insert(0, str(ROOT))
 
-from faultdiag.agent import Agent, OpenAICompatLLM  # noqa: E402
-from faultdiag.baselines import run_fixed, run_tree  # noqa: E402
-from faultdiag.engine import BayesEngine  # noqa: E402
 from faultdiag.harness import SCENARIOS, dev_scenarios, run_all, summary_table  # noqa: E402
-from faultdiag.runmeta import LAGOS, ollama_model_version  # noqa: E402
+from faultdiag.methods import build_methods  # noqa: E402
+from faultdiag.runmeta import LAGOS  # noqa: E402
 
 
 def main():
@@ -29,27 +27,19 @@ def main():
     ap.add_argument("--final", action="store_true",
                     help="final evaluation: also run the frozen held-out set (H3, H4)")
     ap.add_argument("--trials", type=int, default=5)
-    ap.add_argument("--base-url", default="http://localhost:11434/v1")
+    ap.add_argument("--server", choices=["ollama", "llamacpp"], default="ollama")
+    ap.add_argument("--base-url", default=None, help="default: Ollama on :11434, llama.cpp on :8080")
     ap.add_argument("--model", default=None, help="local model name, needed for llm and hybrid")
+    ap.add_argument("--model-version", default=None, help="for llama.cpp: e.g. sha256 prefix of the GGUF")
+    ap.add_argument("--think", action="store_true", help="leave a thinking model's reasoning on")
+    ap.add_argument("--timeout", type=float, default=180, help="seconds per model reply")
     args = ap.parse_args()
 
-    engine = BayesEngine()
-    methods, method_meta = {}, {}
-    for m in args.methods.split(","):
-        if m == "fixed":
-            methods[m] = run_fixed
-        elif m == "tree":
-            methods[m] = run_tree
-        elif m == "bayes":
-            methods[m] = engine.run
-        elif m in ("hybrid", "llm"):
-            if not args.model:
-                sys.exit(f"--model is required for method {m}")
-            agent = Agent(OpenAICompatLLM(args.base_url, args.model), engine if m == "hybrid" else None)
-            methods[m] = agent.run
-            method_meta[m] = {"model": args.model, "model_version": ollama_model_version(args.base_url, args.model)}
-        else:
-            sys.exit(f"unknown method {m}")
+    try:
+        methods, method_meta = build_methods(args.methods.split(","), args.model, args.server, args.base_url,
+                                             args.think, args.timeout, args.model_version)
+    except ValueError as exc:
+        sys.exit(str(exc))
 
     out = ROOT / "results" / datetime.now(LAGOS).strftime("%Y%m%d-%H%M%S")
     scenarios = args.scenarios.split(",") if args.scenarios else (list(SCENARIOS) if args.final else dev_scenarios())

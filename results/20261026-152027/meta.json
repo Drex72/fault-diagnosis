@@ -1,0 +1,19 @@
+{
+  "source": "sim",
+  "commit": "84cdb7a386a8fe77eee512d109b06f501cbac3d9+dirty",
+  "policy_hash": "88b28c1f4c8a",
+  "started": "2026-10-26T15:20:27+01:00",
+  "methods": [
+    "fixed",
+    "tree",
+    "bayes"
+  ],
+  "scenarios": [
+    "healthy",
+    "F2"
+  ],
+  "trials": 1,
+  "seed0": 0,
+  "method_meta": {},
+  "final": false
+}

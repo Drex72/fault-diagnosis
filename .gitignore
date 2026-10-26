@@ -12,3 +12,4 @@ firmware/*/.pio/
 gui/data/
 results/**/*.raw.log
 models/
+results/mock-serial/
