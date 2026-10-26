@@ -71,6 +71,9 @@ def run_trial(name: str, method: str, fn, seed: int, policy: dict, meta: dict | 
     try:
         diag = fn(guard, seed=seed)
         error = None
+    except ConnectionError:
+        log.error("trial %s/%s seed=%d: model server or bench unreachable, stopping the run", method, name, seed)
+        raise
     except Exception as exc:  # surface the failure, keep the run going
         log.exception("trial %s/%s seed=%d crashed", method, name, seed)
         diag, error = {"status": "crashed", "elements": []}, repr(exc)

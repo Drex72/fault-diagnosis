@@ -13,6 +13,7 @@ from __future__ import annotations
 import json
 import re
 import time
+import urllib.error
 import urllib.request
 
 from .logsetup import get_logger
@@ -68,17 +69,32 @@ LLM_ONLY_PROMPT = SYSTEM_PROMPT.split("Each turn you receive")[0] + (
     "Finish with submit_diagnosis.")
 
 
+class LLMUnavailable(ConnectionError):
+    """The model server cannot be reached. Fatal for the run, unlike a timeout."""
+
+
 class OpenAICompatLLM:
-    def __init__(self, base_url: str, model: str, timeout_s: float = 180, temperature: float = 0.0):
+    def __init__(self, base_url: str, model: str, timeout_s: float = 180, temperature: float = 0.0,
+                 extra: dict | None = None):
+        """extra: additional request fields, e.g. {"reasoning_effort": "none"} to
+        switch off a thinking model's reasoning on Ollama."""
         self.url = base_url.rstrip("/") + "/chat/completions"
         self.model, self.timeout_s, self.temperature = model, timeout_s, temperature
+        self.extra = extra or {}
 
     def __call__(self, messages: list[dict], tools: list[dict]) -> dict:
         body = json.dumps({"model": self.model, "messages": messages, "tools": tools,
-                           "temperature": self.temperature, "stream": False}).encode()
+                           "temperature": self.temperature, "stream": False, **self.extra}).encode()
         req = urllib.request.Request(self.url, body, {"Content-Type": "application/json"})
-        with urllib.request.urlopen(req, timeout=self.timeout_s) as resp:
-            return json.loads(resp.read())["choices"][0]["message"]
+        try:
+            with urllib.request.urlopen(req, timeout=self.timeout_s) as resp:
+                return json.loads(resp.read())["choices"][0]["message"]
+        except urllib.error.HTTPError as exc:  # server up, request refused (e.g. model not pulled)
+            raise LLMUnavailable(f"{self.url} returned HTTP {exc.code}: {exc.read()[:200]!r}") from exc
+        except urllib.error.URLError as exc:
+            if isinstance(exc.reason, TimeoutError):
+                raise TimeoutError(f"no reply from {self.model} within {self.timeout_s} s") from exc
+            raise LLMUnavailable(f"cannot reach model server at {self.url}: {exc.reason}") from exc
 
 
 def parse_call(msg: dict):
@@ -119,7 +135,15 @@ class Agent:
         tools = openai_tools(AGENT_TOOLS)
         for attempt in range(self.max_retries + 1):
             t0 = time.perf_counter()
-            msg = self.llm(messages, tools)
+            try:
+                msg = self.llm(messages, tools)
+            except TimeoutError as exc:  # count as invalid and fall back at once: a retry would wait again
+                stats["latency_s"].append(round(time.perf_counter() - t0, 3))
+                stats["llm_calls"] += 1
+                stats["invalid"] += 1
+                stats["timeouts"] += 1
+                log.warning("model timed out (attempt %d): %s", attempt + 1, exc)
+                return None
             stats["latency_s"].append(round(time.perf_counter() - t0, 3))
             stats["llm_calls"] += 1
             assistant = {"role": "assistant", "content": msg.get("content") or ""}
@@ -137,6 +161,7 @@ class Agent:
                 stats["content_parsed"] += how == "content"
                 return name, args, call_id
             stats["invalid"] += 1
+            stats["no_call"] += how is None and not msg.get("tool_calls")
             log.warning("invalid call (attempt %d): %s %s -> %s", attempt + 1, name, args, errors)
             feedback = f"Invalid tool call: {'; '.join(errors)}. Reply with exactly one valid tool call."
             messages.append({"role": "tool", "tool_call_id": call_id, "content": feedback} if call_id
@@ -146,7 +171,8 @@ class Agent:
     def run(self, guard, seed: int = 0) -> dict:
         if self.engine is not None:
             self.engine.reset(seed)
-        stats = {"llm_calls": 0, "invalid": 0, "fallbacks": 0, "content_parsed": 0, "latency_s": []}
+        stats = {"llm_calls": 0, "invalid": 0, "fallbacks": 0, "content_parsed": 0, "no_call": 0, "timeouts": 0,
+                 "latency_s": []}
         prompt = SYSTEM_PROMPT if self.engine is not None else LLM_ONLY_PROMPT
         messages = [{"role": "system", "content": prompt}, {"role": "user", "content": self._state(guard)}]
         for _ in range(self.max_steps):

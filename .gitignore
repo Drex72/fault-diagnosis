@@ -11,3 +11,4 @@ __pycache__/
 firmware/*/.pio/
 gui/data/
 results/**/*.raw.log
+models/
