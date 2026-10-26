@@ -15,6 +15,7 @@ from .faults import ATOM_ELEMENT, apply_atoms, sample_healthy
 from .guard import PolicyGuard, load_policy
 from .heldout import HELDOUT_ELEMENT, apply_heldout
 from .logsetup import get_logger
+from .runmeta import lagos_now, run_meta
 from .simbench import SimBench
 
 log = get_logger("harness")
@@ -59,8 +60,13 @@ def make_bench(name: str, seed: int) -> SimBench:
     return SimBench(state, np.random.default_rng(seed + 10_000), failures=spec.get("failures"))
 
 
-def run_trial(name: str, method: str, fn, seed: int, policy: dict) -> dict:
-    guard = PolicyGuard(make_bench(name, seed), policy)
+def run_trial(name: str, method: str, fn, seed: int, policy: dict, meta: dict | None = None,
+              bench=None) -> dict:
+    """One blind trial. meta (source, commit, policy hash, model...) is copied
+    into the record; it defaults to a simulation run."""
+    meta = meta or run_meta("sim", policy)
+    guard = PolicyGuard(bench if bench is not None else make_bench(name, seed), policy)
+    started = lagos_now()
     t0 = time.perf_counter()
     try:
         diag = fn(guard, seed=seed)
@@ -70,6 +76,7 @@ def run_trial(name: str, method: str, fn, seed: int, policy: dict) -> dict:
         diag, error = {"status": "crashed", "elements": []}, repr(exc)
     truth = truth_elements(SCENARIOS[name])
     rec = {
+        **meta, "timestamp": started,
         "method": method, "scenario": name, "set": SCENARIOS[name]["set"], "seed": seed,
         "truth": truth, "elements": diag.get("elements", []), "status": diag["status"],
         "correct": diag["status"] == "diagnosed" and sorted(diag.get("elements", [])) == truth,
@@ -84,19 +91,38 @@ def run_trial(name: str, method: str, fn, seed: int, policy: dict) -> dict:
 
 
 def run_all(methods: dict, scenarios, trials: int, out_dir: Path | None = None, seed0: int = 0,
-            policy: dict | None = None) -> list[dict]:
+            policy: dict | None = None, method_meta: dict | None = None) -> list[dict]:
+    """method_meta: per-method extras such as {"hybrid": {"model": ..., "model_version": ...}}.
+    Records are appended to sessions.jsonl as each trial finishes, so an
+    interrupted run keeps what it had."""
     policy = policy or load_policy()
+    base = run_meta("sim", policy)
+    method_meta = method_meta or {}
     records = []
-    for name in scenarios:
-        for t in range(trials):
-            seed = seed0 + 1000 * list(SCENARIOS).index(name) + t
-            for method, fn in methods.items():
-                records.append(run_trial(name, method, fn, seed, policy))
+    f = None
     if out_dir:
         out_dir.mkdir(parents=True, exist_ok=True)
-        with open(out_dir / "sessions.jsonl", "w") as f:
-            for r in records:
-                f.write(json.dumps(r, default=str) + "\n")
+        (out_dir / "meta.json").write_text(json.dumps(
+            {**base, "started": lagos_now(), "methods": list(methods), "scenarios": list(scenarios),
+             "trials": trials, "seed0": seed0, "method_meta": method_meta}, indent=2))
+        f = open(out_dir / "sessions.jsonl", "a")
+    try:
+        for name in scenarios:
+            for t in range(trials):
+                seed = seed0 + 1000 * list(SCENARIOS).index(name) + t
+                for method, fn in methods.items():
+                    meta = {**base, "model": None, "model_version": None, **method_meta.get(method, {})}
+                    rec = run_trial(name, method, fn, seed, policy, meta)
+                    records.append(rec)
+                    if f:
+                        f.write(json.dumps(rec, default=str) + "\n")
+                        f.flush()
+    finally:
+        if f:
+            f.close()
+    if records:
+        log.info("record fields: %s", sorted(records[0]))
+    if out_dir:
         (out_dir / "summary.md").write_text(summary_table(records))
     return records
 
@@ -121,7 +147,11 @@ def summarise(records: list[dict]) -> list[dict]:
 
 
 def summary_table(records: list[dict]) -> str:
-    lines = ["| Test set | Method | n | Correct | Wrong | Inconclusive | Out-of-model flag | Mean cost | Mean cost (correct) |",
+    sources = sorted({r.get("source", "sim") for r in records})
+    if len(sources) > 1:
+        raise ValueError(f"refusing to summarise mixed sources {sources}: report sim and hardware separately")
+    lines = [f"Source: {sources[0] if sources else 'sim'}", "",
+             "| Test set | Method | n | Correct | Wrong | Inconclusive | Out-of-model flag | Mean cost | Mean cost (correct) |",
              "|---|---|---|---|---|---|---|---|---|"]
     for r in summarise(records):
         lines.append(f"| {r['set']} | {r['method']} | {r['n']} | {r['accuracy']:.0%} | {r['wrong']:.0%} | "

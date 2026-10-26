@@ -8,7 +8,7 @@ Simulation results are for development only; report them separately from hardwar
 """
 import argparse
 import sys
-import time
+from datetime import datetime
 from pathlib import Path
 
 ROOT = Path(__file__).resolve().parent.parent
@@ -18,6 +18,7 @@ from faultdiag.agent import Agent, OpenAICompatLLM  # noqa: E402
 from faultdiag.baselines import run_fixed, run_tree  # noqa: E402
 from faultdiag.engine import BayesEngine  # noqa: E402
 from faultdiag.harness import SCENARIOS, run_all, summary_table  # noqa: E402
+from faultdiag.runmeta import LAGOS, ollama_model_version  # noqa: E402
 
 
 def main():
@@ -30,7 +31,7 @@ def main():
     args = ap.parse_args()
 
     engine = BayesEngine()
-    methods = {}
+    methods, method_meta = {}, {}
     for m in args.methods.split(","):
         if m == "fixed":
             methods[m] = run_fixed
@@ -43,11 +44,12 @@ def main():
                 sys.exit(f"--model is required for method {m}")
             agent = Agent(OpenAICompatLLM(args.base_url, args.model), engine if m == "hybrid" else None)
             methods[m] = agent.run
+            method_meta[m] = {"model": args.model, "model_version": ollama_model_version(args.base_url, args.model)}
         else:
             sys.exit(f"unknown method {m}")
 
-    out = ROOT / "results" / time.strftime("%Y%m%d-%H%M%S")
-    records = run_all(methods, args.scenarios.split(","), args.trials, out)
+    out = ROOT / "results" / datetime.now(LAGOS).strftime("%Y%m%d-%H%M%S")
+    records = run_all(methods, args.scenarios.split(","), args.trials, out, method_meta=method_meta)
     print("\nSIMULATION RESULTS (not hardware)\n")
     print(summary_table(records))
     print(f"Saved to {out}")
