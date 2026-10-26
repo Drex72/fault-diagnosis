@@ -82,6 +82,13 @@ def test_tool_failures_are_reported():
 
 
 # ---- engine -------------------------------------------------------------
+def test_commit_stamp_is_the_code_loaded(monkeypatch):
+    from faultdiag import runmeta
+    loaded = runmeta.git_commit()
+    monkeypatch.setattr(runmeta.subprocess, "run", lambda *a, **k: (_ for _ in ()).throw(AssertionError("git called again")))
+    assert runmeta.run_meta("sim", {})["commit"] == loaded  # a commit made mid-run must not relabel the run
+
+
 def test_engine_never_imports_heldout():
     code = "import sys; sys.path.insert(0, %r); import faultdiag.engine, faultdiag.agent; print('faultdiag.heldout' in sys.modules)" % str(ROOT)
     out = subprocess.run([sys.executable, "-c", code], capture_output=True, text=True, check=True)

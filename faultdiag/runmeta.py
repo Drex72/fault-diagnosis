@@ -1,6 +1,7 @@
 """Provenance stamped on every result record: source, commit, policy hash, time."""
 from __future__ import annotations
 
+import functools
 import hashlib
 import json
 import subprocess
@@ -18,8 +19,11 @@ def lagos_now() -> str:
     return datetime.now(LAGOS).isoformat(timespec="seconds")
 
 
+@functools.cache
 def git_commit() -> str:
-    """Commit hash of the working tree, with '+dirty' if tracked files have uncommitted changes."""
+    """Commit hash of the code this process loaded, with '+dirty' if tracked files had
+    uncommitted changes. Taken once, when this module is imported: a long run keeps running
+    the code it started with even if a commit lands while it runs."""
     try:
         head = subprocess.run(["git", "rev-parse", "HEAD"], cwd=ROOT, capture_output=True, text=True,
                               check=True).stdout.strip()
@@ -28,6 +32,9 @@ def git_commit() -> str:
         return head + ("+dirty" if dirty else "")
     except (OSError, subprocess.CalledProcessError):
         return "unknown"
+
+
+git_commit()  # stamp the code as loaded, before any long run starts
 
 
 def policy_hash(policy: dict) -> str:
