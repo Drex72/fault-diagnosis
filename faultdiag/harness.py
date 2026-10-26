@@ -40,7 +40,17 @@ SCENARIOS = {
     # test set 4: tool failures
     "TF1": {"set": "toolfail", "atoms": ("F2",), "failures": {"read_voltage:motor": "timeout"}},
     "TF2": {"set": "toolfail", "atoms": ("F3",), "failures": {"read_current:motor": "garbage"}},
+    # test set 5: final held-out faults, frozen 26 Oct 2026. Appended last so the
+    # seeds of the scenarios above are unchanged. Only run with final=True.
+    "H3": {"set": "heldout_final", "heldout": "H3"},
+    "H4": {"set": "heldout_final", "heldout": "H4"},
 }
+FINAL_ONLY_SETS = ("heldout_final",)
+
+
+def dev_scenarios() -> list[str]:
+    """Scenarios that may be run during development (excludes the frozen final held-out set)."""
+    return [n for n, s in SCENARIOS.items() if s["set"] not in FINAL_ONLY_SETS]
 
 
 def truth_elements(spec: dict) -> list[str]:
@@ -94,10 +104,15 @@ def run_trial(name: str, method: str, fn, seed: int, policy: dict, meta: dict | 
 
 
 def run_all(methods: dict, scenarios, trials: int, out_dir: Path | None = None, seed0: int = 0,
-            policy: dict | None = None, method_meta: dict | None = None) -> list[dict]:
+            policy: dict | None = None, method_meta: dict | None = None, final: bool = False) -> list[dict]:
     """method_meta: per-method extras such as {"hybrid": {"model": ..., "model_version": ...}}.
     Records are appended to sessions.jsonl as each trial finishes, so an
-    interrupted run keeps what it had."""
+    interrupted run keeps what it had. The frozen final held-out scenarios are
+    refused unless final=True."""
+    blocked = [n for n in scenarios if SCENARIOS[n]["set"] in FINAL_ONLY_SETS]
+    if blocked and not final:
+        raise ValueError(f"{blocked} are frozen final held-out scenarios; pass final=True (--final) "
+                         "only for the final evaluation run")
     policy = policy or load_policy()
     base = run_meta("sim", policy)
     method_meta = method_meta or {}
@@ -107,7 +122,7 @@ def run_all(methods: dict, scenarios, trials: int, out_dir: Path | None = None, 
         out_dir.mkdir(parents=True, exist_ok=True)
         (out_dir / "meta.json").write_text(json.dumps(
             {**base, "started": lagos_now(), "methods": list(methods), "scenarios": list(scenarios),
-             "trials": trials, "seed0": seed0, "method_meta": method_meta}, indent=2))
+             "trials": trials, "seed0": seed0, "method_meta": method_meta, "final": final}, indent=2))
         f = open(out_dir / "sessions.jsonl", "a")
     try:
         for name in scenarios:

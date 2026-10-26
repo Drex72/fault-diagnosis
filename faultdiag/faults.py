@@ -29,6 +29,7 @@ class FaultState:
     params: CircuitParams
     sensor_offsets: dict = field(default_factory=dict)  # tap -> volts added
     p_lamp_open: float = 0.0                            # >0 means intermittent
+    current_gain: dict = field(default_factory=dict)    # current channel -> gain error (bench only; no atom sets it)
 
 
 def sample_healthy(rng) -> CircuitParams:

@@ -8,7 +8,10 @@ from dataclasses import replace
 
 from .circuit import solve
 from .faults import FaultState
+from .logsetup import get_logger
 from .measure import OBS_KEYS, kind, obs_key, observe, selector
+
+log = get_logger("simbench")
 
 
 class SimBench:
@@ -19,6 +22,8 @@ class SimBench:
         self.noise = {"v": noise_v, "i": noise_i}
         self.failures = failures or {}  # "read_voltage:motor" -> "timeout" | "garbage"
         self.max_source_current = max_source_current
+        log.debug("sim bench: tap offsets %s, current gains %s, p_lamp_open %.2f, tool failures %s",
+                  state.sensor_offsets, state.current_gain, state.p_lamp_open, self.failures)
 
     def _params_now(self):
         p = self.state.params
@@ -39,6 +44,9 @@ class SimBench:
 
         keys = OBS_KEYS[obs_key(tool, args)]
         values = observe(p, self.state.sensor_offsets, tool, args)
+        for i, key in enumerate(keys):  # a current sensor with a gain error (source channel feeds the load test too)
+            channel = args.get("channel") if key == "amps" else ("src" if key.startswith("i_src") else None)
+            values[i] *= self.state.current_gain.get(channel, 1.0)
         if failure == "garbage":
             values = self.rng.uniform(0, 16, size=len(values))
         data = {k: round(float(x + self.rng.normal(0, self.noise[kind(k)])), 4) for k, x in zip(keys, values)}

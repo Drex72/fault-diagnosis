@@ -17,14 +17,17 @@ sys.path.insert(0, str(ROOT))
 from faultdiag.agent import Agent, OpenAICompatLLM  # noqa: E402
 from faultdiag.baselines import run_fixed, run_tree  # noqa: E402
 from faultdiag.engine import BayesEngine  # noqa: E402
-from faultdiag.harness import SCENARIOS, run_all, summary_table  # noqa: E402
+from faultdiag.harness import SCENARIOS, dev_scenarios, run_all, summary_table  # noqa: E402
 from faultdiag.runmeta import LAGOS, ollama_model_version  # noqa: E402
 
 
 def main():
     ap = argparse.ArgumentParser()
     ap.add_argument("--methods", default="fixed,tree,bayes")
-    ap.add_argument("--scenarios", default=",".join(SCENARIOS))
+    ap.add_argument("--scenarios", default=None,
+                    help="default: every development scenario, or every scenario with --final")
+    ap.add_argument("--final", action="store_true",
+                    help="final evaluation: also run the frozen held-out set (H3, H4)")
     ap.add_argument("--trials", type=int, default=5)
     ap.add_argument("--base-url", default="http://localhost:11434/v1")
     ap.add_argument("--model", default=None, help="local model name, needed for llm and hybrid")
@@ -49,7 +52,8 @@ def main():
             sys.exit(f"unknown method {m}")
 
     out = ROOT / "results" / datetime.now(LAGOS).strftime("%Y%m%d-%H%M%S")
-    records = run_all(methods, args.scenarios.split(","), args.trials, out, method_meta=method_meta)
+    scenarios = args.scenarios.split(",") if args.scenarios else (list(SCENARIOS) if args.final else dev_scenarios())
+    records = run_all(methods, scenarios, args.trials, out, method_meta=method_meta, final=args.final)
     print("\nSIMULATION RESULTS (not hardware)\n")
     print(summary_table(records))
     print(f"Saved to {out}")
