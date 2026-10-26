@@ -3,6 +3,7 @@
     python scripts/bench_models.py --models llama3.2:3b,qwen3:8b
     python scripts/bench_models.py --server llamacpp --base-url http://localhost:8080/v1 \
         --models bonsai-8b --model-version <sha256 prefix of the GGUF>
+    python scripts/bench_models.py --engine-only    # method C alone on the same seeds, no model
 
 Reports, per model: diagnosis accuracy on a fixed scenario set, invalid
 tool-call rate, replies parsed from plain text, timeouts, replies the server
@@ -13,7 +14,8 @@ resident size of the llama-server process.
 
 Exit codes: 0 ok, 2 model server not reachable, 3 a requested model is not
 available (the others are still benchmarked).
-Results: results/model-bench/<timestamp>/ (sessions.jsonl, summary.json).
+Results: results/model-bench/<timestamp>/ (sessions.jsonl, summary.json; with
+--engine-only, engine_reference.json instead of summary.json).
 """
 import argparse
 import json
@@ -163,9 +165,27 @@ def bench_model(model, args, policy, engine, out_f) -> dict:
     }
 
 
+def engine_reference(args, policy, engine, out_f) -> dict:
+    """Method C alone on the benchmark's scenarios and seeds: what a model planner has to beat."""
+    meta = {**run_meta("sim", policy), "model": None, "model_version": None}
+    recs = []
+    for s in args.scenarios.split(","):
+        for t in range(args.trials):
+            rec = run_trial(s, "bayes", engine.run, 5000 + t, policy, meta)
+            recs.append(rec)
+            out_f.write(json.dumps(rec, default=str) + "\n")
+    return {"method": "bayes", "date": lagos_now(), "commit": meta["commit"], "policy_hash": meta["policy_hash"],
+            "sessions": len(recs), "accuracy": sum(r["correct"] for r in recs) / len(recs),
+            "mean_cost": sum(r["cost"] for r in recs) / len(recs),
+            "per_scenario": {s: sum(r["correct"] for r in recs if r["scenario"] == s) / args.trials
+                             for s in args.scenarios.split(",")}}
+
+
 def main():
     ap = argparse.ArgumentParser()
-    ap.add_argument("--models", required=True)
+    ap.add_argument("--models", default=None, help="comma-separated; required unless --engine-only")
+    ap.add_argument("--engine-only", action="store_true",
+                    help="run method C alone on the same scenarios and seeds (no model server needed)")
     ap.add_argument("--server", choices=["ollama", "llamacpp"], default="ollama")
     ap.add_argument("--base-url", default=None, help="default: Ollama on :11434, llama.cpp on :8080")
     ap.add_argument("--scenarios", default=DEFAULT_SCENARIOS)
@@ -174,6 +194,17 @@ def main():
     ap.add_argument("--think", action="store_true", help="leave a thinking model's reasoning on")
     ap.add_argument("--model-version", default=None, help="for llama.cpp: e.g. sha256 prefix of the GGUF")
     args = ap.parse_args()
+    if args.engine_only:
+        out = ROOT / "results" / "model-bench" / datetime.now(LAGOS).strftime("%Y%m%d-%H%M%S")
+        out.mkdir(parents=True, exist_ok=True)
+        with open(out / "sessions.jsonl", "a") as f:
+            ref = engine_reference(args, load_policy(), BayesEngine(), f)
+        (out / "engine_reference.json").write_text(json.dumps(ref, indent=2))
+        print(f"\nENGINE ALONE (method C), simulated bench: accuracy {ref['accuracy']:.0%} over {ref['sessions']} "
+              f"sessions, mean cost {ref['mean_cost']:.1f}\nper scenario: {ref['per_scenario']}\nSaved to {out}")
+        return
+    if not args.models:
+        ap.error("--models is required unless --engine-only is given")
     args.base_url = args.base_url or ("http://localhost:11434/v1" if args.server == "ollama"
                                       else "http://localhost:8080/v1")
 

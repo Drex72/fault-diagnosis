@@ -32,12 +32,12 @@ The same runs from the command line: `scripts/run_experiment.py` (simulation), `
 **llama.cpp** (for GGUF files such as Bonsai-8B): start the server in its own terminal, then pass `--server llamacpp` and, so the record names the exact file, `--model-version <first 12 hex digits of the GGUF's SHA-256>`:
 
 ```bash
-llama-server -m models/bonsai-8b/Bonsai-8B-Q1_0.gguf --port 8080 --jinja
+llama-server -m models/bonsai-8b/Bonsai-8B-Q1_0.gguf --port 8080 --jinja -c 16384
 shasum -a 256 models/bonsai-8b/Bonsai-8B-Q1_0.gguf | cut -c1-12
 .venv/bin/python scripts/bench_models.py --server llamacpp --models bonsai-8b --model-version <digits> --trials 3
 ```
 
-`--jinja` makes llama-server use the model's own chat template, which carries the tool-calling format. The `models/` folder is git-ignored.
+`--jinja` makes llama-server use the model's own chat template, which carries the tool-calling format. `-c 16384` gives each request a 16k-token window, enough for a full 20-step session (the agent trims its context above about 12k tokens). The `models/` folder is git-ignored.
 
 ## After calibration
 

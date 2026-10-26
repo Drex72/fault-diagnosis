@@ -2,12 +2,14 @@
 
     python scripts/run_experiment.py --trials 10
     python scripts/run_experiment.py --methods fixed,tree,bayes,llm,hybrid --model qwen3:8b --trials 10 --final
+    python scripts/run_experiment.py <same options> --resume results/<timestamp>   # continue a stopped run
 
 Results go to results/<timestamp>/ (summary.md and sessions.jsonl); FAULTDIAG_RESULTS_DIR
 replaces results/ (the tests use it).
 Simulation results are for development only; report them separately from hardware runs.
 """
 import argparse
+import json
 import os
 import sys
 from datetime import datetime
@@ -35,6 +37,8 @@ def main():
     ap.add_argument("--model-version", default=None, help="for llama.cpp: e.g. sha256 prefix of the GGUF")
     ap.add_argument("--think", action="store_true", help="leave a thinking model's reasoning on")
     ap.add_argument("--timeout", type=float, default=180, help="seconds per model reply")
+    ap.add_argument("--resume", default=None, metavar="RUN_DIR",
+                    help="continue a stopped run in RUN_DIR with the same options: recorded sessions are kept")
     args = ap.parse_args()
 
     try:
@@ -45,7 +49,20 @@ def main():
 
     out = Path(os.environ.get("FAULTDIAG_RESULTS_DIR", ROOT / "results")) / datetime.now(LAGOS).strftime("%Y%m%d-%H%M%S")
     scenarios = args.scenarios.split(",") if args.scenarios else (list(SCENARIOS) if args.final else dev_scenarios())
-    records = run_all(methods, scenarios, args.trials, out, method_meta=method_meta, final=args.final)
+    if args.resume:
+        out = Path(args.resume)
+        try:
+            first = json.loads((out / "meta.json").read_text())
+        except (OSError, ValueError) as exc:
+            sys.exit(f"cannot resume {out}: {exc}")
+        now = {"methods": list(methods), "scenarios": scenarios, "trials": args.trials, "final": args.final,
+               "models": {m: v.get("model") for m, v in method_meta.items()}}
+        then = {k: first.get(k) for k in ("methods", "scenarios", "trials", "final")}
+        then["models"] = {m: v.get("model") for m, v in (first.get("method_meta") or {}).items()}
+        if now != then:
+            sys.exit(f"cannot resume {out}: options differ from the original run\n  original: {then}\n  now:      {now}")
+    records = run_all(methods, scenarios, args.trials, out, method_meta=method_meta, final=args.final,
+                      resume=bool(args.resume))
     print("\nSIMULATION RESULTS (not hardware)\n")
     print(summary_table(records))
     print(f"Saved to {out}")

@@ -89,6 +89,38 @@ def test_commit_stamp_is_the_code_loaded(monkeypatch):
     assert runmeta.run_meta("sim", {})["commit"] == loaded  # a commit made mid-run must not relabel the run
 
 
+def test_resume_runs_only_missing_sessions(tmp_path):
+    from faultdiag.harness import run_all, summary_table
+    calls = []
+
+    def fixed(guard, seed):
+        calls.append(seed)
+        return run_fixed(guard, seed)
+
+    full = run_all({"fixed": fixed, "tree": run_tree}, ["healthy", "F2"], 2, tmp_path / "a")
+    path = tmp_path / "a" / "sessions.jsonl"
+    path.write_text("".join(path.read_text().splitlines(keepends=True)[:3]))  # stopped after 3 of 8 sessions
+    calls.clear()
+    resumed = run_all({"fixed": fixed, "tree": run_tree}, ["healthy", "F2"], 2, tmp_path / "a", resume=True)
+    assert len(calls) == 2 and len(path.read_text().splitlines()) == 8  # 2 of the 5 missing are "fixed"
+    assert summary_table(resumed) == summary_table(full)
+    assert (tmp_path / "a" / "meta.json").exists() and list((tmp_path / "a").glob("meta-resumed-*.json"))
+
+
+def test_run_experiment_resume_refuses_other_options(tmp_path):
+    env = {**__import__("os").environ, "FAULTDIAG_RESULTS_DIR": str(tmp_path)}
+    script = str(ROOT / "scripts" / "run_experiment.py")
+    subprocess.run([sys.executable, script, "--scenarios", "healthy", "--trials", "1"], env=env, check=True,
+                   capture_output=True)
+    run = next(tmp_path.iterdir())
+    bad = subprocess.run([sys.executable, script, "--scenarios", "healthy", "--trials", "2", "--resume", str(run)],
+                         env=env, capture_output=True, text=True)
+    assert bad.returncode != 0 and "options differ" in bad.stderr
+    ok = subprocess.run([sys.executable, script, "--scenarios", "healthy", "--trials", "1", "--resume", str(run)],
+                        env=env, capture_output=True, text=True)
+    assert ok.returncode == 0 and len((run / "sessions.jsonl").read_text().splitlines()) == 3
+
+
 def test_engine_never_imports_heldout():
     code = "import sys; sys.path.insert(0, %r); import faultdiag.engine, faultdiag.agent; print('faultdiag.heldout' in sys.modules)" % str(ROOT)
     out = subprocess.run([sys.executable, "-c", code], capture_output=True, text=True, check=True)

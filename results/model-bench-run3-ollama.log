@@ -1,0 +1,426 @@
+19:44:56 WARNING faultdiag.agent: invalid call (attempt 1): load_test {'mode': 'pulse', 'width_ms': '100'} -> ['args.width_ms: expected integer']
+19:44:58 WARNING faultdiag.agent: invalid call (attempt 2): load_test {'tool': 'load_test', 'args': {'mode': 'pulse'}} -> ['args.mode: required', 'args.tool: unexpected field', 'args.args: unexpected field']
+19:45:09 WARNING faultdiag.guard: rejected human_probe {'point_a': 'load', 'point_b': 'neg'}: human_probe limit of 2 per session reached
+19:45:18 WARNING faultdiag.guard: rejected human_probe {'point_b': 'neg', 'point_a': 'load'}: human_probe limit of 2 per session reached
+19:45:23 WARNING faultdiag.guard: rejected human_probe {'point_a': 'lamp', 'point_b': 'neg'}: human_probe limit of 2 per session reached
+19:45:29 WARNING faultdiag.guard: rejected human_probe {'point_a': 'ret', 'point_b': 'neg'}: human_probe limit of 2 per session reached
+19:45:40 WARNING faultdiag.guard: rejected human_probe {'point_a': 'load', 'point_b': 'neg'}: human_probe limit of 2 per session reached
+19:45:47 WARNING faultdiag.guard: rejected human_probe {'point_a': 'ret', 'point_b': 'neg'}: human_probe limit of 2 per session reached
+19:45:53 WARNING faultdiag.guard: rejected human_probe {'point_a': 'ret', 'point_b': 'neg'}: human_probe limit of 2 per session reached
+19:46:00 WARNING faultdiag.agent: invalid call (attempt 1): submit_diagnosis {'faults': '[]', 'confidence': '1'} -> ['args.faults: expected array', 'args.confidence: expected number']
+19:46:03 INFO    faultdiag.agent: submitted [], evidence: 
+19:46:03 INFO    faultdiag.harness: hybrid:llama3.2:3b F2        seed=5000 diagnosed    got=[] truth=['motor_connection'] cost=26 WRONG
+19:46:08 WARNING faultdiag.agent: invalid call (attempt 1): load_test {'mode': 'pulse', 'width_ms': '100'} -> ['args.width_ms: expected integer']
+19:46:37 WARNING faultdiag.guard: rejected human_probe {'point_a': 'src', 'point_b': 'ret', 'instruction': 'Measure the voltage between src and ret.'}: human_probe limit of 2 per session reached
+19:46:43 WARNING faultdiag.guard: rejected human_probe {'instruction': 'Measure the voltage between ret and neg.', 'point_a': 'ret', 'point_b': 'neg'}: human_probe limit of 2 per session reached
+19:46:50 WARNING faultdiag.guard: rejected human_probe {'instruction': 'Measure the voltage between src and neg.', 'point_a': 'src', 'point_b': 'neg'}: human_probe limit of 2 per session reached
+19:47:09 WARNING faultdiag.guard: rejected human_probe {'instruction': 'Measure the voltage between src and neg.', 'point_a': 'src', 'point_b': 'neg'}: human_probe limit of 2 per session reached
+19:47:16 WARNING faultdiag.agent: invalid call (attempt 1): submit_diagnosis {'faults': '["motor_connection"]', 'confidence': '0'} -> ['args.faults: expected array', 'args.confidence: expected number']
+19:47:19 WARNING faultdiag.agent: invalid call (attempt 2): submit_diagnosis {'confidence': '0', 'faults': '["motor_connection"]'} -> ['args.confidence: expected number', 'args.faults: expected array']
+19:47:22 WARNING faultdiag.agent: invalid call (attempt 3): submit_diagnosis {'confidence': '0', 'faults': '[]'} -> ['args.confidence: expected number', 'args.faults: expected array']
+19:47:22 WARNING faultdiag.agent: falling back to engine suggestion read_current {'channel': 'src'}
+19:47:28 WARNING faultdiag.agent: invalid call (attempt 1): submit_diagnosis {'confidence': '0', 'faults': '[]'} -> ['args.confidence: expected number', 'args.faults: expected array']
+19:47:31 WARNING faultdiag.agent: invalid call (attempt 2): submit_diagnosis {'confidence': 1, 'faults': '["motor_connection"]'} -> ['args.faults: expected array']
+19:47:32 WARNING faultdiag.agent: invalid call (attempt 3): submit_diagnosis {'confidence': 1, 'faults': '["motor_connection"]'} -> ['args.faults: expected array']
+19:47:32 WARNING faultdiag.agent: falling back to engine suggestion read_current {'channel': 'src'}
+19:47:37 WARNING faultdiag.agent: invalid call (attempt 1): submit_diagnosis {'confidence': 1, 'faults': '["motor_connection"]'} -> ['args.faults: expected array']
+19:47:40 WARNING faultdiag.agent: invalid call (attempt 2): submit_diagnosis {'confidence': 1, 'faults': '["motor_connection"]'} -> ['args.faults: expected array']
+19:47:41 WARNING faultdiag.agent: invalid call (attempt 3): print_diagnosis {'diagnosis': '["Motor connection is faulty."]'} -> ["unknown tool 'print_diagnosis'"]
+19:47:41 WARNING faultdiag.agent: falling back to engine suggestion read_current {'channel': 'src'}
+19:47:41 WARNING faultdiag.agent: loop detected: read_current {'channel': 'src'} 3 times with no new information; ending the session
+19:47:46 WARNING faultdiag.agent: invalid call (attempt 1): submit_diagnosis {'confidence': 1, 'faults': '["motor_connection"]'} -> ['args.faults: expected array']
+19:47:51 WARNING faultdiag.agent: invalid call (attempt 2): submit_diagnosis {'confidence': 1, 'faults': '[]'} -> ['args.faults: expected array']
+19:47:54 WARNING faultdiag.agent: invalid call (attempt 3): submit_diagnosis {'confidence': 1, 'faults': ''} -> ['args.faults: expected array']
+19:47:54 WARNING faultdiag.agent: agent ended without submitting a diagnosis
+19:47:54 INFO    faultdiag.harness: hybrid:llama3.2:3b F2        seed=5001 inconclusive got=['motor_connection'] truth=['motor_connection'] cost=32 WRONG
+19:47:58 WARNING faultdiag.agent: invalid call (attempt 1): load_test {'mode': 'pulse', 'width_ms': '100'} -> ['args.width_ms: expected integer']
+19:47:59 WARNING faultdiag.agent: invalid call (attempt 2): load_test {'tool': 'load_test', 'args': {'mode': 'pulse', 'width_ms': 100}} -> ['args.mode: required', 'args.tool: unexpected field', 'args.args: unexpected field']
+19:48:15 WARNING faultdiag.guard: rejected human_probe {'point_a': 'lamp', 'point_b': 'neg'}: human_probe limit of 2 per session reached
+19:48:20 WARNING faultdiag.agent: invalid call (attempt 1): submit_diagnosis {'faults': '["motor_connection"]', 'confidence': None, 'evidence': None} -> ['args.faults: expected array', 'args.confidence: expected number', 'args.evidence: expected string']
+19:48:22 WARNING faultdiag.agent: invalid call (attempt 2): submit_diagnosis {'faults': '["motor_connection"]'} -> ['args.confidence: required', 'args.faults: expected array']
+19:48:23 WARNING faultdiag.agent: invalid call (attempt 3): diagnostic_report {'faults': '["motor_connection"]'} -> ["unknown tool 'diagnostic_report'"]
+19:48:23 WARNING faultdiag.agent: falling back to engine suggestion read_voltage {'point': 'lamp'}
+19:48:26 WARNING faultdiag.agent: invalid call (attempt 1): submit_diagnosis {'faults': '["motor_connection"]'} -> ['args.confidence: required', 'args.faults: expected array']
+19:48:28 WARNING faultdiag.agent: invalid call (attempt 2): diagnostic_report {'faults': '["motor_connection"]'} -> ["unknown tool 'diagnostic_report'"]
+19:48:30 WARNING faultdiag.agent: invalid call (attempt 3): submit_diagnosis {'faults': '["motor_connection"]'} -> ['args.confidence: required', 'args.faults: expected array']
+19:48:30 WARNING faultdiag.agent: falling back to engine suggestion read_voltage {'point': 'load'}
+19:48:38 WARNING faultdiag.agent: invalid call (attempt 1): submit_diagnosis {'faults': '["motor_connection"]'} -> ['args.confidence: required', 'args.faults: expected array']
+19:48:40 WARNING faultdiag.agent: invalid call (attempt 2): diagnostic_report {'faults': '["motor_connection"]'} -> ["unknown tool 'diagnostic_report'"]
+19:48:42 WARNING faultdiag.agent: invalid call (attempt 3): submit_diagnosis {'faults': '["motor_connection"]'} -> ['args.confidence: required', 'args.faults: expected array']
+19:48:43 WARNING faultdiag.agent: falling back to engine suggestion read_voltage {'point': 'lamp'}
+19:48:47 WARNING faultdiag.guard: rejected human_probe {'point_a': 'ret', 'point_b': 'neg'}: human_probe limit of 2 per session reached
+19:48:52 WARNING faultdiag.agent: invalid call (attempt 1): submit_diagnosis {'faults': '["motor_connection"]'} -> ['args.confidence: required', 'args.faults: expected array']
+19:48:54 WARNING faultdiag.agent: invalid call (attempt 2): diagnostic_report {'faults': '["motor_connection"]'} -> ["unknown tool 'diagnostic_report'"]
+19:48:56 WARNING faultdiag.agent: invalid call (attempt 3): submit_diagnosis {'faults': '["motor_connection"]'} -> ['args.confidence: required', 'args.faults: expected array']
+19:48:57 WARNING faultdiag.agent: falling back to engine suggestion read_voltage {'point': 'lamp'}
+19:49:01 WARNING faultdiag.guard: rejected human_probe {'point_a': 'ret', 'point_b': 'neg'}: human_probe limit of 2 per session reached
+19:49:06 WARNING faultdiag.guard: rejected human_probe {'point_a': 'ret', 'point_b': 'neg'}: human_probe limit of 2 per session reached
+19:49:12 WARNING faultdiag.agent: invalid call (attempt 1): submit_diagnosis {'faults': '["motor_connection"]'} -> ['args.confidence: required', 'args.faults: expected array']
+19:49:15 WARNING faultdiag.agent: invalid call (attempt 2): diagnostic_report {'faults': '["motor_connection"]'} -> ["unknown tool 'diagnostic_report'"]
+19:49:17 WARNING faultdiag.agent: invalid call (attempt 3): submit_diagnosis {'faults': '["motor_connection"]'} -> ['args.confidence: required', 'args.faults: expected array']
+19:49:17 WARNING faultdiag.agent: falling back to engine suggestion read_current {'channel': 'src'}
+19:49:22 WARNING faultdiag.guard: rejected human_probe {'point_a': 'ret', 'point_b': 'neg'}: human_probe limit of 2 per session reached
+19:49:28 WARNING faultdiag.guard: rejected human_probe {'point_a': 'ret', 'point_b': 'neg'}: human_probe limit of 2 per session reached
+19:49:36 WARNING faultdiag.guard: rejected human_probe {'point_a': 'neg', 'point_b': 'ret'}: human_probe limit of 2 per session reached
+19:49:44 WARNING faultdiag.guard: rejected human_probe {'instruction': 'Measure the voltage between neg and ret', 'point_a': 'neg', 'point_b': 'ret'}: human_probe limit of 2 per session reached
+19:49:52 WARNING faultdiag.guard: rejected human_probe {'point_a': 'neg', 'point_b': 'ret', 'instruction': 'Measure the voltage between neg and ret'}: human_probe limit of 2 per session reached
+19:49:52 WARNING faultdiag.agent: agent ended without submitting a diagnosis
+19:49:52 INFO    faultdiag.harness: hybrid:llama3.2:3b F2        seed=5002 inconclusive got=['motor_connection'] truth=['motor_connection'] cost=31 WRONG
+19:49:55 WARNING faultdiag.agent: invalid call (attempt 1): load_test {'mode': 'pulse', 'width_ms': '100'} -> ['args.width_ms: expected integer']
+19:49:57 WARNING faultdiag.agent: invalid call (attempt 2): load_test {'tool': 'load_test', 'args': {'mode': 'pulse', 'width_ms': 100}} -> ['args.mode: required', 'args.tool: unexpected field', 'args.args: unexpected field']
+19:50:07 WARNING faultdiag.guard: rejected human_probe {'point_a': 'motor', 'point_b': 'neg'}: human_probe limit of 2 per session reached
+19:50:11 WARNING faultdiag.guard: rejected human_probe {'point_a': 'ret', 'point_b': 'neg'}: human_probe limit of 2 per session reached
+19:50:35 WARNING faultdiag.guard: rejected human_probe {'point_b': 'ret', 'point_a': 'neg'}: human_probe limit of 2 per session reached
+19:50:40 WARNING faultdiag.agent: invalid call (attempt 1): submit_diagnosis {'confidence': '0', 'faults': '[]'} -> ['args.confidence: expected number', 'args.faults: expected array']
+19:50:43 INFO    faultdiag.agent: submitted [], evidence: 
+19:50:43 INFO    faultdiag.harness: hybrid:llama3.2:3b C1        seed=5000 diagnosed    got=[] truth=['battery', 'motor'] cost=30 WRONG
+19:50:46 WARNING faultdiag.agent: invalid call (attempt 1): load_test {'mode': 'pulse', 'width_ms': 1000} -> ['args.width_ms: above maximum 500']
+19:50:47 WARNING faultdiag.agent: invalid call (attempt 2): read_current {'tool': 'read_current', 'args': {'channel': 'src'}} -> ['args.channel: required', 'args.tool: unexpected field', 'args.args: unexpected field']
+19:51:02 WARNING faultdiag.guard: rejected human_probe {'instruction': 'Measure the voltage between src and ret.', 'point_a': 'src', 'point_b': 'ret'}: human_probe limit of 2 per session reached
+19:51:15 WARNING faultdiag.guard: rejected human_probe {'point_a': 'src', 'point_b': 'ret', 'instruction': 'Measure the voltage between src and ret.'}: human_probe limit of 2 per session reached
+19:51:25 WARNING faultdiag.guard: rejected human_probe {'point_a': 'ret', 'point_b': 'neg', 'instruction': 'Measure the voltage between src and ret.'}: human_probe limit of 2 per session reached
+19:51:31 WARNING faultdiag.guard: rejected human_probe {'point_a': 'neg', 'point_b': 'ret', 'instruction': 'Measure the voltage between src and ret.'}: human_probe limit of 2 per session reached
+19:51:49 WARNING faultdiag.guard: rejected human_probe {'point_a': 'neg', 'point_b': 'ret', 'instruction': 'Measure the voltage between src and ret.'}: human_probe limit of 2 per session reached
+19:52:02 WARNING faultdiag.guard: rejected human_probe {'point_a': 'neg', 'point_b': 'ret', 'instruction': 'Measure the voltage between src and ret.'}: human_probe limit of 2 per session reached
+19:52:17 WARNING faultdiag.guard: rejected human_probe {'instruction': 'Measure the voltage between src and ret.', 'point_a': 'src', 'point_b': 'ret'}: human_probe limit of 2 per session reached
+19:52:25 WARNING faultdiag.agent: agent ended without submitting a diagnosis
+19:52:25 INFO    faultdiag.harness: hybrid:llama3.2:3b C1        seed=5001 inconclusive got=['battery', 'motor'] truth=['battery', 'motor'] cost=35 WRONG
+19:52:28 WARNING faultdiag.agent: invalid call (attempt 1): load_test {'mode': 'pulse', 'width_ms': '100'} -> ['args.width_ms: expected integer']
+19:52:29 WARNING faultdiag.agent: invalid call (attempt 2): load_test {'tool': 'load_test', 'args': {'mode': 'pulse'}} -> ['args.mode: required', 'args.tool: unexpected field', 'args.args: unexpected field']
+19:52:43 WARNING faultdiag.guard: rejected human_probe {'point_a': 'lamp', 'point_b': 'neg'}: human_probe limit of 2 per session reached
+19:52:48 WARNING faultdiag.guard: rejected human_probe {'point_a': 'load', 'point_b': 'neg'}: human_probe limit of 2 per session reached
+19:52:52 WARNING faultdiag.agent: invalid call (attempt 1): submit_diagnosis {'confidence': '1', 'faults': '[]'} -> ['args.confidence: expected number', 'args.faults: expected array']
+19:52:54 INFO    faultdiag.agent: submitted [], evidence: 
+19:52:54 INFO    faultdiag.harness: hybrid:llama3.2:3b C1        seed=5002 diagnosed    got=[] truth=['battery', 'motor'] cost=25 WRONG
+19:52:57 WARNING faultdiag.agent: invalid call (attempt 1): load_test {'mode': 'pulse', 'width_ms': '100'} -> ['args.width_ms: expected integer']
+19:52:58 WARNING faultdiag.agent: invalid call (attempt 2): load_test {'tool': 'load_test', 'args': {'mode': 'pulse'}} -> ['args.mode: required', 'args.tool: unexpected field', 'args.args: unexpected field']
+19:53:08 WARNING faultdiag.guard: rejected human_probe {'point_a': 'load', 'point_b': 'neg'}: human_probe limit of 2 per session reached
+19:53:17 WARNING faultdiag.guard: rejected human_probe {'point_a': 'lamp', 'point_b': 'neg'}: human_probe limit of 2 per session reached
+19:53:21 WARNING faultdiag.guard: rejected human_probe {'point_b': 'neg', 'point_a': 'ret'}: human_probe limit of 2 per session reached
+19:53:26 WARNING faultdiag.guard: rejected human_probe {'point_a': 'ret', 'point_b': 'neg'}: human_probe limit of 2 per session reached
+19:53:30 WARNING faultdiag.guard: rejected human_probe {'point_a': 'ret', 'point_b': 'neg'}: human_probe limit of 2 per session reached
+19:53:31 WARNING faultdiag.agent: loop detected: human_probe {'point_a': 'ret', 'point_b': 'neg'} 3 times with no new information; ending the session
+19:53:35 WARNING faultdiag.agent: invalid call (attempt 1): submit_diagnosis {'confidence': '0', 'faults': '["motor_connection", "sensor_motor"]'} -> ['args.confidence: expected number', 'args.faults: expected array']
+19:53:37 WARNING faultdiag.agent: invalid call (attempt 2): submit_diagnosis {'confidence': 0, 'faults': '["motor_connection", "sensor_motor"]'} -> ['args.faults: expected array']
+19:53:38 WARNING faultdiag.agent: invalid call (attempt 3): submit_diagnosis {'confidence': 0, 'faults': '["motor_connection", "sensor_motor"]'} -> ['args.faults: expected array']
+19:53:38 WARNING faultdiag.agent: agent ended without submitting a diagnosis
+19:53:38 INFO    faultdiag.harness: hybrid:llama3.2:3b C2        seed=5000 inconclusive got=['motor_connection', 'sensor_motor'] truth=['motor_connection', 'sensor_motor'] cost=25 WRONG
+19:53:42 WARNING faultdiag.agent: invalid call (attempt 1): load_test {'mode': 'pulse', 'width_ms': '100'} -> ['args.width_ms: expected integer']
+19:54:07 WARNING faultdiag.guard: rejected human_probe {'point_a': 'ret', 'point_b': 'neg', 'instruction': 'Measure the voltage between src and ret.'}: human_probe limit of 2 per session reached
+19:54:22 WARNING faultdiag.guard: rejected human_probe {'point_a': 'ret', 'point_b': 'neg', 'instruction': 'Measure the voltage between src and ret.'}: human_probe limit of 2 per session reached
+19:54:27 WARNING faultdiag.agent: invalid call (attempt 1): submit_diagnosis {'faults': '["motor_connection", "sensor_motor"]', 'confidence': '0'} -> ['args.faults: expected array', 'args.confidence: expected number']
+19:54:30 WARNING faultdiag.agent: invalid call (attempt 2): submit_diagnosis {'confidence': '0', 'faults': '["motor_connection", "sensor_motor"]'} -> ['args.confidence: expected number', 'args.faults: expected array']
+19:54:33 WARNING faultdiag.agent: invalid call (attempt 3): submit_diagnosis {'confidence': '0', 'faults': '["motor_connection", "sensor_motor"]'} -> ['args.confidence: expected number', 'args.faults: expected array']
+19:54:33 WARNING faultdiag.agent: falling back to engine suggestion load_test {'mode': 'steady'}
+19:54:38 WARNING faultdiag.agent: invalid call (attempt 1): submit_diagnosis {'confidence': '0', 'faults': '["motor_connection", "sensor_motor"]'} -> ['args.confidence: expected number', 'args.faults: expected array']
+19:54:41 WARNING faultdiag.agent: invalid call (attempt 2): submit_diagnosis {'confidence': '0', 'faults': '["motor_connection", "sensor_motor"]'} -> ['args.confidence: expected number', 'args.faults: expected array']
+19:54:44 WARNING faultdiag.agent: invalid call (attempt 3): submit_diagnosis {'confidence': '0', 'faults': '["motor_connection", "sensor_motor"]'} -> ['args.confidence: expected number', 'args.faults: expected array']
+19:54:44 WARNING faultdiag.agent: falling back to engine suggestion read_voltage {'point': 'motor'}
+19:54:49 WARNING faultdiag.agent: invalid call (attempt 1): submit_diagnosis {'faults': '["motor_connection", "sensor_motor"]', 'confidence': '0'} -> ['args.faults: expected array', 'args.confidence: expected number']
+19:54:52 WARNING faultdiag.agent: invalid call (attempt 2): submit_diagnosis {'confidence': '0', 'faults': '["motor_connection", "sensor_motor"]'} -> ['args.confidence: expected number', 'args.faults: expected array']
+19:54:55 WARNING faultdiag.agent: invalid call (attempt 3): submit_diagnosis {'confidence': '0', 'faults': '["motor_connection", "sensor_motor"]'} -> ['args.confidence: expected number', 'args.faults: expected array']
+19:54:55 WARNING faultdiag.agent: falling back to engine suggestion read_voltage {'point': 'motor'}
+19:55:00 WARNING faultdiag.agent: invalid call (attempt 1): submit_diagnosis {'confidence': '0', 'faults': '["motor_connection", "sensor_motor"]'} -> ['args.confidence: expected number', 'args.faults: expected array']
+19:55:03 WARNING faultdiag.agent: invalid call (attempt 2): submit_diagnosis {'confidence': '0', 'faults': '["motor_connection", "sensor_motor"]'} -> ['args.confidence: expected number', 'args.faults: expected array']
+19:55:07 WARNING faultdiag.agent: invalid call (attempt 3): submit_diagnosis {'confidence': '0', 'faults': '["motor_connection", "sensor_motor"]'} -> ['args.confidence: expected number', 'args.faults: expected array']
+19:55:07 WARNING faultdiag.agent: falling back to engine suggestion read_voltage {'point': 'motor'}
+19:55:07 WARNING faultdiag.agent: loop detected: read_voltage {'point': 'motor'} 3 times with no new information; ending the session
+19:55:11 WARNING faultdiag.agent: invalid call (attempt 1): submit_diagnosis {'confidence': '0', 'faults': '["motor_connection", "sensor_motor"]'} -> ['args.confidence: expected number', 'args.faults: expected array']
+19:55:14 WARNING faultdiag.agent: invalid call (attempt 2): submit_diagnosis {'confidence': '0', 'faults': '["motor_connection", "sensor_motor"]'} -> ['args.confidence: expected number', 'args.faults: expected array']
+19:55:17 WARNING faultdiag.agent: invalid call (attempt 3): submit_diagnosis {'confidence': '0', 'faults': '["motor_connection", "sensor_motor"]'} -> ['args.confidence: expected number', 'args.faults: expected array']
+19:55:17 WARNING faultdiag.agent: agent ended without submitting a diagnosis
+19:55:17 INFO    faultdiag.harness: hybrid:llama3.2:3b C2        seed=5001 inconclusive got=['sensor_motor'] truth=['motor_connection', 'sensor_motor'] cost=37 WRONG
+19:55:20 WARNING faultdiag.agent: invalid call (attempt 1): load_test {'mode': 'pulse', 'width_ms': '100'} -> ['args.width_ms: expected integer']
+19:55:21 WARNING faultdiag.agent: invalid call (attempt 2): load_test {'tool': 'load_test', 'args': {'mode': 'pulse', 'width_ms': 100}} -> ['args.mode: required', 'args.tool: unexpected field', 'args.args: unexpected field']
+19:55:36 WARNING faultdiag.guard: rejected human_probe {'point_a': 'lamp', 'point_b': 'neg'}: human_probe limit of 2 per session reached
+19:55:41 WARNING faultdiag.agent: invalid call (attempt 1): submit_diagnosis {'faults': '[]', 'confidence': '1'} -> ['args.faults: expected array', 'args.confidence: expected number']
+19:55:43 INFO    faultdiag.agent: submitted [], evidence: 
+19:55:43 INFO    faultdiag.harness: hybrid:llama3.2:3b C2        seed=5002 diagnosed    got=[] truth=['motor_connection', 'sensor_motor'] cost=25 WRONG
+19:55:46 WARNING faultdiag.agent: invalid call (attempt 1): load_test {'mode': 'pulse', 'width_ms': '100'} -> ['args.width_ms: expected integer']
+19:55:48 WARNING faultdiag.agent: invalid call (attempt 2): load_test {'tool': 'load_test', 'args': {'mode': 'pulse', 'width_ms': 100}} -> ['args.mode: required', 'args.tool: unexpected field', 'args.args: unexpected field']
+19:56:04 WARNING faultdiag.guard: rejected human_probe {'point_a': 'lamp', 'point_b': 'neg'}: human_probe limit of 2 per session reached
+19:56:18 WARNING faultdiag.guard: rejected human_probe {'point_a': 'ret', 'point_b': 'neg'}: human_probe limit of 2 per session reached
+19:56:29 WARNING faultdiag.guard: rejected human_probe {'point_b': 'neg', 'point_a': 'load'}: human_probe limit of 2 per session reached
+19:56:40 WARNING faultdiag.guard: rejected human_probe {'point_a': 'load', 'point_b': 'neg'}: human_probe limit of 2 per session reached
+19:56:52 WARNING faultdiag.guard: rejected human_probe {'point_a': 'ret', 'point_b': 'neg'}: human_probe limit of 2 per session reached
+19:56:59 WARNING faultdiag.agent: invalid call (attempt 1): submit_diagnosis {'confidence': '0', 'faults': '[]'} -> ['args.confidence: expected number', 'args.faults: expected array']
+19:57:02 INFO    faultdiag.agent: submitted [], evidence: 
+19:57:02 INFO    faultdiag.harness: hybrid:llama3.2:3b H1        seed=5000 diagnosed    got=[] truth=['ground_return'] cost=30 WRONG
+19:57:06 WARNING faultdiag.agent: invalid call (attempt 1): load_test {'mode': 'pulse', 'width_ms': 1000} -> ['args.width_ms: above maximum 500']
+19:57:07 WARNING faultdiag.agent: invalid call (attempt 2): read_current {'tool': 'read_current', 'args': {'channel': 'src'}} -> ['args.channel: required', 'args.tool: unexpected field', 'args.args: unexpected field']
+19:57:23 WARNING faultdiag.guard: rejected human_probe {'point_a': 'ret', 'instruction': 'Measure the voltage between src and ret.', 'point_b': 'neg'}: human_probe limit of 2 per session reached
+19:57:38 WARNING faultdiag.guard: rejected human_probe {'point_b': 'neg', 'point_a': 'ret', 'instruction': 'Measure the voltage between src and ret.'}: human_probe limit of 2 per session reached
+19:58:02 WARNING faultdiag.guard: rejected human_probe {'point_a': 'ret', 'instruction': 'Measure the voltage between src and ret.', 'point_b': 'neg'}: human_probe limit of 2 per session reached
+19:58:08 WARNING faultdiag.agent: invalid call (attempt 1): submit_diagnosis {'faults': '["battery", "lamp_connection"]'} -> ['args.confidence: required', 'args.faults: expected array']
+19:58:11 WARNING faultdiag.agent: invalid call (attempt 2): submit_diagnosis {'faults': '["battery", "lamp_connection"]', 'confidence': 0.99} -> ['args.faults: expected array']
+19:58:12 WARNING faultdiag.agent: invalid call (attempt 3): diagnostic_report {'faults': '["battery", "lamp_connection"]', 'confidence': 0.99} -> ["unknown tool 'diagnostic_report'"]
+19:58:12 WARNING faultdiag.agent: falling back to engine suggestion read_voltage {'point': 'lamp'}
+19:58:18 WARNING faultdiag.agent: invalid call (attempt 1): submit_diagnosis {'faults': '["battery", "lamp_connection"]', 'confidence': 0.99} -> ['args.faults: expected array']
+19:58:21 WARNING faultdiag.agent: invalid call (attempt 2): diagnostic_report {'faults': '["battery", "lamp_connection"]', 'confidence': 0.99} -> ["unknown tool 'diagnostic_report'"]
+19:58:25 WARNING faultdiag.agent: invalid call (attempt 3): submit_diagnosis {'faults': '["battery", "lamp_connection"]', 'confidence': 0.99} -> ['args.faults: expected array']
+19:58:25 WARNING faultdiag.agent: falling back to engine suggestion read_voltage {'point': 'motor'}
+19:58:30 WARNING faultdiag.agent: invalid call (attempt 1): submit_diagnosis {'faults': '["battery", "lamp_connection"]', 'confidence': 0.99} -> ['args.faults: expected array']
+19:58:33 WARNING faultdiag.agent: invalid call (attempt 2): diagnostic_report {'faults': '["battery", "lamp_connection"]', 'confidence': 0.99} -> ["unknown tool 'diagnostic_report'"]
+19:58:37 WARNING faultdiag.agent: invalid call (attempt 3): submit_diagnosis {'faults': '["battery", "lamp_connection"]', 'confidence': 0.99} -> ['args.faults: expected array']
+19:58:37 WARNING faultdiag.agent: falling back to engine suggestion read_voltage {'point': 'motor'}
+19:58:43 WARNING faultdiag.agent: invalid call (attempt 1): submit_diagnosis {'faults': '["battery", "lamp_connection"]', 'confidence': 0.99} -> ['args.faults: expected array']
+19:58:46 WARNING faultdiag.agent: invalid call (attempt 2): diagnostic_report {'faults': '["battery", "lamp_connection"]', 'confidence': 0.99} -> ["unknown tool 'diagnostic_report'"]
+19:58:50 WARNING faultdiag.agent: invalid call (attempt 3): submit_diagnosis {'faults': '["battery", "lamp_connection"]', 'confidence': 0.99} -> ['args.faults: expected array']
+19:58:50 WARNING faultdiag.agent: falling back to engine suggestion read_voltage {'point': 'motor'}
+19:58:50 WARNING faultdiag.agent: loop detected: read_voltage {'point': 'motor'} 3 times with no new information; ending the session
+19:59:01 WARNING faultdiag.agent: invalid call (attempt 1): submit_diagnosis {'faults': '["battery", "lamp_connection"]', 'confidence': 0.99} -> ['args.faults: expected array']
+19:59:03 WARNING faultdiag.agent: invalid call (attempt 2): submit_diagnosis {'confidence': 0.99, 'faults': 'battery and lamp_connection'} -> ['args.faults: expected array']
+19:59:05 WARNING faultdiag.agent: invalid call (attempt 3): submit_diagnosis {'confidence': 0.99, 'faults': '["battery", "lamp_connection"]'} -> ['args.faults: expected array']
+19:59:05 WARNING faultdiag.agent: agent ended without submitting a diagnosis
+19:59:05 INFO    faultdiag.harness: hybrid:llama3.2:3b H1        seed=5001 out_of_model got=[] truth=['ground_return'] cost=34 WRONG
+19:59:09 WARNING faultdiag.agent: invalid call (attempt 1): load_test {'mode': 'pulse', 'width_ms': '100'} -> ['args.width_ms: expected integer']
+19:59:10 WARNING faultdiag.agent: invalid call (attempt 2): load_test {'tool': 'load_test', 'args': {'mode': 'pulse'}} -> ['args.mode: required', 'args.tool: unexpected field', 'args.args: unexpected field']
+19:59:27 WARNING faultdiag.agent: invalid call (attempt 1): human_probe {'point_a': 'sensor_load', 'point_b': 'neg'} -> ["args.point_a: 'sensor_load' not one of ['src', 'bus', 'motor', 'lamp', 'load', 'ret', 'neg']"]
+19:59:30 WARNING faultdiag.agent: invalid call (attempt 2): human_probe {'point_a': 'sensor_load', 'point_b': 'neg'} -> ["args.point_a: 'sensor_load' not one of ['src', 'bus', 'motor', 'lamp', 'load', 'ret', 'neg']"]
+19:59:32 WARNING faultdiag.guard: rejected human_probe {'point_a': 'ret', 'point_b': 'neg'}: human_probe limit of 2 per session reached
+19:59:42 WARNING faultdiag.agent: invalid call (attempt 1): human_probe {'point_a': 'sensor_load', 'point_b': 'neg'} -> ["args.point_a: 'sensor_load' not one of ['src', 'bus', 'motor', 'lamp', 'load', 'ret', 'neg']"]
+19:59:46 WARNING faultdiag.guard: rejected human_probe {'point_a': 'bus', 'point_b': 'neg'}: human_probe limit of 2 per session reached
+19:59:51 WARNING faultdiag.agent: invalid call (attempt 1): human_probe {'point_a': 'sensor_load', 'point_b': 'neg'} -> ["args.point_a: 'sensor_load' not one of ['src', 'bus', 'motor', 'lamp', 'load', 'ret', 'neg']"]
+20:00:20 WARNING faultdiag.guard: rejected human_probe {'point_b': 'neg', 'point_a': 'ret'}: human_probe limit of 2 per session reached
+20:00:41 WARNING faultdiag.guard: rejected human_probe {'point_a': 'ret', 'point_b': 'neg'}: human_probe limit of 2 per session reached
+20:01:06 WARNING faultdiag.guard: rejected human_probe {'point_a': 'lamp', 'point_b': 'neg'}: human_probe limit of 2 per session reached
+20:01:15 WARNING faultdiag.agent: agent ended without submitting a diagnosis
+20:01:15 INFO    faultdiag.harness: hybrid:llama3.2:3b H1        seed=5002 out_of_model got=[] truth=['ground_return'] cost=37 WRONG
+20:01:18 WARNING faultdiag.agent: invalid call (attempt 1): load_test {'mode': 'pulse', 'width_ms': '100'} -> ['args.width_ms: expected integer']
+20:01:20 WARNING faultdiag.agent: invalid call (attempt 2): load_test {'tool': 'load_test', 'args': {'mode': 'pulse', 'width_ms': 100}} -> ['args.mode: required', 'args.tool: unexpected field', 'args.args: unexpected field']
+20:01:36 WARNING faultdiag.guard: rejected human_probe {'point_a': 'ret', 'point_b': 'neg'}: human_probe limit of 2 per session reached
+20:01:42 WARNING faultdiag.agent: invalid call (attempt 1): submit_diagnosis {'faults': '[]', 'confidence': '0'} -> ['args.faults: expected array', 'args.confidence: expected number']
+20:01:44 INFO    faultdiag.agent: submitted [], evidence: 
+20:01:44 INFO    faultdiag.harness: hybrid:llama3.2:3b H2        seed=5000 diagnosed    got=[] truth=['unmonitored_load'] cost=25 WRONG
+20:01:48 WARNING faultdiag.agent: invalid call (attempt 1): load_test {'mode': 'pulse', 'width_ms': 1000} -> ['args.width_ms: above maximum 500']
+20:01:49 WARNING faultdiag.agent: invalid call (attempt 2): read_current {'tool': 'read_current', 'args': {'channel': 'src'}} -> ['args.channel: required', 'args.tool: unexpected field', 'args.args: unexpected field']
+20:02:02 WARNING faultdiag.guard: rejected human_probe {'instruction': 'Measure the voltage between src and ret.', 'point_a': 'src', 'point_b': 'ret'}: human_probe limit of 2 per session reached
+20:02:07 WARNING faultdiag.agent: invalid call (attempt 1): submit_diagnosis {'faults': '["motor", "motor_connection"]', 'confidence': '0'} -> ['args.faults: expected array', 'args.confidence: expected number']
+20:02:10 WARNING faultdiag.agent: invalid call (attempt 2): submit_diagnosis {'confidence': 0, 'faults': '["motor", "motor_connection"]'} -> ['args.faults: expected array']
+20:02:11 WARNING faultdiag.agent: invalid call (attempt 3): diagnostic_summary {'confidence': 0, 'faults': '["motor", "motor_connection"]'} -> ["unknown tool 'diagnostic_summary'"]
+20:02:11 WARNING faultdiag.agent: falling back to engine suggestion read_voltage {'point': 'motor'}
+20:02:15 WARNING faultdiag.agent: invalid call (attempt 1): submit_diagnosis {'faults': '["motor", "motor_connection"]'} -> ['args.confidence: required', 'args.faults: expected array']
+20:02:17 WARNING faultdiag.agent: invalid call (attempt 2): diagnostic_summary {'confidence': 0, 'faults': '["motor", "motor_connection"]'} -> ["unknown tool 'diagnostic_summary'"]
+20:02:20 WARNING faultdiag.agent: invalid call (attempt 3): submit_diagnosis {'confidence': 0, 'faults': '["motor", "motor_connection"]'} -> ['args.faults: expected array']
+20:02:20 WARNING faultdiag.agent: falling back to engine suggestion load_test {'mode': 'steady'}
+20:02:30 WARNING faultdiag.guard: rejected human_probe {'instruction': 'Measure the voltage between src and ret.', 'point_a': 'src', 'point_b': 'ret'}: human_probe limit of 2 per session reached
+20:02:43 WARNING faultdiag.guard: rejected human_probe {'instruction': 'Measure the voltage between src and ret.', 'point_a': 'src', 'point_b': 'ret'}: human_probe limit of 2 per session reached
+20:02:49 WARNING faultdiag.guard: rejected human_probe {'instruction': 'Measure the voltage between src and ret.', 'point_a': 'src', 'point_b': 'ret'}: human_probe limit of 2 per session reached
+20:02:56 WARNING faultdiag.guard: rejected human_probe {'point_a': 'src', 'point_b': 'ret', 'instruction': 'Measure the voltage between src and ret.'}: human_probe limit of 2 per session reached
+20:02:57 WARNING faultdiag.agent: loop detected: human_probe {'point_a': 'src', 'point_b': 'ret', 'instruction': 'Measure the voltage between src and ret.'} 3 times with no new information; ending the session
+20:03:02 WARNING faultdiag.agent: invalid call (attempt 1): submit_diagnosis {'faults': '["motor", "motor_connection"]'} -> ['args.confidence: required', 'args.faults: expected array']
+20:03:06 WARNING faultdiag.agent: invalid call (attempt 2): submit_diagnosis {'confidence': 1, 'faults': '["motor", "motor_connection"]'} -> ['args.faults: expected array']
+20:03:08 WARNING faultdiag.agent: invalid call (attempt 3): submit_diagnosis {'faults': '["motor", "motor_connection"]'} -> ['args.confidence: required', 'args.faults: expected array']
+20:03:08 WARNING faultdiag.agent: agent ended without submitting a diagnosis
+20:03:08 INFO    faultdiag.harness: hybrid:llama3.2:3b H2        seed=5001 out_of_model got=[] truth=['unmonitored_load'] cost=32 WRONG
+20:03:12 WARNING faultdiag.agent: invalid call (attempt 1): load_test {'mode': 'pulse', 'width_ms': '100'} -> ['args.width_ms: expected integer']
+20:03:14 WARNING faultdiag.agent: invalid call (attempt 2): load_test {'tool': 'load_test', 'args': {'mode': 'pulse'}} -> ['args.mode: required', 'args.tool: unexpected field', 'args.args: unexpected field']
+20:03:31 WARNING faultdiag.guard: rejected human_probe {'point_a': 'ret', 'point_b': 'neg'}: human_probe limit of 2 per session reached
+20:03:36 WARNING faultdiag.agent: invalid call (attempt 1): submit_diagnosis {'faults': '[]', 'confidence': '1'} -> ['args.faults: expected array', 'args.confidence: expected number']
+20:03:38 INFO    faultdiag.agent: submitted [], evidence: 
+20:03:38 INFO    faultdiag.harness: hybrid:llama3.2:3b H2        seed=5002 diagnosed    got=[] truth=['unmonitored_load'] cost=25 WRONG
+20:03:42 WARNING faultdiag.agent: invalid call (attempt 1): load_test {'mode': 'pulse', 'width_ms': '100'} -> ['args.width_ms: expected integer']
+20:03:44 WARNING faultdiag.agent: invalid call (attempt 2): load_test {'tool': 'load_test', 'args': {'mode': 'pulse'}} -> ['args.mode: required', 'args.tool: unexpected field', 'args.args: unexpected field']
+20:03:57 WARNING faultdiag.guard: step 5 read_voltage {'point': 'motor'} -> timeout: no response from instrument
+20:04:02 WARNING faultdiag.guard: rejected human_probe {'point_a': 'lamp', 'point_b': 'neg'}: human_probe limit of 2 per session reached
+20:04:07 WARNING faultdiag.guard: rejected human_probe {'point_a': 'ret', 'point_b': 'neg'}: human_probe limit of 2 per session reached
+20:04:18 WARNING faultdiag.guard: rejected human_probe {'point_a': 'ret', 'point_b': 'neg'}: human_probe limit of 2 per session reached
+20:04:23 WARNING faultdiag.guard: rejected human_probe {'point_a': 'neg', 'point_b': 'ret'}: human_probe limit of 2 per session reached
+20:04:30 WARNING faultdiag.guard: rejected human_probe {'point_b': 'ret', 'point_a': 'neg'}: human_probe limit of 2 per session reached
+20:04:49 WARNING faultdiag.guard: rejected human_probe {'point_a': 'ret', 'point_b': 'neg'}: human_probe limit of 2 per session reached
+20:05:02 WARNING faultdiag.guard: rejected human_probe {'point_a': 'ret', 'point_b': 'neg'}: human_probe limit of 2 per session reached
+20:05:17 WARNING faultdiag.guard: rejected human_probe {'point_a': 'ret', 'point_b': 'neg'}: human_probe limit of 2 per session reached
+20:05:25 WARNING faultdiag.guard: rejected human_probe {'point_a': 'ret', 'point_b': 'neg'}: human_probe limit of 2 per session reached
+20:05:35 WARNING faultdiag.agent: agent ended without submitting a diagnosis
+20:05:35 INFO    faultdiag.harness: hybrid:llama3.2:3b TF1       seed=5000 inconclusive got=[] truth=['motor_connection'] cost=31 WRONG
+20:05:39 WARNING faultdiag.agent: invalid call (attempt 1): load_test {'mode': 'pulse', 'width_ms': '100'} -> ['args.width_ms: expected integer']
+20:05:53 WARNING faultdiag.guard: step 5 read_voltage {'point': 'motor'} -> timeout: no response from instrument
+20:06:09 WARNING faultdiag.guard: rejected human_probe {'instruction': 'Measure the voltage between src and ret.', 'point_a': 'src', 'point_b': 'ret'}: human_probe limit of 2 per session reached
+20:06:27 WARNING faultdiag.guard: rejected human_probe {'instruction': 'Measure the voltage between src and ret.', 'point_a': 'src', 'point_b': 'ret'}: human_probe limit of 2 per session reached
+20:06:46 WARNING faultdiag.guard: rejected human_probe {'point_b': 'ret', 'instruction': 'Measure the voltage between src and ret.', 'point_a': 'src'}: human_probe limit of 2 per session reached
+20:06:54 WARNING faultdiag.agent: invalid call (attempt 1): submit_diagnosis {'confidence': '0', 'faults': '["motor_connection"]'} -> ['args.confidence: expected number', 'args.faults: expected array']
+20:06:57 WARNING faultdiag.agent: invalid call (attempt 2): submit_diagnosis {'confidence': 0, 'faults': '["motor_connection"]'} -> ['args.faults: expected array']
+20:07:01 WARNING faultdiag.agent: invalid call (attempt 3): submit_diagnosis {'confidence': 0, 'faults': '["motor_connection"]'} -> ['args.faults: expected array']
+20:07:01 WARNING faultdiag.agent: falling back to engine suggestion read_current {'channel': 'src'}
+20:07:07 WARNING faultdiag.agent: invalid call (attempt 1): submit_diagnosis {'confidence': 0, 'faults': '["motor_connection"]'} -> ['args.faults: expected array']
+20:07:10 WARNING faultdiag.agent: invalid call (attempt 2): submit_diagnosis {'confidence': 0, 'faults': '["motor_connection"]'} -> ['args.faults: expected array']
+20:07:11 WARNING faultdiag.agent: invalid call (attempt 3): print_faults {'faults': '["motor_connection"]'} -> ["unknown tool 'print_faults'"]
+20:07:11 WARNING faultdiag.agent: falling back to engine suggestion read_current {'channel': 'src'}
+20:07:17 WARNING faultdiag.agent: invalid call (attempt 1): submit_diagnosis {'confidence': 0, 'faults': '["motor_connection"]'} -> ['args.faults: expected array']
+20:07:21 WARNING faultdiag.agent: invalid call (attempt 2): print_faults {'f': '["motor_connection"]'} -> ["unknown tool 'print_faults'"]
+20:07:24 WARNING faultdiag.agent: invalid call (attempt 3): submit_diagnosis {'confidence': 0, 'faults': '["motor_connection"]'} -> ['args.faults: expected array']
+20:07:24 WARNING faultdiag.agent: falling back to engine suggestion load_test {'mode': 'pulse', 'width_ms': 100}
+20:07:31 WARNING faultdiag.agent: invalid call (attempt 1): submit_diagnosis {'faults': '["motor_connection"]'} -> ['args.confidence: required', 'args.faults: expected array']
+20:07:59 WARNING faultdiag.agent: invalid call (attempt 1): submit_diagnosis {'faults': '["motor_connection"]'} -> ['args.confidence: required', 'args.faults: expected array']
+20:08:02 WARNING faultdiag.guard: rejected load_test {'mode': 'pulse', 'width_ms': 100}: load_test limit of 3 per session reached
+20:08:02 WARNING faultdiag.agent: agent ended without submitting a diagnosis
+20:08:02 INFO    faultdiag.harness: hybrid:llama3.2:3b TF1       seed=5001 inconclusive got=[] truth=['motor_connection'] cost=40 WRONG
+20:08:06 WARNING faultdiag.agent: invalid call (attempt 1): load_test {'mode': 'pulse', 'width_ms': '100'} -> ['args.width_ms: expected integer']
+20:08:07 WARNING faultdiag.agent: invalid call (attempt 2): load_test {'tool': 'load_test', 'args': {'mode': 'pulse'}} -> ['args.mode: required', 'args.tool: unexpected field', 'args.args: unexpected field']
+20:08:19 WARNING faultdiag.guard: rejected human_probe {'point_a': 'neg', 'point_b': 'ret'}: human_probe limit of 2 per session reached
+20:08:25 WARNING faultdiag.guard: step 5 read_voltage {'point': 'motor'} -> timeout: no response from instrument
+20:08:30 WARNING faultdiag.guard: rejected human_probe {'point_b': 'neg', 'point_a': 'ret'}: human_probe limit of 2 per session reached
+20:08:40 WARNING faultdiag.guard: rejected human_probe {'point_a': 'ret', 'point_b': 'neg'}: human_probe limit of 2 per session reached
+20:08:46 WARNING faultdiag.guard: rejected human_probe {'point_a': 'ret', 'point_b': 'neg'}: human_probe limit of 2 per session reached
+20:08:53 WARNING faultdiag.guard: rejected human_probe {'point_a': 'ret', 'point_b': 'neg'}: human_probe limit of 2 per session reached
+20:08:53 WARNING faultdiag.agent: loop detected: human_probe {'point_a': 'ret', 'point_b': 'neg'} 3 times with no new information; ending the session
+20:08:58 WARNING faultdiag.agent: invalid call (attempt 1): submit_diagnosis {'confidence': '0', 'faults': '["motor_connection"]'} -> ['args.confidence: expected number', 'args.faults: expected array']
+20:09:01 WARNING faultdiag.agent: invalid call (attempt 2): submit_diagnosis {'confidence': 0, 'faults': '["motor_connection"]'} -> ['args.faults: expected array']
+20:09:02 WARNING faultdiag.agent: invalid call (attempt 3): submit_diagnosis {'confidence': 0, 'faults': '["motor_connection"]'} -> ['args.faults: expected array']
+20:09:02 WARNING faultdiag.agent: agent ended without submitting a diagnosis
+20:09:02 INFO    faultdiag.harness: hybrid:llama3.2:3b TF1       seed=5002 inconclusive got=[] truth=['motor_connection'] cost=26 WRONG
+20:09:06 WARNING faultdiag.agent: invalid call (attempt 1): load_test {'width_ms': '100', 'mode': 'pulse'} -> ['args.width_ms: expected integer']
+20:09:07 WARNING faultdiag.agent: invalid call (attempt 2): load_test {'tool': 'load_test', 'args': {'mode': 'pulse'}} -> ['args.mode: required', 'args.tool: unexpected field', 'args.args: unexpected field']
+20:09:25 WARNING faultdiag.guard: rejected human_probe {'point_b': 'neg', 'point_a': 'lamp'}: human_probe limit of 2 per session reached
+20:09:41 WARNING faultdiag.guard: rejected human_probe {'point_a': 'ret', 'point_b': 'neg'}: human_probe limit of 2 per session reached
+20:09:53 WARNING faultdiag.guard: rejected human_probe {'point_a': 'ret', 'point_b': 'neg'}: human_probe limit of 2 per session reached
+20:10:06 WARNING faultdiag.guard: rejected human_probe {'point_a': 'ret', 'point_b': 'neg'}: human_probe limit of 2 per session reached
+20:10:13 WARNING faultdiag.agent: invalid call (attempt 1): submit_diagnosis {'faults': '["motor"]', 'confidence': '0'} -> ['args.faults: expected array', 'args.confidence: expected number']
+20:10:16 WARNING faultdiag.agent: invalid call (attempt 2): submit_diagnosis {'confidence': 0, 'faults': '["motor"]'} -> ['args.faults: expected array']
+20:10:17 WARNING faultdiag.agent: invalid call (attempt 3): diagnosis_confidence {'confidence': 0} -> ["unknown tool 'diagnosis_confidence'"]
+20:10:17 WARNING faultdiag.agent: falling back to engine suggestion read_voltage {'point': 'lamp'}
+20:10:22 WARNING faultdiag.agent: invalid call (attempt 1): submit_diagnosis {'faults': '["motor"]'} -> ['args.confidence: required', 'args.faults: expected array']
+20:10:25 WARNING faultdiag.agent: invalid call (attempt 2): diagnosis_confidence {'confidence': 0} -> ["unknown tool 'diagnosis_confidence'"]
+20:10:30 WARNING faultdiag.agent: invalid call (attempt 3): submit_diagnosis {'confidence': 0, 'faults': '["motor"]'} -> ['args.faults: expected array']
+20:10:30 WARNING faultdiag.agent: falling back to engine suggestion read_current {'channel': 'src'}
+20:10:35 WARNING faultdiag.agent: invalid call (attempt 1): submit_diagnosis {'faults': '["motor"]', 'confidence': 0} -> ['args.faults: expected array']
+20:10:38 WARNING faultdiag.agent: invalid call (attempt 2): diagnosis_confidence {'confidence': 0} -> ["unknown tool 'diagnosis_confidence'"]
+20:10:42 WARNING faultdiag.agent: invalid call (attempt 3): submit_diagnosis {'confidence': 0, 'faults': '["motor"]'} -> ['args.faults: expected array']
+20:10:42 WARNING faultdiag.agent: falling back to engine suggestion read_voltage {'point': 'lamp'}
+20:10:48 WARNING faultdiag.agent: invalid call (attempt 1): submit_diagnosis {'faults': '["motor"]'} -> ['args.confidence: required', 'args.faults: expected array']
+20:10:51 WARNING faultdiag.agent: invalid call (attempt 2): diagnosis_confidence {'confidence': 0} -> ["unknown tool 'diagnosis_confidence'"]
+20:10:54 WARNING faultdiag.agent: invalid call (attempt 3): submit_diagnosis {'confidence': 0, 'faults': '["motor"]'} -> ['args.faults: expected array']
+20:10:54 WARNING faultdiag.agent: falling back to engine suggestion read_voltage {'point': 'lamp'}
+20:11:00 WARNING faultdiag.agent: invalid call (attempt 1): submit_diagnosis {'faults': '["motor"]'} -> ['args.confidence: required', 'args.faults: expected array']
+20:11:10 WARNING faultdiag.agent: invalid call (attempt 2): diagnosis_confidence {'confidence': 0} -> ["unknown tool 'diagnosis_confidence'"]
+20:11:12 WARNING faultdiag.agent: invalid call (attempt 3): submit_diagnosis {'faults': '["motor"]', 'confidence': 0} -> ['args.faults: expected array']
+20:11:12 WARNING faultdiag.agent: falling back to engine suggestion read_voltage {'point': 'lamp'}
+20:11:12 WARNING faultdiag.agent: loop detected: read_voltage {'point': 'lamp'} 3 times with no new information; ending the session
+20:11:21 WARNING faultdiag.agent: invalid call (attempt 1): submit_diagnosis {'faults': '["motor"]'} -> ['args.confidence: required', 'args.faults: expected array']
+20:11:24 WARNING faultdiag.agent: invalid call (attempt 2): load_test {'mode': 'pulse', 'width_ms': 100} -> ["unknown tool 'load_test'"]
+20:11:26 WARNING faultdiag.agent: invalid call (attempt 3): submit_diagnosis {'evidence': 'load test failed to show any unusual behavior', 'faults': '["motor"]', 'confidence': 1} -> ['args.faults: expected array']
+20:11:26 WARNING faultdiag.agent: agent ended without submitting a diagnosis
+20:11:26 INFO    faultdiag.harness: hybrid:llama3.2:3b TF2       seed=5000 inconclusive got=['motor'] truth=['motor'] cost=34 WRONG
+20:11:32 WARNING faultdiag.agent: invalid call (attempt 1): load_test {'mode': 'pulse', 'width_ms': 1000} -> ['args.width_ms: above maximum 500']
+20:11:33 WARNING faultdiag.agent: invalid call (attempt 2): read_current {'tool': 'read_current', 'args': {'channel': 'src'}} -> ['args.channel: required', 'args.tool: unexpected field', 'args.args: unexpected field']
+20:12:01 WARNING faultdiag.guard: rejected human_probe {'instruction': 'Measure the voltage between src and ret.', 'point_a': 'src', 'point_b': 'ret'}: human_probe limit of 2 per session reached
+20:12:08 WARNING faultdiag.agent: invalid call (attempt 1): submit_diagnosis {'faults': '["motor"]', 'confidence': '0'} -> ['args.faults: expected array', 'args.confidence: expected number']
+20:12:10 WARNING faultdiag.agent: invalid call (attempt 2): submit_diagnosis {'confidence': 0, 'faults': '["motor"]'} -> ['args.faults: expected array']
+20:12:11 WARNING faultdiag.agent: invalid call (attempt 3): submit_diagnosis {'confidence': 0, 'faults': '["motor"]'} -> ['args.faults: expected array']
+20:12:11 WARNING faultdiag.agent: falling back to engine suggestion read_voltage {'point': 'load'}
+20:12:16 WARNING faultdiag.agent: invalid call (attempt 1): submit_diagnosis {'faults': '["motor"]'} -> ['args.confidence: required', 'args.faults: expected array']
+20:12:18 WARNING faultdiag.agent: invalid call (attempt 2): submit_diagnosis {'confidence': 0, 'faults': '["motor"]'} -> ['args.faults: expected array']
+20:12:19 WARNING faultdiag.agent: invalid call (attempt 3): submit_diagnosis {'confidence': 1, 'faults': '["motor"]'} -> ['args.faults: expected array']
+20:12:19 WARNING faultdiag.agent: falling back to engine suggestion read_current {'channel': 'src'}
+20:12:24 WARNING faultdiag.agent: invalid call (attempt 1): submit_diagnosis {'faults': '["motor"]'} -> ['args.confidence: required', 'args.faults: expected array']
+20:12:26 WARNING faultdiag.agent: invalid call (attempt 2): submit_diagnosis {'confidence': 1, 'faults': '["motor"]'} -> ['args.faults: expected array']
+20:12:33 WARNING faultdiag.agent: invalid call (attempt 1): submit_diagnosis {'confidence': 1, 'faults': '["motor"]'} -> ['args.faults: expected array']
+20:12:36 WARNING faultdiag.agent: invalid call (attempt 2): submit_diagnosis {'confidence': 0, 'faults': '["motor"]'} -> ['args.faults: expected array']
+20:12:43 WARNING faultdiag.agent: invalid call (attempt 1): submit_diagnosis {'confidence': 1, 'faults': '["motor"]'} -> ['args.faults: expected array']
+20:12:46 WARNING faultdiag.guard: rejected load_test {'mode': 'pulse', 'width_ms': 100}: load_test limit of 3 per session reached
+20:12:51 WARNING faultdiag.agent: invalid call (attempt 1): submit_diagnosis {'confidence': 1, 'faults': '["motor"]'} -> ['args.faults: expected array']
+20:12:54 WARNING faultdiag.guard: rejected load_test {'width_ms': 100, 'mode': 'pulse'}: load_test limit of 3 per session reached
+20:13:00 WARNING faultdiag.agent: invalid call (attempt 1): submit_diagnosis {'confidence': 1, 'faults': '["motor"]'} -> ['args.faults: expected array']
+20:13:03 WARNING faultdiag.guard: rejected load_test {'mode': 'pulse', 'width_ms': 100}: load_test limit of 3 per session reached
+20:13:03 WARNING faultdiag.agent: loop detected: load_test {'mode': 'pulse', 'width_ms': 100} 3 times with no new information; ending the session
+20:13:07 WARNING faultdiag.agent: invalid call (attempt 1): submit_diagnosis {'confidence': 1, 'faults': '["motor"]'} -> ['args.faults: expected array']
+20:13:12 WARNING faultdiag.agent: invalid call (attempt 2): None None -> ['no tool call found in reply']
+20:13:14 WARNING faultdiag.agent: invalid call (attempt 3): submit_diagnosis {'confidence': 1, 'faults': '["motor"]'} -> ['args.faults: expected array']
+20:13:14 WARNING faultdiag.agent: agent ended without submitting a diagnosis
+20:13:14 INFO    faultdiag.harness: hybrid:llama3.2:3b TF2       seed=5001 inconclusive got=['motor'] truth=['motor'] cost=35 WRONG
+20:13:18 WARNING faultdiag.agent: invalid call (attempt 1): load_test {'mode': 'pulse', 'width_ms': '100'} -> ['args.width_ms: expected integer']
+20:13:20 WARNING faultdiag.agent: invalid call (attempt 2): load_test {'tool': 'load_test', 'args': {'mode': 'pulse'}} -> ['args.mode: required', 'args.tool: unexpected field', 'args.args: unexpected field']
+20:13:39 WARNING faultdiag.guard: rejected human_probe {'point_a': 'lamp', 'point_b': 'neg'}: human_probe limit of 2 per session reached
+20:13:56 WARNING faultdiag.guard: rejected human_probe {'point_b': 'neg', 'point_a': 'ret'}: human_probe limit of 2 per session reached
+20:14:03 WARNING faultdiag.agent: invalid call (attempt 1): submit_diagnosis {'faults': '[]', 'confidence': '1', 'evidence': '', 'element': ''} -> ['args.faults: expected array', 'args.confidence: expected number', 'args.element: unexpected field']
+20:14:06 WARNING faultdiag.agent: invalid call (attempt 2): submit_diagnosis {'evidence': '', 'faults': [], 'confidence': 1, 'element': ''} -> ['args.element: unexpected field']
+20:14:08 WARNING faultdiag.agent: invalid call (attempt 3): diagnostic_summary {'data': '{"motor":12.23,"lamp":12.326,"load":12.34,"src_current":4.327}"'} -> ["unknown tool 'diagnostic_summary'"]
+20:14:08 WARNING faultdiag.agent: falling back to engine suggestion read_voltage {'point': 'lamp'}
+20:14:13 WARNING faultdiag.agent: invalid call (attempt 1): submit_diagnosis {'faults': '["motor"]'} -> ['args.confidence: required', 'args.faults: expected array']
+20:14:16 WARNING faultdiag.agent: invalid call (attempt 2): submit_diagnosis {'faults': '["motor"]'} -> ['args.confidence: required', 'args.faults: expected array']
+20:14:17 WARNING faultdiag.agent: invalid call (attempt 3): diagnostic_confidence {'data': '{"confidence":0.974,"faults":["motor"]}'} -> ["unknown tool 'diagnostic_confidence'"]
+20:14:17 WARNING faultdiag.agent: falling back to engine suggestion read_voltage {'point': 'lamp'}
+20:14:23 WARNING faultdiag.agent: invalid call (attempt 1): submit_diagnosis {'faults': '["motor"]'} -> ['args.confidence: required', 'args.faults: expected array']
+20:29:27 WARNING faultdiag.agent: invalid call (attempt 2): diagnostic_confidence {'data': '{"confidence":0.984,"faults":["motor"]}'} -> ["unknown tool 'diagnostic_confidence'"]
+20:29:35 WARNING faultdiag.agent: invalid call (attempt 3): diagnostic_confidence {'data': '{"confidence":0.984,"faults":["motor"]}'} -> ["unknown tool 'diagnostic_confidence'"]
+20:29:35 WARNING faultdiag.agent: falling back to engine suggestion read_current {'channel': 'src'}
+20:56:14 WARNING faultdiag.agent: invalid call (attempt 1): submit_diagnosis {'faults': '["motor"]'} -> ['args.confidence: required', 'args.faults: expected array']
+20:56:17 WARNING faultdiag.agent: invalid call (attempt 2): diagnostic_confidence {'data': '{"confidence":0.99,"faults":["motor"]}'} -> ["unknown tool 'diagnostic_confidence'"]
+20:56:19 WARNING faultdiag.agent: invalid call (attempt 3): submit_diagnosis {'faults': '["motor"]', 'confidence': 0.99} -> ['args.faults: expected array']
+20:56:20 WARNING faultdiag.agent: falling back to engine suggestion read_voltage {'point': 'lamp'}
+20:56:24 WARNING faultdiag.agent: invalid call (attempt 1): submit_diagnosis {'faults': '["motor"]'} -> ['args.confidence: required', 'args.faults: expected array']
+20:56:27 WARNING faultdiag.agent: invalid call (attempt 2): diagnostic_confidence {'data': '{"confidence":0.994,"faults":["motor"]}'} -> ["unknown tool 'diagnostic_confidence'"]
+20:56:30 WARNING faultdiag.agent: invalid call (attempt 3): submit_diagnosis {'faults': '["motor"]', 'confidence': 0.994} -> ['args.faults: expected array']
+20:56:30 WARNING faultdiag.agent: falling back to engine suggestion read_current {'channel': 'src'}
+20:56:34 WARNING faultdiag.agent: invalid call (attempt 1): submit_diagnosis {'faults': '["motor"]'} -> ['args.confidence: required', 'args.faults: expected array']
+20:56:37 WARNING faultdiag.agent: invalid call (attempt 2): diagnostic_confidence {'data': '{"confidence":0.996,"faults":["motor"]}'} -> ["unknown tool 'diagnostic_confidence'"]
+20:56:40 WARNING faultdiag.agent: invalid call (attempt 3): submit_diagnosis {'faults': '["motor"]', 'confidence': 0.996} -> ['args.faults: expected array']
+20:56:40 WARNING faultdiag.agent: falling back to engine suggestion read_current {'channel': 'src'}
+20:56:45 WARNING faultdiag.agent: invalid call (attempt 1): submit_diagnosis {'faults': '["motor"]'} -> ['args.confidence: required', 'args.faults: expected array']
+20:56:48 WARNING faultdiag.agent: invalid call (attempt 2): diagnostic_confidence {'data': '{"confidence":0.998,"faults":["motor"]}'} -> ["unknown tool 'diagnostic_confidence'"]
+20:56:52 WARNING faultdiag.agent: invalid call (attempt 3): submit_diagnosis {'faults': '["motor"]', 'confidence': 0.998} -> ['args.faults: expected array']
+20:56:52 WARNING faultdiag.agent: falling back to engine suggestion read_voltage {'point': 'lamp'}
+20:56:57 WARNING faultdiag.agent: invalid call (attempt 1): submit_diagnosis {'faults': '["motor"]'} -> ['args.confidence: required', 'args.faults: expected array']
+20:57:15 WARNING faultdiag.guard: rejected human_probe {'point_a': 'motor', 'point_b': 'neg'}: human_probe limit of 2 per session reached
+20:57:25 WARNING faultdiag.agent: invalid call (attempt 1): load_test {'mode': 'steady', 'width_ms': 1000} -> ['args.width_ms: above maximum 500']
+20:57:35 WARNING faultdiag.agent: agent ended without submitting a diagnosis
+20:57:35 INFO    faultdiag.harness: hybrid:llama3.2:3b TF2       seed=5002 out_of_model got=[] truth=['motor'] cost=39 WRONG
+20:59:32 WARNING faultdiag.agent: agent ended without submitting a diagnosis
+20:59:32 INFO    faultdiag.harness: hybrid:qwen3:8b F2        seed=5000 inconclusive got=['motor_connection'] truth=['motor_connection'] cost=26 WRONG
+21:00:01 INFO    faultdiag.agent: submitted ['motor_connection'], evidence: The motor voltage is lower than expected, and the motor current is significantly less than the source current, indicating a poor connection or high resistance in the motor branch.
+21:00:01 INFO    faultdiag.harness: hybrid:qwen3:8b F2        seed=5001 diagnosed    got=['motor_connection'] truth=['motor_connection'] cost=8 OK
+21:00:35 INFO    faultdiag.agent: submitted ['motor_connection'], evidence: The motor voltage is significantly lower than expected, and the current measurements and load test results strongly indicate a fault in the motor connection.
+21:00:35 INFO    faultdiag.harness: hybrid:qwen3:8b F2        seed=5002 diagnosed    got=['motor_connection'] truth=['motor_connection'] cost=9 OK
+21:00:57 WARNING faultdiag.agent: invalid call (attempt 1): load_test {'mode': 'steady', 'width_ms': 1000} -> ['args.width_ms: above maximum 500']
+21:01:20 INFO    faultdiag.agent: submitted ['battery', 'motor'], evidence: Voltage and current readings during load tests show significant deviations from expected values, suggesting both battery and motor issues.
+21:01:20 INFO    faultdiag.harness: hybrid:qwen3:8b C1        seed=5000 diagnosed    got=['battery', 'motor'] truth=['battery', 'motor'] cost=14 OK
+21:01:51 INFO    faultdiag.agent: submitted ['battery', 'motor'], evidence: Load test showed significant voltage drop and higher current draw, suggesting battery aging and motor issues.
+21:01:51 INFO    faultdiag.harness: hybrid:qwen3:8b C1        seed=5001 diagnosed    got=['battery', 'motor'] truth=['battery', 'motor'] cost=8 OK
+21:02:11 WARNING faultdiag.agent: invalid call (attempt 1): load_test {'mode': 'steady', 'width_ms': 1000} -> ['args.width_ms: above maximum 500']
+21:03:44 WARNING faultdiag.agent: agent ended without submitting a diagnosis
+21:03:44 INFO    faultdiag.harness: hybrid:qwen3:8b C1        seed=5002 inconclusive got=['battery', 'motor'] truth=['battery', 'motor'] cost=28 WRONG
+21:04:27 INFO    faultdiag.agent: submitted ['motor_connection'], evidence: Multiple voltage and current readings indicate a faulty motor connection, with the sensor motor showing inconsistencies.
+21:04:27 INFO    faultdiag.harness: hybrid:qwen3:8b C2        seed=5000 diagnosed    got=['motor_connection'] truth=['motor_connection', 'sensor_motor'] cost=15 WRONG
+21:04:55 WARNING faultdiag.agent: invalid call (attempt 1): load_test {'mode': 'steady', 'width_ms': 1000} -> ['args.width_ms: above maximum 500']
+21:06:25 WARNING faultdiag.agent: agent ended without submitting a diagnosis
+21:06:25 INFO    faultdiag.harness: hybrid:qwen3:8b C2        seed=5001 inconclusive got=['motor_connection', 'sensor_motor'] truth=['motor_connection', 'sensor_motor'] cost=28 WRONG
+21:06:57 INFO    faultdiag.agent: submitted ['motor_connection'], evidence: The motor voltage is higher than expected, and the current measured on the motor branch is low, indicating a potential issue with the motor connection.
+21:06:57 INFO    faultdiag.harness: hybrid:qwen3:8b C2        seed=5002 diagnosed    got=['motor_connection'] truth=['motor_connection', 'sensor_motor'] cost=10 WRONG
+21:07:43 INFO    faultdiag.agent: submitted ['battery'], evidence: The load test showed significant voltage drop and unexpected current readings, indicating a high internal resistance in the battery. The human probe measurement between 'ret' and 'neg' showed a voltag
+21:07:43 INFO    faultdiag.harness: hybrid:qwen3:8b H1        seed=5000 diagnosed    got=['battery'] truth=['ground_return'] cost=19 WRONG
+21:08:42 INFO    faultdiag.agent: submitted ['battery', 'lamp_connection'], evidence: Voltage readings on the lamp and motor branches, along with current measurements, indicate a faulty battery and intermittent lamp connection.
+21:08:42 INFO    faultdiag.harness: hybrid:qwen3:8b H1        seed=5001 diagnosed    got=['battery', 'lamp_connection'] truth=['ground_return'] cost=21 WRONG
+21:09:04 WARNING faultdiag.agent: invalid call (attempt 1): read_voltage {'point': 'ret'} -> ["args.point: 'ret' not one of ['src', 'bus', 'motor', 'lamp', 'load']"]
+21:09:34 INFO    faultdiag.agent: submitted ['battery'], evidence: The load test showed significant voltage drop and unexpected current readings, indicating a high internal resistance in the battery. The motor and lamp voltages were higher than expected, suggesting a
+21:09:34 INFO    faultdiag.harness: hybrid:qwen3:8b H1        seed=5002 diagnosed    got=['battery'] truth=['ground_return'] cost=12 WRONG
+21:10:06 INFO    faultdiag.agent: submitted ['motor_connection', 'motor'], evidence: Voltage and current readings are inconsistent with expected values, suggesting a fault in the motor connection or motor itself.
+21:10:06 INFO    faultdiag.harness: hybrid:qwen3:8b H2        seed=5000 diagnosed    got=['motor', 'motor_connection'] truth=['unmonitored_load'] cost=17 WRONG
+21:10:46 INFO    faultdiag.agent: submitted ['motor_connection'], evidence: The motor voltage is significantly higher than expected, and the current measured in the motor branch is much lower than expected, indicating a poor connection or high resistance in the motor branch.
+21:10:46 INFO    faultdiag.harness: hybrid:qwen3:8b H2        seed=5001 diagnosed    got=['motor_connection'] truth=['unmonitored_load'] cost=19 WRONG
+21:11:21 INFO    faultdiag.agent: submitted ['motor_connection'], evidence: The motor voltage and current readings are inconsistent with expected values, and the load test results show significant discrepancies, pointing to a faulty motor connection.
+21:11:21 INFO    faultdiag.harness: hybrid:qwen3:8b H2        seed=5002 diagnosed    got=['motor_connection'] truth=['unmonitored_load'] cost=18 WRONG
+21:11:22 WARNING faultdiag.guard: step 1 read_voltage {'point': 'motor'} -> timeout: no response from instrument
+21:13:04 WARNING faultdiag.agent: agent ended without submitting a diagnosis
+21:13:04 INFO    faultdiag.harness: hybrid:qwen3:8b TF1       seed=5000 inconclusive got=['sensor_motor'] truth=['motor_connection'] cost=26 WRONG
+21:13:05 WARNING faultdiag.guard: step 1 read_voltage {'point': 'motor'} -> timeout: no response from instrument
+21:13:40 WARNING faultdiag.agent: invalid call (attempt 1): load_test {'mode': 'steady', 'width_ms': 1000} -> ['args.width_ms: above maximum 500']
+21:14:52 WARNING faultdiag.agent: agent ended without submitting a diagnosis
+21:14:52 INFO    faultdiag.harness: hybrid:qwen3:8b TF1       seed=5001 inconclusive got=[] truth=['motor_connection'] cost=28 WRONG
+21:14:53 WARNING faultdiag.guard: step 1 read_voltage {'point': 'motor'} -> timeout: no response from instrument
+21:15:22 INFO    faultdiag.agent: submitted ['motor_connection'], evidence: Current readings and voltage drops indicate a potential poor connection in the motor branch.
+21:15:22 INFO    faultdiag.harness: hybrid:qwen3:8b TF1       seed=5002 diagnosed    got=['motor_connection'] truth=['motor_connection'] cost=8 OK
+21:16:02 INFO    faultdiag.agent: submitted ['motor'], evidence: The motor branch voltage is consistently lower than the bus voltage, and the current draw is significantly higher than expected, indicating a stalled motor.
+21:16:02 INFO    faultdiag.harness: hybrid:qwen3:8b TF2       seed=5000 diagnosed    got=['motor'] truth=['motor'] cost=9 OK
+21:16:51 INFO    faultdiag.agent: submitted ['motor_connection'], evidence: The motor branch current is significantly higher than expected, and the voltage readings are inconsistent with a healthy system. The human probe confirmed the return node is at 0.0932 V, indicating a 
+21:16:51 INFO    faultdiag.harness: hybrid:qwen3:8b TF2       seed=5001 diagnosed    got=['motor_connection'] truth=['motor'] cost=18 WRONG
+21:17:36 INFO    faultdiag.agent: submitted ['motor'], evidence: The motor branch voltage is consistently lower than the bus voltage, and the current draw is significantly higher than expected, indicating a stalled motor.
+21:17:36 INFO    faultdiag.harness: hybrid:qwen3:8b TF2       seed=5002 diagnosed    got=['motor'] truth=['motor'] cost=9 OK
+
+MODEL BENCHMARK (simulated bench, hybrid planner)
+
+| Model | Version | Accuracy | Invalid call rate | Plain-text parsed | Timeouts | Unparseable | Fallbacks | Median latency (s) | p95 latency (s) | Peak memory (GB) | Crashes |
+|---|---|---|---|---|---|---|---|---|---|---|---|
+| llama3.2:3b | a80c4f17acd5 | 0% | 41.2% | 8 | 0 | 0 | 35 | 4.10 | 7.21 | 4.2 | 0 |
+| qwen3:8b | 500a1f067a9f | 33% | 2.1% | 0 | 0 | 0 | 0 | 4.74 | 8.18 | 8.1 | 0 |
+
+Saved to /Users/apple/Documents/SIWES/fault-diagnosis/results/model-bench/20261026-194448

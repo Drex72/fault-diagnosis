@@ -7,6 +7,7 @@ from __future__ import annotations
 import json
 import time
 from collections import defaultdict
+from datetime import datetime
 from pathlib import Path
 
 import numpy as np
@@ -15,7 +16,7 @@ from .faults import ATOM_ELEMENT, apply_atoms, sample_healthy
 from .guard import PolicyGuard, load_policy
 from .heldout import HELDOUT_ELEMENT, apply_heldout
 from .logsetup import get_logger
-from .runmeta import lagos_now, run_meta
+from .runmeta import LAGOS, lagos_now, run_meta
 from .simbench import SimBench
 
 log = get_logger("harness")
@@ -161,11 +162,13 @@ def grade(sessions: list[dict], truth_rows: list[dict]) -> list[dict]:
 
 
 def run_all(methods: dict, scenarios, trials: int, out_dir: Path | None = None, seed0: int = 0,
-            policy: dict | None = None, method_meta: dict | None = None, final: bool = False) -> list[dict]:
+            policy: dict | None = None, method_meta: dict | None = None, final: bool = False,
+            resume: bool = False) -> list[dict]:
     """method_meta: per-method extras such as {"hybrid": {"model": ..., "model_version": ...}}.
     Records are appended to sessions.jsonl as each trial finishes, so an
-    interrupted run keeps what it had. The frozen final held-out scenarios are
-    refused unless final=True."""
+    interrupted run keeps what it had; resume=True continues it in out_dir,
+    keeping the sessions already recorded and running only the missing ones.
+    The frozen final held-out scenarios are refused unless final=True."""
     blocked = [n for n in scenarios if SCENARIOS[n]["set"] in FINAL_ONLY_SETS]
     if blocked and not final:
         raise ValueError(f"{blocked} are frozen final held-out scenarios; pass final=True (--final) "
@@ -175,17 +178,22 @@ def run_all(methods: dict, scenarios, trials: int, out_dir: Path | None = None, 
     method_meta = method_meta or {}
     records = []
     f = None
+    done = load_done(out_dir) if resume else {}
     if out_dir:
         out_dir.mkdir(parents=True, exist_ok=True)
-        (out_dir / "meta.json").write_text(json.dumps(
-            {**base, "started": lagos_now(), "methods": list(methods), "scenarios": list(scenarios),
-             "trials": trials, "seed0": seed0, "method_meta": method_meta, "final": final}, indent=2))
+        meta = {**base, "started": lagos_now(), "methods": list(methods), "scenarios": list(scenarios),
+                "trials": trials, "seed0": seed0, "method_meta": method_meta, "final": final}
+        name = f"meta-resumed-{datetime.now(LAGOS):%Y%m%d-%H%M%S}.json" if resume else "meta.json"
+        (out_dir / name).write_text(json.dumps(meta, indent=2))
         f = open(out_dir / "sessions.jsonl", "a")
     try:
         for name in scenarios:
             for t in range(trials):
                 seed = seed0 + 1000 * list(SCENARIOS).index(name) + t
                 for method, fn in methods.items():
+                    if (name, seed, method) in done:
+                        records.append(done[(name, seed, method)])
+                        continue
                     meta = {**base, "model": None, "model_version": None, **method_meta.get(method, {})}
                     rec = run_trial(name, method, fn, seed, policy, meta)
                     records.append(rec)
@@ -200,6 +208,22 @@ def run_all(methods: dict, scenarios, trials: int, out_dir: Path | None = None, 
     if out_dir:
         (out_dir / "summary.md").write_text(summary_table(records))
     return records
+
+
+def load_done(out_dir: Path) -> dict:
+    """Sessions already in out_dir/sessions.jsonl, by (scenario, seed, method), for a resumed run."""
+    path = out_dir / "sessions.jsonl"
+    if not path.exists():
+        raise ValueError(f"nothing to resume: {path} does not exist")
+    done = {}
+    for n, line in enumerate(path.read_text().splitlines(), 1):
+        try:
+            r = json.loads(line)
+        except json.JSONDecodeError as exc:
+            raise ValueError(f"{path} line {n} is not a complete record ({exc}); fix the file before resuming") from exc
+        done[(r["scenario"], r["seed"], r["method"])] = r
+    log.warning("resuming %s: %d sessions already recorded are kept, not run again", out_dir, len(done))
+    return done
 
 
 def summarise(records: list[dict]) -> list[dict]:

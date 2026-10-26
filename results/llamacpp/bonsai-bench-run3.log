@@ -1,0 +1,58 @@
+21:19:22 WARNING faultdiag.agent: agent ended without submitting a diagnosis
+21:19:22 INFO    faultdiag.harness: hybrid:bonsai-8b F2        seed=5000 inconclusive got=['motor_connection'] truth=['motor_connection'] cost=22 WRONG
+21:19:59 WARNING faultdiag.agent: loop detected: read_current {'channel': 'motor'} 3 times with no new information; ending the session
+21:20:35 INFO    faultdiag.agent: submitted ['motor_connection', 'lamp_connection'], evidence: The repeated measurements of the motor current and voltage indicate a potential issue with the motor connection. The lamp voltage is also slightly higher than expected, suggesting a possible problem w
+21:20:35 INFO    faultdiag.harness: hybrid:bonsai-8b F2        seed=5001 diagnosed    got=['lamp_connection', 'motor_connection'] truth=['motor_connection'] cost=13 WRONG
+21:21:00 WARNING faultdiag.agent: loop detected: read_current {'channel': 'src'} 3 times with no new information; ending the session
+21:21:25 INFO    faultdiag.agent: submitted ['motor_connection', 'lamp_connection', 'load_connection'], evidence: Repeated measurements of current and voltage at the motor, lamp, and load branches did not yield new information, suggesting a potential fault in the connections or a consistent issue in the system.
+21:21:25 INFO    faultdiag.harness: hybrid:bonsai-8b F2        seed=5002 diagnosed    got=['lamp_connection', 'load_connection', 'motor_connection'] truth=['motor_connection'] cost=10 WRONG
+21:22:35 WARNING faultdiag.agent: agent ended without submitting a diagnosis
+21:22:35 INFO    faultdiag.harness: hybrid:bonsai-8b C1        seed=5000 inconclusive got=['battery', 'motor'] truth=['battery', 'motor'] cost=22 WRONG
+21:23:09 INFO    faultdiag.agent: submitted ['motor', 'lamp_connection', 'load_connection'], evidence: The load test showed a significant current increase during steady mode, suggesting a possible internal fault or poor connection. The lamp voltage is higher than expected, indicating a possible faulty 
+21:23:09 INFO    faultdiag.harness: hybrid:bonsai-8b C1        seed=5001 diagnosed    got=['lamp_connection', 'load_connection', 'motor'] truth=['battery', 'motor'] cost=14 WRONG
+21:24:26 WARNING faultdiag.agent: agent ended without submitting a diagnosis
+21:24:26 INFO    faultdiag.harness: hybrid:bonsai-8b C1        seed=5002 inconclusive got=['battery', 'motor'] truth=['battery', 'motor'] cost=22 WRONG
+21:25:32 WARNING faultdiag.agent: loop detected: read_current {'channel': 'motor'} 3 times with no new information; ending the session
+21:25:49 INFO    faultdiag.agent: submitted ['motor_connection', 'sensor_motor'], evidence: Repeated measurements of the motor current showed no significant variation, suggesting a potential issue with the sensor or the connection.
+21:25:49 INFO    faultdiag.harness: hybrid:bonsai-8b C2        seed=5000 diagnosed    got=['motor_connection', 'sensor_motor'] truth=['motor_connection', 'sensor_motor'] cost=21 OK
+21:26:05 INFO    faultdiag.agent: submitted ['sensor_motor'], evidence: The voltage tap on the motor shows a reading of 13.877 volts, which is slightly higher than the expected 13.873 volts. The current sensor on the motor also shows a reading of 0.373 amps, which is slig
+21:26:05 INFO    faultdiag.harness: hybrid:bonsai-8b C2        seed=5001 diagnosed    got=['sensor_motor'] truth=['motor_connection', 'sensor_motor'] cost=4 WRONG
+21:26:34 INFO    faultdiag.agent: submitted ['motor_connection'], evidence: The voltage readings on the motor and the current during the load test show a significant deviation from expected values, indicating a potential issue with the motor connection.
+21:26:34 INFO    faultdiag.harness: hybrid:bonsai-8b C2        seed=5002 diagnosed    got=['motor_connection'] truth=['motor_connection', 'sensor_motor'] cost=9 WRONG
+21:27:21 INFO    faultdiag.agent: submitted ['battery'], evidence: The load test results showed a large current draw (3.18 A) and a voltage drop (12.411 V) that contradicts the expected behavior of a healthy battery. The current sensor readings also showed a large de
+21:27:21 INFO    faultdiag.harness: hybrid:bonsai-8b H1        seed=5000 diagnosed    got=['battery'] truth=['ground_return'] cost=23 WRONG
+21:27:57 INFO    faultdiag.agent: submitted ['battery', 'lamp_connection', 'motor_connection'], evidence: The load test results show a large discrepancy in current and voltage readings, indicating a possible fault in the battery, lamp connection, or motor connection.
+21:27:57 INFO    faultdiag.harness: hybrid:bonsai-8b H1        seed=5001 diagnosed    got=['battery', 'lamp_connection', 'motor_connection'] truth=['ground_return'] cost=12 WRONG
+21:28:46 INFO    faultdiag.agent: submitted ['battery', 'lamp_connection', 'motor_connection'], evidence: The load test results show a large discrepancy in current and voltage readings, which contradicts the expected behavior of the system. The largest residuals indicate that the battery's behavior is not
+21:28:46 INFO    faultdiag.harness: hybrid:bonsai-8b H1        seed=5002 diagnosed    got=['battery', 'lamp_connection', 'motor_connection'] truth=['ground_return'] cost=23 WRONG
+21:29:32 WARNING faultdiag.agent: evidence cites readings not in the history: ['2.173 A'] []
+21:29:32 INFO    faultdiag.agent: submitted ['motor'], evidence: The current reading from the motor branch is 0.379 A, which is much lower than the expected 2.173 A for a healthy motor. Additionally, the voltage drop across the motor is not consistent with the expe
+21:29:32 INFO    faultdiag.harness: hybrid:bonsai-8b H2        seed=5000 diagnosed    got=['motor'] truth=['unmonitored_load'] cost=24 WRONG
+21:29:53 INFO    faultdiag.agent: submitted ['motor', 'motor_connection', 'sensor_load'], evidence: The engine's top hypothesis suggests that the motor and its connection are the most likely faulty elements. The measured current and voltage on the motor branch are significantly lower than expected, 
+21:29:53 INFO    faultdiag.harness: hybrid:bonsai-8b H2        seed=5001 diagnosed    got=['motor', 'motor_connection', 'sensor_load'] truth=['unmonitored_load'] cost=7 WRONG
+21:30:20 INFO    faultdiag.agent: submitted ['lamp_connection'], evidence: The voltage between 'ret' and 'neg' is 0.0837 V, which is higher than expected, indicating a possible issue with the lamp connection. The current readings also show discrepancies, suggesting a faulty 
+21:30:20 INFO    faultdiag.harness: hybrid:bonsai-8b H2        seed=5002 diagnosed    got=['lamp_connection'] truth=['unmonitored_load'] cost=16 WRONG
+21:30:22 WARNING faultdiag.guard: step 1 read_voltage {'point': 'motor'} -> timeout: no response from instrument
+21:30:56 INFO    faultdiag.agent: submitted ['motor', 'lamp', 'load'], evidence: The load test showed a significant voltage drop during the pulse, and the current readings were inconsistent with the expected values. The lamp voltage is also lower than expected, which could be due 
+21:30:56 INFO    faultdiag.harness: hybrid:bonsai-8b TF1       seed=5000 diagnosed    got=['lamp', 'load', 'motor'] truth=['motor_connection'] cost=13 WRONG
+21:30:57 WARNING faultdiag.guard: step 1 read_voltage {'point': 'motor'} -> timeout: no response from instrument
+21:32:13 WARNING faultdiag.agent: agent ended without submitting a diagnosis
+21:32:13 INFO    faultdiag.harness: hybrid:bonsai-8b TF1       seed=5001 inconclusive got=[] truth=['motor_connection'] cost=28 WRONG
+21:32:14 WARNING faultdiag.guard: step 1 read_voltage {'point': 'motor'} -> timeout: no response from instrument
+21:32:36 INFO    faultdiag.agent: submitted ['motor_connection'], evidence: The load test results show a significant deviation in current and voltage readings, suggesting a faulty motor connection. The voltage readings for the motor and lamp are also slightly lower than expec
+21:32:36 INFO    faultdiag.harness: hybrid:bonsai-8b TF1       seed=5002 diagnosed    got=['motor_connection'] truth=['motor_connection'] cost=9 OK
+21:33:00 INFO    faultdiag.agent: submitted ['motor'], evidence: The readings from the voltage taps and current sensor indicate that the motor is not functioning correctly, with the largest residual being -0.4 volts on the lamp tap and -0.4 volts on the load tap.
+21:33:00 INFO    faultdiag.harness: hybrid:bonsai-8b TF2       seed=5000 diagnosed    got=['motor'] truth=['motor'] cost=9 OK
+21:33:30 INFO    faultdiag.agent: submitted ['motor', 'lamp_connection', 'load_connection'], evidence: The motor is drawing more current than expected, the lamp voltage is lower than expected, and the load voltage is slightly lower than expected, all of which contradict the known physics of the system.
+21:33:30 INFO    faultdiag.harness: hybrid:bonsai-8b TF2       seed=5001 diagnosed    got=['lamp_connection', 'load_connection', 'motor'] truth=['motor'] cost=19 WRONG
+21:34:12 WARNING faultdiag.agent: evidence cites readings not in the history: ['3.216 A'] []
+21:34:12 INFO    faultdiag.agent: submitted ['motor'], evidence: The current sensor on the motor branch measures 15.9934 A, which is significantly higher than the expected 3.216 A. This indicates a misfit with the model, suggesting a fault in the motor or its conne
+21:34:12 INFO    faultdiag.harness: hybrid:bonsai-8b TF2       seed=5002 diagnosed    got=['motor'] truth=['motor'] cost=21 OK
+
+MODEL BENCHMARK (simulated bench, hybrid planner)
+
+| Model | Version | Accuracy | Invalid call rate | Plain-text parsed | Timeouts | Unparseable | Fallbacks | Median latency (s) | p95 latency (s) | Peak memory (GB) | Crashes |
+|---|---|---|---|---|---|---|---|---|---|---|---|
+| bonsai-8b | 284a335aa3fb | 19% | 0.0% | 0 | 0 | 0 | 0 | 3.38 | 6.81 | 15.1 | 0 |
+
+Saved to /Users/apple/Documents/SIWES/fault-diagnosis/results/model-bench/20261026-211755

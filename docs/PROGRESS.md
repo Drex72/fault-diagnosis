@@ -48,3 +48,8 @@ The owner's steps are in `docs/OWNER_TODO.md`.
 - Checked in a browser: a mock-bench session watched live (C2, Bayesian engine, diagnosed correctly at cost 3), the replay after a reload, the experiment detail, the tracker, and a phone-width layout.
 - Full suite: 72 passed.
 - Not done: watching a session on the real bench, because there is no board. The same code path runs with the mock bench (`mode: mock`); only the serial port differs.
+
+## Phase 5: maintainer readiness (done 26 Oct 2026)
+
+- `README.md` (quick start: venv, tests, a simulated experiment, the dashboard, local models, the mock hardware path), `docs/ARCHITECTURE.md` (components, data flow diagram, tool contract, safety layers), `docs/HARDWARE.md`, `docs/RUNBOOK.md` (demo from cold, offline checklist, local model servers, after calibration, troubleshooting), `docs/DECISIONS.md`, `docs/OWNER_TODO.md`, `CHANGELOG.md`.
+- CI: `.github/workflows/ci.yml` runs pytest on every push and pull request (Python 3.12, simulation and mock devices only). First run on GitHub: 72 passed in 55 s (run 40344688569).
