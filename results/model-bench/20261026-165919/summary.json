@@ -1,0 +1,35 @@
+[
+  {
+    "model": "bonsai-8b",
+    "model_version": "284a335aa3fb",
+    "server": "llamacpp",
+    "think": false,
+    "date": "2026-10-26T17:29:26+01:00",
+    "commit": "a0d22ac37725799399f4a0ba117c8f646c0ab1eb",
+    "policy_hash": "88b28c1f4c8a",
+    "sessions": 21,
+    "llm_calls": 366,
+    "accuracy": 0.14285714285714285,
+    "invalid_rate": 0.0,
+    "content_parsed": 0,
+    "no_call": 0,
+    "timeouts": 0,
+    "server_parse_errors": 0,
+    "fallbacks": 0,
+    "submitted": 7,
+    "median_latency_s": 2.5785,
+    "p95_latency_s": 4.238,
+    "peak_memory_gb": 11.37,
+    "load_s": 0.2,
+    "crashes": 0,
+    "per_scenario": {
+      "F2": 0.0,
+      "C1": 0.0,
+      "C2": 0.6666666666666666,
+      "H1": 0.0,
+      "H2": 0.0,
+      "TF1": 0.0,
+      "TF2": 0.3333333333333333
+    }
+  }
+]

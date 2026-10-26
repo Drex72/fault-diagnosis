@@ -8,3 +8,57 @@
 17:01:00 INFO    faultdiag.harness: hybrid:bonsai-8b F2        seed=5002 diagnosed    got=['lamp_connection', 'load_connection', 'motor_connection'] truth=['motor_connection'] cost=6 WRONG
 17:02:22 WARNING faultdiag.agent: agent ended without submitting a diagnosis
 17:02:22 INFO    faultdiag.harness: hybrid:bonsai-8b C1        seed=5000 inconclusive got=['battery', 'motor'] truth=['battery', 'motor'] cost=22 WRONG
+17:03:44 WARNING faultdiag.agent: agent ended without submitting a diagnosis
+17:03:44 INFO    faultdiag.harness: hybrid:bonsai-8b C1        seed=5001 inconclusive got=['battery', 'motor'] truth=['battery', 'motor'] cost=24 WRONG
+17:04:46 INFO    faultdiag.agent: submitted ['motor', 'lamp_connection', 'load_connection'], evidence: Current readings from the motor and load are higher than expected, and the lamp voltage is slightly lower than expected, which could point to a faulty connection or sensor.
+17:04:46 INFO    faultdiag.harness: hybrid:bonsai-8b C1        seed=5002 diagnosed    got=['lamp_connection', 'load_connection', 'motor'] truth=['battery', 'motor'] cost=28 WRONG
+17:05:38 WARNING faultdiag.agent: loop detected: read_current {'channel': 'motor'} 3 times with no new information; ending the session
+17:05:42 INFO    faultdiag.agent: submitted ['motor_connection', 'sensor_motor'], evidence: Loop detected: the same call 3 times in a row gave no new information.
+17:05:42 INFO    faultdiag.harness: hybrid:bonsai-8b C2        seed=5000 diagnosed    got=['motor_connection', 'sensor_motor'] truth=['motor_connection', 'sensor_motor'] cost=20 OK
+17:06:27 WARNING faultdiag.agent: agent ended without submitting a diagnosis
+17:06:27 INFO    faultdiag.harness: hybrid:bonsai-8b C2        seed=5001 inconclusive got=['sensor_motor'] truth=['motor_connection', 'sensor_motor'] cost=20 WRONG
+17:06:52 WARNING faultdiag.agent: loop detected: read_current {'channel': 'motor'} 3 times with no new information; ending the session
+17:07:25 INFO    faultdiag.agent: submitted ['motor_connection', 'sensor_motor'], evidence: Loop detected: the same call 3 times in a row gave no new information.
+17:07:25 INFO    faultdiag.harness: hybrid:bonsai-8b C2        seed=5002 diagnosed    got=['motor_connection', 'sensor_motor'] truth=['motor_connection', 'sensor_motor'] cost=11 OK
+17:20:29 WARNING faultdiag.agent: agent ended without submitting a diagnosis
+17:20:29 INFO    faultdiag.harness: hybrid:bonsai-8b H1        seed=5000 out_of_model got=[] truth=['ground_return'] cost=40 WRONG
+17:21:19 WARNING faultdiag.agent: agent ended without submitting a diagnosis
+17:21:19 INFO    faultdiag.harness: hybrid:bonsai-8b H1        seed=5001 out_of_model got=[] truth=['ground_return'] cost=40 WRONG
+17:22:10 WARNING faultdiag.agent: agent ended without submitting a diagnosis
+17:22:10 INFO    faultdiag.harness: hybrid:bonsai-8b H1        seed=5002 out_of_model got=[] truth=['ground_return'] cost=40 WRONG
+17:22:55 WARNING faultdiag.guard: rejected human_probe {'point_a': 'ret', 'point_b': 'neg', 'instruction': "Measure the voltage between the shared return node 'ret' and the battery negative 'neg'."}: human_probe limit of 2 per session reached
+17:23:03 WARNING faultdiag.agent: agent ended without submitting a diagnosis
+17:23:03 INFO    faultdiag.harness: hybrid:bonsai-8b H2        seed=5000 out_of_model got=[] truth=['unmonitored_load'] cost=39 WRONG
+17:23:45 WARNING faultdiag.guard: rejected human_probe {'point_a': 'ret', 'point_b': 'neg', 'instruction': "Measure the voltage between the shared return node 'ret' and the battery negative 'neg'."}: human_probe limit of 2 per session reached
+17:23:53 WARNING faultdiag.agent: agent ended without submitting a diagnosis
+17:23:53 INFO    faultdiag.harness: hybrid:bonsai-8b H2        seed=5001 out_of_model got=[] truth=['unmonitored_load'] cost=39 WRONG
+17:24:31 WARNING faultdiag.guard: rejected human_probe {'point_a': 'ret', 'point_b': 'neg', 'instruction': "Measure the voltage between the shared return node 'ret' and the battery negative 'neg'."}: human_probe limit of 2 per session reached
+17:24:40 WARNING faultdiag.guard: rejected read_current {'channel': 'motor'}: cost 1 exceeds remaining budget 0
+17:24:40 WARNING faultdiag.agent: agent ended without submitting a diagnosis
+17:24:40 INFO    faultdiag.harness: hybrid:bonsai-8b H2        seed=5002 out_of_model got=[] truth=['unmonitored_load'] cost=40 WRONG
+17:24:41 WARNING faultdiag.guard: step 1 read_voltage {'point': 'motor'} -> timeout: no response from instrument
+17:25:28 WARNING faultdiag.agent: agent ended without submitting a diagnosis
+17:25:28 INFO    faultdiag.harness: hybrid:bonsai-8b TF1       seed=5000 inconclusive got=['sensor_motor'] truth=['motor_connection'] cost=31 WRONG
+17:25:29 WARNING faultdiag.guard: step 1 read_voltage {'point': 'motor'} -> timeout: no response from instrument
+17:26:21 WARNING faultdiag.agent: agent ended without submitting a diagnosis
+17:26:21 INFO    faultdiag.harness: hybrid:bonsai-8b TF1       seed=5001 inconclusive got=[] truth=['motor_connection'] cost=31 WRONG
+17:26:22 WARNING faultdiag.guard: step 1 read_voltage {'point': 'motor'} -> timeout: no response from instrument
+17:26:55 WARNING faultdiag.agent: loop detected: read_current {'channel': 'src'} 3 times with no new information; ending the session
+17:27:01 INFO    faultdiag.agent: submitted ['sensor_bus'], evidence: The voltage readings from the bus and other points suggest a potential issue with the sensor or its calibration. The repeated failure to get a response from the instrument for the voltage measurement 
+17:27:01 INFO    faultdiag.harness: hybrid:bonsai-8b TF1       seed=5002 diagnosed    got=['sensor_bus'] truth=['motor_connection'] cost=23 WRONG
+17:27:21 WARNING faultdiag.agent: loop detected: read_voltage {'point': 'bus'} 3 times with no new information; ending the session
+17:27:25 INFO    faultdiag.agent: submitted ['motor'], evidence: Loop detected: the same call 3 times in a row gave no new information.
+17:27:25 INFO    faultdiag.harness: hybrid:bonsai-8b TF2       seed=5000 diagnosed    got=['motor'] truth=['motor'] cost=8 OK
+17:28:12 WARNING faultdiag.guard: rejected human_probe {'point_a': 'ret', 'point_b': 'neg', 'instruction': "Measure the voltage between the shared return node 'ret' and the battery negative 'neg'."}: human_probe limit of 2 per session reached
+17:28:29 WARNING faultdiag.agent: agent ended without submitting a diagnosis
+17:28:29 INFO    faultdiag.harness: hybrid:bonsai-8b TF2       seed=5001 out_of_model got=[] truth=['motor'] cost=39 WRONG
+17:29:26 WARNING faultdiag.agent: agent ended without submitting a diagnosis
+17:29:26 INFO    faultdiag.harness: hybrid:bonsai-8b TF2       seed=5002 inconclusive got=['motor'] truth=['motor'] cost=20 WRONG
+
+MODEL BENCHMARK (simulated bench, hybrid planner)
+
+| Model | Version | Accuracy | Invalid call rate | Plain-text parsed | Timeouts | Unparseable | Fallbacks | Median latency (s) | p95 latency (s) | Peak memory (GB) | Crashes |
+|---|---|---|---|---|---|---|---|---|---|---|---|
+| bonsai-8b | 284a335aa3fb | 14% | 0.0% | 0 | 0 | 0 | 0 | 2.58 | 4.24 | 11.4 | 0 |
+
+Saved to /Users/apple/Documents/SIWES/fault-diagnosis/results/model-bench/20261026-165919

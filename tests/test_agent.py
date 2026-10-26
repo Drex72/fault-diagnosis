@@ -170,12 +170,23 @@ def test_context_is_trimmed_for_long_sessions(engine):
     g = PolicyGuard(make_bench("healthy", 1))
     d = Agent(llm, engine, max_context_chars=6000).run(g, seed=1)
     s = d["agent_stats"]
-    assert s["trimmed_turns"] > 0 and s["max_context_chars"] < 9000
-    last, _ = llm.sent[-1]
+    assert s["trimmed_turns"] > 0 and s["max_context_chars"] < 12000
+    last, _ = llm.sent[-1]  # sent after 10 calls
     assert last[0]["role"] == "system" and "Earlier steps" in last[1]["content"]
-    assert all(f"{i}. read_voltage" in last[1]["content"] for i in range(1, 11))  # every call kept
-    assert '"engine"' in last[1]["content"]  # latest engine report kept
-    assert not any(m["role"] == "tool" for m in last)  # no orphaned tool replies
+    assert all(f"{i}. read_voltage" in last[1]["content"] for i in range(1, 7))  # older calls compacted
+    assert "7. read_voltage" not in last[1]["content"] and "State after step 6" in last[1]["content"]
+    kept = [m["tool_call_id"] for m in last if m["role"] == "tool"]
+    assert kept == ["c6", "c7", "c8", "c9"]  # the latest 4 turns word for word
+    asked = {c["id"] for m in last if m["role"] == "assistant" for c in m.get("tool_calls", [])}
+    assert set(kept) <= asked  # no orphaned tool replies
+    assert last[-1]["role"] == "user" and '"engine"' in last[-1]["content"]  # latest engine report last
+
+
+def test_short_sessions_are_not_trimmed(engine):
+    """A 20-step session fits the default limit: the model sees its whole transcript."""
+    llm = Scripted([tc("read_voltage", {"point": p}, i) for i, p in enumerate(["src", "bus", "motor", "lamp", "load"] * 4)])
+    d = Agent(llm, engine).run(PolicyGuard(make_bench("healthy", 1)), seed=1)
+    assert d["agent_stats"]["trimmed_turns"] == 0 and len(llm.sent) == 20
 
 
 def test_evidence_check_flags_readings_never_taken():

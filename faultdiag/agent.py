@@ -129,7 +129,8 @@ def parse_call(msg: dict):
 
 
 LOOP_REPEATS = 3            # the same call this many times in a row with no new information ends the session
-MAX_CONTEXT_CHARS = 8000    # above this, older turns are sent as a compact history
+MAX_CONTEXT_CHARS = 36000   # about 12k tokens: under a 16k-token llama.cpp slot and Ollama's 32k window
+KEEP_TURNS = 4              # when trimming, the latest turns are still sent word for word
 
 
 def _no_new_info(a: dict, b: dict) -> bool:
@@ -165,17 +166,20 @@ class Agent:
                                "model_misfit": e.misfit(), "largest_residuals": e.residuals(3)}
         return json.dumps(state)
 
-    def _context(self, messages: list[dict], state_idx: int, calls: list[dict], stats: dict) -> list[dict]:
-        """What is sent to the model. Short sessions get the full transcript; long
-        ones get the system prompt, a compact history of every call, and the
-        latest state (with the latest engine report) plus anything after it."""
-        if len(json.dumps(messages)) <= self.max_context_chars or not calls:
+    def _context(self, messages: list[dict], state_idxs: list[int], calls: list[dict], stats: dict) -> list[dict]:
+        """What is sent to the model. Sessions that fit get the full transcript; longer
+        ones get the system prompt, a compact history of the older calls with the state
+        after them, then the latest KEEP_TURNS turns word for word (the model's own
+        calls, their results and the latest engine report), so it keeps its thread."""
+        if len(json.dumps(messages)) <= self.max_context_chars or len(calls) <= KEEP_TURNS:
             return messages
         stats["trimmed_turns"] += 1
-        compact = ("Earlier steps, compacted to save context (every call so far):\n"
-                   + "\n".join(_line(i + 1, c) for i, c in enumerate(calls))
-                   + "\n\nCurrent state:\n" + messages[state_idx]["content"])
-        return [messages[0], {"role": "user", "content": compact}] + messages[state_idx + 1:]
+        n_old = len(calls) - KEEP_TURNS
+        cut = state_idxs[n_old]  # the state message sent after call n_old
+        compact = ("Earlier steps, compacted to save context:\n"
+                   + "\n".join(_line(i + 1, c) for i, c in enumerate(calls[:n_old]))
+                   + f"\n\nState after step {n_old}:\n" + messages[cut]["content"])
+        return [messages[0], {"role": "user", "content": compact}] + messages[cut + 1:]
 
     def _next_call(self, messages, stats, context=lambda m: m, schemas=AGENT_TOOLS, turns=None):
         tools = openai_tools(schemas)
@@ -245,10 +249,10 @@ class Agent:
                  "server_parse_errors": 0, "loop_detected": False, "trimmed_turns": 0, "max_context_chars": 0, "latency_s": []}
         prompt = SYSTEM_PROMPT if self.engine is not None else LLM_ONLY_PROMPT
         messages = [{"role": "system", "content": prompt}, {"role": "user", "content": self._state(guard)}]
-        state_idx, calls, turns = 1, [], []
+        state_idxs, calls, turns = [1], [], []  # state_idxs[k]: the state message sent after k calls
 
         def context(m):
-            return self._context(m, state_idx, calls, stats)
+            return self._context(m, state_idxs, calls, stats)
 
         for _ in range(self.max_steps):
             got = self._next_call(messages, stats, context, turns=turns)
@@ -278,7 +282,7 @@ class Agent:
             if call_id:
                 messages.append({"role": "tool", "tool_call_id": call_id, "content": json.dumps(last)})
             messages.append({"role": "user", "content": self._state(guard, last)})
-            state_idx = len(messages) - 1
+            state_idxs.append(len(messages) - 1)
 
             recent = calls[-LOOP_REPEATS:]
             if (len(recent) == LOOP_REPEATS and all((c["tool"], c["args"]) == (recent[0]["tool"], recent[0]["args"])
