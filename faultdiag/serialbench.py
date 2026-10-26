@@ -195,6 +195,7 @@ class SerialBench:
     def _lost_link(self, exc) -> None:
         self.connected = False
         log.error("bench link lost (%s); reconnecting for up to %.0f s", exc, self.reconnect_s)
+        self._event({"event": "link_lost", "error": str(exc)})
         self._fail_pending("bench link lost")
         deadline = time.monotonic() + self.reconnect_s
         while not self._stop.is_set() and time.monotonic() < deadline:
@@ -228,7 +229,7 @@ class SerialBench:
             log.error("bench over-current %.2f A: firmware switched off and latched safe state", msg.get("amps", -1))
         elif name == "test_load_forced_off":
             log.error("bench forced the test load off outside a load test")
-        elif name != "reconnected":
+        elif name not in ("reconnected", "link_lost"):  # those two are raised here, not by the firmware
             log.warning("unknown bench event: %s", msg)
         if self.on_event:
             try:
@@ -360,7 +361,13 @@ class SerialBench:
         return resp["data"]
 
     def safe_state(self) -> dict:
-        return self.request("safe_state")
+        resp = self.request("safe_state")
+        if resp.get("status") == "ok":  # the firmware latches it until resume()
+            self.inhibited = True
+            log.warning("safe state latched by the host: loads off, load tests refused until resume")
+        else:
+            log.error("safe_state not confirmed by the bench: %s", resp)
+        return resp
 
     def resume(self) -> dict:
         self.inhibited = False

@@ -118,10 +118,16 @@ def grade_dir(out: Path) -> str:
     """Join sessions with the truth file, write graded.jsonl and summary.md."""
     graded = grade(read_jsonl(out / "sessions.jsonl"), read_jsonl(out / "truth.jsonl"))
     (out / "graded.jsonl").write_text("".join(json.dumps(g, default=str) + "\n" for g in graded))
+    summary = graded_summary(graded)
+    (out / "summary.md").write_text(summary)
+    return summary
+
+
+def graded_summary(graded: list[dict]) -> str:
+    """The hardware summary text (the GUI shows exactly this)."""
     valid = [g for g in graded if g["status"] != "interrupted"]
     summary = summary_table(valid) if valid else "No completed sessions.\n"
     summary += f"\nInterrupted sessions (excluded above): {len(graded) - len(valid)}\n"
     if valid:
         summary += "\nPer scenario\n\n" + scenario_table(valid)
-    (out / "summary.md").write_text(summary)
     return summary

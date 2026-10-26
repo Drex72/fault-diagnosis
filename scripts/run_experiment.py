@@ -3,10 +3,12 @@
     python scripts/run_experiment.py --trials 10
     python scripts/run_experiment.py --methods fixed,tree,bayes,llm,hybrid --model qwen3:8b --trials 10 --final
 
-Results go to results/<timestamp>/ (summary.md and sessions.jsonl).
+Results go to results/<timestamp>/ (summary.md and sessions.jsonl); FAULTDIAG_RESULTS_DIR
+replaces results/ (the tests use it).
 Simulation results are for development only; report them separately from hardware runs.
 """
 import argparse
+import os
 import sys
 from datetime import datetime
 from pathlib import Path
@@ -41,7 +43,7 @@ def main():
     except ValueError as exc:
         sys.exit(str(exc))
 
-    out = ROOT / "results" / datetime.now(LAGOS).strftime("%Y%m%d-%H%M%S")
+    out = Path(os.environ.get("FAULTDIAG_RESULTS_DIR", ROOT / "results")) / datetime.now(LAGOS).strftime("%Y%m%d-%H%M%S")
     scenarios = args.scenarios.split(",") if args.scenarios else (list(SCENARIOS) if args.final else dev_scenarios())
     records = run_all(methods, scenarios, args.trials, out, method_meta=method_meta, final=args.final)
     print("\nSIMULATION RESULTS (not hardware)\n")

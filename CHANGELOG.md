@@ -41,3 +41,12 @@ Every change to existing code, with the reason. Newest first within a phase.
 - `scripts/run_hardware.py`, `scripts/calibrate.py`, `scripts/fw_selftest.py`, `scripts/injector_check.py`, `scripts/refit_noise.py` (new). `FAULTDIAG_RESULTS_DIR` overrides where they write (used by the tests).
 - `requirements.txt`: `pyserial==3.5`.
 - New tests: `tests/test_serialbench.py` (19), `tests/test_hardware_scripts.py` (8).
+
+## Phase 4 (26 Oct 2026)
+
+- `gui/` (new): local dashboard, `python -m gui`. `server.py` (JSON API, server-sent events, static files), `store.py` (SQLite: live sessions, their event log, the project tracker), `live.py` (one live session at a time on the simulator, the mock bench or the real bench, with a shadow Bayesian engine for the hypothesis chart), `experiments.py` (read-only views over `results/` built from the CLI's own summary functions), `seed.py` (first-run tracker contents), `static/` (HTML, CSS, JavaScript; no external assets).
+- `faultdiag/serialbench.py`: `safe_state()` now sets `inhibited` when the bench confirms, and logs it. Reason: the firmware latches the safe state until `resume`, but the host only learned of the latch from an over-current event, so the GUI showed a latched bench as ready and a following session would have met refused load tests. A GUI test written first showed `inhibited` still `False` after a confirmed safe state.
+- `scripts/run_experiment.py`: `FAULTDIAG_RESULTS_DIR` replaces `results/` when set (default unchanged), as the hardware scripts already allow. Reason: the GUI tests run the real CLI into a temporary directory and compare its `summary.md` with the GUI's.
+- `faultdiag/hwrun.py`: the summary text of `grade_dir` moved into `graded_summary(graded)`; `grade_dir` writes the same file as before. Reason: the GUI shows exactly that text without writing to the run directory.
+- `faultdiag/methods.py`: `build_methods(..., on_reply=None)` wraps the model client so each reply also goes to a callback. Without a callback nothing changes. Reason: the live page shows the model's replies as they arrive.
+- New tests: `tests/test_gui.py` (12).

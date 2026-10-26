@@ -24,9 +24,25 @@ def llm_extra(server: str, think: bool) -> dict:
     return {"reasoning_effort": "none"} if server == "ollama" else {"chat_template_kwargs": {"enable_thinking": False}}
 
 
+class _Observed:
+    """Passes each model reply to a callback (the GUI shows the reasoning live)."""
+
+    def __init__(self, llm, on_reply):
+        self.llm, self.on_reply = llm, on_reply
+
+    def __call__(self, messages, tools):
+        msg = self.llm(messages, tools)
+        try:
+            self.on_reply(msg)
+        except Exception:  # noqa: BLE001 - a display callback must not break a session
+            log.exception("on_reply callback failed")
+        return msg
+
+
 def build_methods(names, model: str | None = None, server: str = "ollama", base_url: str | None = None,
-                  think: bool = False, timeout_s: float = 180, model_version: str | None = None):
-    """Returns (methods, method_meta): name -> fn(guard, seed), name -> record extras."""
+                  think: bool = False, timeout_s: float = 180, model_version: str | None = None, on_reply=None):
+    """Returns (methods, method_meta): name -> fn(guard, seed), name -> record extras.
+    on_reply(message): optional, called with every model reply."""
     base_url = base_url or DEFAULT_URL[server]
     engine = BayesEngine()
     methods, meta = {}, {}
@@ -42,8 +58,8 @@ def build_methods(names, model: str | None = None, server: str = "ollama", base_
                 raise ValueError(f"a model name is needed for method {m}")
             extra = llm_extra(server, think)
             log.info("method %s: model %s on %s, request extras %s", m, model, base_url, extra)
-            agent = Agent(OpenAICompatLLM(base_url, model, timeout_s=timeout_s, extra=extra),
-                          engine if m == "hybrid" else None)
+            llm = OpenAICompatLLM(base_url, model, timeout_s=timeout_s, extra=extra)
+            agent = Agent(_Observed(llm, on_reply) if on_reply else llm, engine if m == "hybrid" else None)
             methods[m] = agent.run
             meta[m] = {"model": model, "think": think,
                        "model_version": model_version or (ollama_model_version(base_url, model)
