@@ -1,90 +1,103 @@
 # Autonomous Electrical Fault Diagnosis (SIWES)
 
-Software for a 12 V DC diagnostic testbench. A Bayesian engine and a local LLM agent choose measurements under a cost budget, diagnose faults, and are compared against fixed-sequence and decision-tree baselines. Everything runs against a circuit simulator now and against the ESP32 testbench later, through the same tool contract.
+Software for a 12 V DC diagnostic testbench: an aged lead-acid battery feeding a motor, a lamp and a resistive load, with multiplexed voltage taps, two INA226 current sensors and a switched test load. Five methods diagnose faults by choosing measurements under a cost budget:
 
-## Status
+| | Method | Code |
+|---|---|---|
+| A | fixed measurement sequence | `faultdiag/baselines.py` |
+| B | decision tree | `faultdiag/baselines.py` |
+| C | Bayesian active diagnosis (expected information gain per unit cost) | `faultdiag/engine.py` |
+| D | local LLM agent alone | `faultdiag/agent.py` |
+| E | hybrid: the LLM plans on top of the Bayesian engine | `faultdiag/agent.py` |
 
-| Part | State |
-|---|---|
-| Circuit simulator (nodal analysis, battery polarisation, motor back-EMF and stall) | Built, tested |
-| Tool contract, policy config, guard | Built, tested |
-| Bayesian engine (approach C) and baselines A, B | Built, tested, run in simulation |
-| Hybrid agent (E) and LLM-only agent (D) | Built; tested only with a scripted model. Needs a real local model |
-| Model benchmark script | Built; not yet run (needs Ollama on the laptop) |
-| ESP32 firmware and serial transport | Not started |
+The research question: does E beat C on faults outside the engine's model (held-out faults), on tool failures, and when a human measurement is needed? Everything runs offline, with local models (Ollama or llama.cpp). The same tool contract drives a circuit simulator and the ESP32 bench.
+
+Current results, what is done and what is waiting are in [docs/PROGRESS.md](docs/PROGRESS.md).
+
+## Quick start (simulation, about 5 minutes)
+
+Needs Python 3.10 or newer (3.12 is used here and in CI).
+
+```bash
+python3.12 -m venv .venv
+.venv/bin/pip install -r requirements.txt
+.venv/bin/python -m pytest -q
+```
+
+All tests run without hardware, a model or the internet.
+
+Run the baselines and the Bayesian engine on every development scenario:
+
+```bash
+.venv/bin/python scripts/run_experiment.py --trials 10
+```
+
+It prints a summary labelled `sim` and saves `results/<date-time>/` (`sessions.jsonl`, `summary.md`, `meta.json`). Set `FAULTDIAG_LOG=DEBUG` to see every tool call.
+
+Open the dashboard:
+
+```bash
+.venv/bin/python -m gui --open
+```
+
+It serves http://127.0.0.1:8765 from this laptop only. On the Live session page, pick "Simulator", a method and a scenario, and press Start session to watch a diagnosis step by step. The Experiments page shows every run in `results/`.
+
+## With a local model (methods D and E)
+
+```bash
+ollama pull qwen3:8b
+.venv/bin/python scripts/bench_models.py --models qwen3:8b --trials 3
+.venv/bin/python scripts/run_experiment.py --methods fixed,tree,bayes,llm,hybrid --model qwen3:8b --trials 10
+```
+
+Thinking is switched off by default (`--think` turns it on). For llama.cpp, start `llama-server` and pass `--server llamacpp` (see [docs/RUNBOOK.md](docs/RUNBOOK.md)). The model choice and its reasons are in [docs/model-benchmark.md](docs/model-benchmark.md).
+
+## With the hardware bench
+
+Building, flashing, calibrating and running the bench is a numbered checklist in [docs/OWNER_TODO.md](docs/OWNER_TODO.md). Wiring, pin map and safety layers are in [docs/HARDWARE.md](docs/HARDWARE.md). Without a board, the whole hardware path runs against mock devices:
+
+```bash
+.venv/bin/python scripts/run_hardware.py --mock --methods bayes --scenarios healthy,F2 --trials 1
+```
+
+Mock results are labelled `sim` and go to `results/mock-serial/`.
 
 ## Layout
 
 ```
-config/policy.json      costs, per-session limits, pulse bounds, safety limits
-faultdiag/circuit.py    testbench physics
-faultdiag/measure.py    what each instrument reports (taps, currents, load tests)
-faultdiag/faults.py     in-model faults F1 to F5 (the engine's fault model)
-faultdiag/heldout.py    held-out faults H1, H2 (only the harness imports this)
-faultdiag/tools.py      tool schemas and validator, shared with the LLM
-faultdiag/guard.py      every call goes through here: validation, budget, logging
-faultdiag/simbench.py   simulated bench with noise, intermittent faults, tool failures
-faultdiag/engine.py     Bayesian active diagnosis, expected information gain per cost
-faultdiag/baselines.py  approaches A and B
-faultdiag/agent.py      approaches D and E, OpenAI-compatible local LLM client
-faultdiag/harness.py    scenarios, blind ground truth, metrics
-scripts/                run_experiment.py, bench_models.py
+config/policy.json       costs, budget, per-session limits, load-test bounds, safety limits, timeouts
+faultdiag/               the diagnosis package
+  circuit.py measure.py  bench physics and what each instrument reports
+  faults.py              in-model faults F1 to F5 (the engine's fault model)
+  heldout.py             held-out faults H1 to H4 (only harness.py imports it)
+  tools.py guard.py      tool contract and the guard every call goes through
+  simbench.py            simulated bench
+  serialbench.py         the real bench over USB serial (same interface)
+  mockdevice.py          mock bench and injector firmware for tests
+  injector.py            fault-injection controller client
+  engine.py baselines.py agent.py methods.py   methods A to E
+  harness.py hwrun.py    scenarios, blind grading, summaries
+  calib.py               calibration records
+firmware/bench/          ESP32 bench firmware (PlatformIO); enforces every electrical limit
+firmware/injector/       ESP32 fault-injection relays
+gui/                     dashboard (python -m gui)
+scripts/                 run_experiment, bench_models, run_hardware, calibrate, fw_selftest, injector_check, refit_noise
+results/                 raw run output, append-only
+docs/                    ARCHITECTURE, HARDWARE, RUNBOOK, DECISIONS, PROGRESS, OPEN_QUESTIONS, OWNER_TODO
 ```
-
-## Setup
-
-```
-python3 -m venv .venv && source .venv/bin/activate
-pip install -r requirements.txt
-python -m pytest -q
-```
-
-## Run
-
-Baselines and engine, in simulation:
-
-```
-python scripts/run_experiment.py --trials 10
-```
-
-Set `FAULTDIAG_LOG=DEBUG` to print every tool call. Results go to `results/<timestamp>/`.
-
-With a local model (Ollama on the default port):
-
-```
-ollama pull qwen2.5:7b
-python scripts/bench_models.py --models qwen2.5:7b
-python scripts/run_experiment.py --methods bayes,hybrid --model qwen2.5:7b
-```
-
-For llama.cpp, start `llama-server` and pass `--base-url http://localhost:8080/v1`.
 
 ## Scenarios
 
 | Set | Scenarios |
 |---|---|
-| single | healthy, F1 (aged battery), F1b (marginal battery), F2 (motor connection), F3 (stall), F4 (intermittent lamp), F5 on motor, lamp or load tap |
+| single | healthy, F1 (aged battery), F1b (marginal battery), F2 (motor connection), F3 (stall), F4 (intermittent lamp), F5 on the motor, lamp or load tap |
 | compound | C1 = F1 + F3, C2 = F2 + F5 on the motor tap |
-| heldout | H1 (shared ground-return resistance), H2 (hidden parasitic load) |
+| heldout (development) | H1 (shared ground-return resistance), H2 (hidden parasitic load) |
 | toolfail | TF1 = F2 with the motor tap timing out, TF2 = F3 with the motor current sensor returning garbage |
+| heldout_final (frozen) | H3 (main wiring resistance), H4 (failing source current sensor): run only with `--final` |
 
 Diagnoses are graded by circuit element, so in-model and held-out faults share one answer vocabulary.
 
-## First simulation results (development only, not hardware)
+## Rules this repository keeps
 
-10 trials per scenario, run 26 Oct 2026. Correct means status "diagnosed" with exactly the right elements.
-
-| Test set | Fixed (A) | Tree (B) | Bayes (C) |
-|---|---|---|---|
-| single | 91% | 91% | 94% |
-| compound | 50% | 0% | 80% |
-| heldout | 0% | 0% | 0% (H1 flagged out-of-model 9/10; H2 confidently wrong 10/10) |
-| toolfail | 45% | 45% | 55% |
-
-What the engine cannot do, and where the hybrid has to earn its place: C2 and TF1 need a measurement the bench cannot make (the human probe across the motor connection); H1 needs the return node probed; H2 needs a current-balance argument outside the fault model.
-
-## Notes for the hardware phase
-
-- The INA226 needs a lower-value shunt (about 0.01 ohm) for the 3 A motor stall current and 5 A total during load tests.
-- Re-fit the simulator's noise and settling values, and the engine's sigma values, to calibration data from the real bench.
-- The ESP32 must enforce the safety limits itself; the guard is a second layer, not the only one.
+Simulation and hardware results are never mixed: every record carries `source`, and every table says which it is. H3 and H4 were frozen on 26 Oct 2026 and are not looked at before the final run. The firmware enforces every electrical limit by itself; the software and the GUI are extra layers. See [CLAUDE.md](CLAUDE.md) for the full working rules.

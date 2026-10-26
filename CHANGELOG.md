@@ -50,3 +50,9 @@ Every change to existing code, with the reason. Newest first within a phase.
 - `faultdiag/hwrun.py`: the summary text of `grade_dir` moved into `graded_summary(graded)`; `grade_dir` writes the same file as before. Reason: the GUI shows exactly that text without writing to the run directory.
 - `faultdiag/methods.py`: `build_methods(..., on_reply=None)` wraps the model client so each reply also goes to a callback. Without a callback nothing changes. Reason: the live page shows the model's replies as they arrive.
 - New tests: `tests/test_gui.py` (12).
+
+## Phase 5 (26 Oct 2026)
+
+- `README.md`: rewritten as a quick start for a new person (tests, a simulated experiment, the dashboard, local models, the mock hardware path), with the current layout and scenario sets. The old status table and early results moved out: current results live in `docs/PROGRESS.md`.
+- `docs/ARCHITECTURE.md`, `docs/RUNBOOK.md` (new).
+- `.github/workflows/ci.yml` (new): pytest on every push and pull request, Python 3.12, simulation and mock devices only.
