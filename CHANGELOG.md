@@ -20,3 +20,8 @@ Every change to existing code, with the reason. Newest first within a phase.
 - `faultdiag/simbench.py`: debug log of the injected sensor faults (added first; showed only tap offsets were supported), then applies `current_gain` to current readings.
 - `faultdiag/heldout.py`: H3, H4.
 - New tests: `tests/test_agent.py` (6), `tests/test_heldout_final.py` (4).
+
+## Phase 2 (26 Oct 2026)
+
+- `faultdiag/agent.py`: loop detection (the same call three times in a row with no new information ends the session; the model then gets one turn in which only `submit_diagnosis` is offered), context trimming (above 8000 characters the model gets the system prompt, a compact one-line-per-call history of every call, and the latest state with the latest engine report), evidence check on submission, and a per-turn `turns` log (reply text, call, validity) in the result for the GUI drill-down. Reason: Phase 2 requirements. Logging added first (context size per call, repeated calls, submitted evidence) showed, with a scripted model, the context growing about 1.6k characters per turn, six identical calls in a row going unnoticed, and evidence citing a tap that was never read and a probe that was never made being accepted.
+- `faultdiag/evidence.py` (new): `check_evidence(evidence, history)`.

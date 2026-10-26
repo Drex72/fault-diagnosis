@@ -16,6 +16,7 @@ import time
 import urllib.error
 import urllib.request
 
+from .evidence import check_evidence
 from .logsetup import get_logger
 from .tools import ELEMENTS, TOOL_SCHEMAS, openai_tools, validate_call
 
@@ -115,10 +116,31 @@ def parse_call(msg: dict):
     raise ValueError("no tool call found in reply")
 
 
+LOOP_REPEATS = 3            # the same call this many times in a row with no new information ends the session
+MAX_CONTEXT_CHARS = 8000    # above this, older turns are sent as a compact history
+
+
+def _no_new_info(a: dict, b: dict) -> bool:
+    """True if result b tells nothing a did not: same status, readings within noise."""
+    if a["status"] != b["status"]:
+        return False
+    da, db = a.get("data") or {}, b.get("data") or {}
+    if set(da) != set(db):
+        return False
+    return all(abs(da[k] - db[k]) <= max(0.1, 0.02 * abs(da[k])) for k in da if isinstance(da[k], (int, float)))
+
+
+def _line(n: int, c: dict) -> str:
+    out = c.get("data") if c["status"] == "ok" else (c.get("error") or c.get("reason"))
+    return f"{n}. {c['tool']} {json.dumps(c['args'], sort_keys=True)} -> {c['status']}: {json.dumps(out)}"
+
+
 class Agent:
-    def __init__(self, llm, engine=None, max_steps: int = 20, max_retries: int = 2):
+    def __init__(self, llm, engine=None, max_steps: int = 20, max_retries: int = 2,
+                 max_context_chars: int = MAX_CONTEXT_CHARS):
         self.llm, self.engine = llm, engine  # engine=None gives the LLM-only agent (D)
         self.max_steps, self.max_retries = max_steps, max_retries
+        self.max_context_chars = max_context_chars
         self.method = "hybrid" if engine is not None else "llm"
 
     def _state(self, guard, last=None) -> str:
@@ -131,12 +153,27 @@ class Agent:
                                "model_misfit": e.misfit(), "largest_residuals": e.residuals(3)}
         return json.dumps(state)
 
-    def _next_call(self, messages, stats):
-        tools = openai_tools(AGENT_TOOLS)
+    def _context(self, messages: list[dict], state_idx: int, calls: list[dict], stats: dict) -> list[dict]:
+        """What is sent to the model. Short sessions get the full transcript; long
+        ones get the system prompt, a compact history of every call, and the
+        latest state (with the latest engine report) plus anything after it."""
+        if len(json.dumps(messages)) <= self.max_context_chars or not calls:
+            return messages
+        stats["trimmed_turns"] += 1
+        compact = ("Earlier steps, compacted to save context (every call so far):\n"
+                   + "\n".join(_line(i + 1, c) for i, c in enumerate(calls))
+                   + "\n\nCurrent state:\n" + messages[state_idx]["content"])
+        return [messages[0], {"role": "user", "content": compact}] + messages[state_idx + 1:]
+
+    def _next_call(self, messages, stats, context=lambda m: m, schemas=AGENT_TOOLS, turns=None):
+        tools = openai_tools(schemas)
         for attempt in range(self.max_retries + 1):
+            ctx = context(messages)
+            stats["max_context_chars"] = max(stats["max_context_chars"], len(json.dumps(ctx)))
             t0 = time.perf_counter()
+            log.debug("context sent: %d messages, %d chars", len(ctx), len(json.dumps(ctx)))
             try:
-                msg = self.llm(messages, tools)
+                msg = self.llm(ctx, tools)
             except TimeoutError as exc:  # count as invalid and fall back at once: a retry would wait again
                 stats["latency_s"].append(round(time.perf_counter() - t0, 3))
                 stats["llm_calls"] += 1
@@ -152,11 +189,14 @@ class Agent:
             messages.append(assistant)
             try:
                 name, args, call_id, how = parse_call(msg)
-                errors = validate_call(name, args, AGENT_TOOLS)
+                errors = validate_call(name, args, schemas)
             except (ValueError, KeyError, json.JSONDecodeError) as exc:
                 name, args, call_id, how, errors = None, None, None, None, [str(exc)]
                 if msg.get("tool_calls"):
                     call_id = msg["tool_calls"][0].get("id")
+            if turns is not None:
+                turns.append({"content": (msg.get("content") or "")[:600], "tool": name, "args": args,
+                              "how": how, "valid": not errors})
             if not errors:
                 stats["content_parsed"] += how == "content"
                 return name, args, call_id
@@ -168,15 +208,31 @@ class Agent:
                             else {"role": "user", "content": feedback})
         return None
 
+    def _submitted(self, args: dict, guard, stats: dict, turns: list) -> dict:
+        check = check_evidence(args.get("evidence", ""), guard.history)
+        if check["flag"]:
+            log.warning("evidence cites readings not in the history: %s %s", check["unverified"],
+                        check["missing_tools"])
+        log.info("submitted %s, evidence: %.200s", [f["element"] for f in args["faults"]], args.get("evidence", ""))
+        return {"method": self.method, "status": "diagnosed",
+                "elements": sorted({f["element"] for f in args["faults"]}),
+                "confidence": args["confidence"], "evidence": args.get("evidence", ""), "evidence_check": check,
+                "turns": turns, "agent_stats": stats}
+
     def run(self, guard, seed: int = 0) -> dict:
         if self.engine is not None:
             self.engine.reset(seed)
         stats = {"llm_calls": 0, "invalid": 0, "fallbacks": 0, "content_parsed": 0, "no_call": 0, "timeouts": 0,
-                 "latency_s": []}
+                 "loop_detected": False, "trimmed_turns": 0, "max_context_chars": 0, "latency_s": []}
         prompt = SYSTEM_PROMPT if self.engine is not None else LLM_ONLY_PROMPT
         messages = [{"role": "system", "content": prompt}, {"role": "user", "content": self._state(guard)}]
+        state_idx, calls, turns = 1, [], []
+
+        def context(m):
+            return self._context(m, state_idx, calls, stats)
+
         for _ in range(self.max_steps):
-            got = self._next_call(messages, stats)
+            got = self._next_call(messages, stats, context, turns=turns)
             if got is None:
                 if self.engine is None:
                     break
@@ -190,9 +246,7 @@ class Agent:
                 name, args, call_id = got
 
             if name == "submit_diagnosis":
-                elements = sorted({f["element"] for f in args["faults"]})
-                return {"method": self.method, "status": "diagnosed", "elements": elements,
-                        "confidence": args["confidence"], "evidence": args.get("evidence", ""), "agent_stats": stats}
+                return self._submitted(args, guard, stats, turns)
 
             res = guard.call(name, args)
             if self.engine is not None:
@@ -201,13 +255,31 @@ class Agent:
                 elif res["status"] != "rejected":
                     self.engine.mark_failed(name, res["args"])
             last = {k: res.get(k) for k in ("tool", "args", "status", "data", "error", "reason")}
+            calls.append(last)
             if call_id:
                 messages.append({"role": "tool", "tool_call_id": call_id, "content": json.dumps(last)})
             messages.append({"role": "user", "content": self._state(guard, last)})
+            state_idx = len(messages) - 1
+
+            recent = calls[-LOOP_REPEATS:]
+            if (len(recent) == LOOP_REPEATS and all((c["tool"], c["args"]) == (recent[0]["tool"], recent[0]["args"])
+                                                    for c in recent)
+                    and all(_no_new_info(recent[0], c) for c in recent[1:])):
+                stats["loop_detected"] = True
+                log.warning("loop detected: %s %s %d times with no new information; ending the session",
+                            name, res["args"], LOOP_REPEATS)
+                messages.append({"role": "user", "content": (
+                    f"Loop detected: the same call {LOOP_REPEATS} times in a row gave no new information. "
+                    "The session is ending. Call submit_diagnosis now with your best diagnosis.")})
+                got = self._next_call(messages, stats, context, schemas={"submit_diagnosis": SUBMIT_SCHEMA},
+                                      turns=turns)
+                if got is not None:
+                    return self._submitted(got[1], guard, stats, turns)
+                break
 
         log.warning("agent ended without submitting a diagnosis")
         if self.engine is not None:
             d = self.engine.diagnosis()
             return {"method": self.method, **d, "status": "inconclusive" if d["status"] == "diagnosed" else d["status"],
-                    "agent_stats": stats}
-        return {"method": self.method, "status": "inconclusive", "elements": [], "agent_stats": stats}
+                    "turns": turns, "agent_stats": stats}
+        return {"method": self.method, "status": "inconclusive", "elements": [], "turns": turns, "agent_stats": stats}
