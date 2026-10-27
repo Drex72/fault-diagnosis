@@ -189,6 +189,18 @@ def test_per_minute_limit_waits_the_retry_delay(fake, clock):
     assert clock.slept == [41.0] and llm.last_wait_s == 41.0 and llm.usage["requests"] == 1
 
 
+def test_network_drop_is_retried_only_for_cloud(clock):
+    """A DNS hiccup or dropped connection (seen on the real run, 27 Oct 2026) is waited out
+    with a key; a local server with no key still stops at once."""
+    closed = "http://127.0.0.1:9/v1beta/openai"   # nothing listens on port 9
+    with pytest.raises(LLMUnavailable, match="cannot reach"):
+        OpenAICompatLLM(closed, FLASH, api_key=KEY)([{"role": "user", "content": "{}"}], [])
+    assert clock.slept == [5, 10, 20]
+    with pytest.raises(LLMUnavailable, match="cannot reach"):
+        OpenAICompatLLM(closed, FLASH)([{"role": "user", "content": "{}"}], [])
+    assert clock.slept == [5, 10, 20]
+
+
 @pytest.mark.parametrize("reply", [_quota("Day", "3600s"),   # Google; and OpenRouter's free models:
                                    (429, {"error": {"code": 429, "message": "Rate limit exceeded: free-models-per-day"}})])
 def test_daily_quota_stops_with_resume_hint(fake, clock, reply):

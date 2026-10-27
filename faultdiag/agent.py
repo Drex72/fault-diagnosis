@@ -160,10 +160,16 @@ class OpenAICompatLLM:
                 hint = {401: "; check the API key", 402: "; out of credits",
                         403: "; the key is not allowed this model or has reached its limit"}.get(exc.code, "")
                 raise LLMUnavailable(f"{self.url} returned HTTP {exc.code}{hint}: {detail}") from exc
-            except urllib.error.URLError as exc:
-                if isinstance(exc.reason, TimeoutError):
+            except (urllib.error.URLError, ConnectionError) as exc:  # no reply at all (refused, reset, DNS)
+                reason = getattr(exc, "reason", exc)
+                if isinstance(reason, TimeoutError):
                     raise TimeoutError(f"no reply from {self.model} within {self.timeout_s} s") from exc
-                raise LLMUnavailable(f"cannot reach model server at {self.url}: {exc.reason}") from exc
+                if attempt < self.max_retries:  # cloud only: a dropped connection or a DNS hiccup is waited out
+                    log.warning("cannot reach %s (attempt %d); trying again in %d s: %s",
+                                self.url, attempt + 1, 5 * 2 ** attempt, reason)
+                    self._wait(5 * 2 ** attempt)
+                    continue
+                raise LLMUnavailable(f"cannot reach model server at {self.url}: {reason}") from exc
             if out.get("choices"):
                 break
             # OpenRouter can answer 200 with the provider's error instead of a reply
