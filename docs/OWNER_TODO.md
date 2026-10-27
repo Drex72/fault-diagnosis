@@ -103,8 +103,9 @@ The same kind of cloud comparison as section G, on Google's free tier. Gemini 3.
 35. **Save the key on this laptop without showing it**, outside the repository (the command asks for it; nothing appears on screen):
    `read -rs "k?Gemini key: " && printf '%s' "$k" > ~/.gemini-key && chmod 600 ~/.gemini-key && unset k`
    Do not paste the key into a chat or any file in this folder.
-36. **Short test** (the same 21 sessions as every other planner, about 20 to 30 minutes):
+36. **Short test** (the same 21 sessions as every other planner). The free tier allows only 20 requests a day per model (about 2 sessions), so this takes 7 to 10 days, one `--resume` a day:
    `GEMINI_API_KEY="$(cat ~/.gemini-key)" .venv/bin/python scripts/bench_models.py --server gemini --models gemini-3.8-flash --think --timeout 180`
    Or tell the maintainer the key is saved in `~/.gemini-key`, and they run it. If it stops with "the daily request quota is used up", run the command it prints (it ends with `--resume` and the results folder) after 8 am the next day.
-37. **Decide on the full comparison** from the short test. On the free tier it needs about 2,000 requests, so several days of quota; `--resume` continues it each day.
+37. **The full comparison is not practical on the free tier** (about 2,000 requests, so about 100 days). Decide from the short test whether it is worth paying for.
+38. **Replace the Gemini and OpenRouter keys.** Both were pasted into the chat on 27 Oct 2026. Delete the Gemini key at https://aistudio.google.com/apikey and the OpenRouter key at https://openrouter.ai/settings/keys, make new ones, and save them with the `read -rs` commands in steps 31 and 35 (they overwrite `~/.openrouter-key` and `~/.gemini-key`).
 

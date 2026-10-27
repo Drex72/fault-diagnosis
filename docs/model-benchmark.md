@@ -37,6 +37,47 @@ What the table shows:
 - llama3.2:3b mostly fails at the format: 190 of its 461 replies were invalid tool calls (wrong argument types, invented tools), so the engine's suggestion was used 35 times, and 8 of its sessions ended on loop detection.
 - Bonsai-8B never produced an invalid call but chose poorly. In 2 of its 17 submitted diagnoses the evidence quoted a current that matches no reading taken (flagged by the evidence check); qwen3:8b and llama3.2:3b had none flagged.
 
+## Free cloud models (27 Oct 2026; a screen, not the benchmark)
+
+The owner has no money for credits, so the free tiers of Google's Gemini API and OpenRouter were tried, with the owner's keys. Their daily limits are small: Gemini allows 20 requests per day per model; OpenRouter allows 50 requests per day to free models in all, and failed attempts count. The 21-session benchmark needs about 150 to 230 requests, so it was not run on any of them today. This screen answers a smaller question: which free models can work as the hybrid's planner at all. All `source: sim`.
+
+**Step 1, one request each.** The agent's exact first turn on F2 (seed 5000) was sent to each free OpenRouter model that lists tool support, and the reply was checked with the tool contract (a throwaway script, `or_probe.py`, not in the repository). 14 of the 16 were tried; left out were `openrouter/free`, which sends each request to a random model, and the 2.6B `liquid/lfm-2.5-2.6b`, the size class where llama3.2:3b failed the format. Reasoning was off where the model allows it, as for the local models.
+
+| Model | First turn |
+|---|---|
+| nvidia/nemotron-3-ultra-550b-a55b:free | valid call, 1.4 s |
+| nvidia/nemotron-3.5-super-vl:free | valid call, 8.6 s |
+| nvidia/nemotron-3.5-lightning:free | valid call, 0.9 s |
+| poolside/laguna-s-2.1:free | valid call, 2.6 s |
+| cohere/north-mini-code:free | valid call, 1.1 s |
+| recursive/flint-v1.0:free (always reasons) | valid call, 1.4 s |
+| dots-studio/dots-3-note-preview:free | no tool call: it described the step in plain text |
+| google/gemma-4-31b-it:free, google/gemma-4-26b-a4b-it:free, xingchen-agi/xing4.0-29b-a4b:free, poolside/laguna-xs-2.1:free | HTTP 429: rate-limited by their provider |
+| nvidia/nemotron-3-nano-omni-30b-a3b-reasoning:free | provider overloaded (HTTP 502) |
+| thinkingmachines/inkling:free, thinkingmachines/inkling-small:free | HTTP 403: "only available on agentic harnesses" |
+
+**Step 2, one full hybrid session on F2, seed 5000**, for the four largest models that passed step 1, plus Gemini (`bench_models.py --scenarios F2 --trials 1`; OpenRouter at 15 requests a minute). The same session for the earlier planners is shown for comparison.
+
+| Planner | Run (`results/model-bench/`) | F2, seed 5000 | Cost (of 40) | Model calls | Median reply (s) |
+|---|---|---|---|---|---|
+| Engine alone (C) | `20261026-213536` | correct | 8 | n/a | n/a |
+| qwen3:8b | `20261026-194448` | wrong | 26 | 20 | |
+| jev-1.14.0 | `20261027-103049` | correct | 13 | 5 | |
+| poolside/laguna-s-2.1:free (118B, 8B active) | `20261027-141027` | correct | 8 | 7 | 5.36 |
+| nvidia/nemotron-3.5-super-vl:free (120B, 12B active) | `20261027-141143` | correct | 30 | 11 | 1.38 |
+| gemini-3.6-flash (Gemini API, reasoning on) | `20261027-135344` | correct; the second session then hit the daily cap | 20 | 10 | 3.69 |
+| nvidia/nemotron-3-ultra-550b-a55b:free | `20261027-135706` | no session finished: the provider timed out (HTTP 504, about 2 minutes each time) for 13 minutes | | | |
+| recursive/flint-v1.0:free | `20261027-141229` | no session finished: rate-limited by its provider | | | |
+
+What it shows:
+
+- Two free OpenRouter models, Laguna S 2.1 and Nemotron 3.5 Super VL, and Gemini 3.6 Flash can run the agent end to end: every call valid, a diagnosis submitted, and the right one. Laguna S 2.1 got it at the engine's own cost (8) with 7 calls.
+- F2 is the easiest scenario (the engine gets all three seeds), so one correct F2 session says the model can do the job's format, not that it beats the engine. That needs the 21 sessions, and above all H1, H2, TF1 and C2.
+- Free models are often unavailable: 7 of the 14 could not answer at the time (rate limits, overload, refusals), and the strongest-looking one, Nemotron 3 Ultra, never finished a session. Laguna S 2.1's free listing ends on 31 Oct 2026 (OpenRouter's `expiration_date`).
+- Gemini 3.8 and 3.7 Flash were overloaded all afternoon (HTTP 503 "currently experiencing high demand"), so 3.6 Flash was used.
+
+Runs at commit `76a03ac`. The two OpenRouter runs record `76a03ac+dirty`: during them only `docs/RUNBOOK.md`, `docs/OWNER_TODO.md` and the tracker seed list (`gui/seed.py`) were edited; no code they ran changed. Logs: kept outside the repository (scratch), the records are in the run folders.
+
 ## Setup
 
 | Item | Value |

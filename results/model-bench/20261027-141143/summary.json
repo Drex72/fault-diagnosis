@@ -1,0 +1,40 @@
+[
+  {
+    "model": "nvidia/nemotron-3.5-super-vl:free",
+    "model_version": "nvidia/nemotron-3.5-super-vl-20261015",
+    "server": "openrouter",
+    "think": false,
+    "date": "2026-10-27T14:12:26+01:00",
+    "commit": "76a03ac4fdc94c4ff0ab0ca7cdcabfd41c37ad17+dirty",
+    "policy_hash": "88b28c1f4c8a",
+    "sessions": 1,
+    "llm_calls": 11,
+    "accuracy": 1.0,
+    "invalid_rate": 0.0,
+    "content_parsed": 0,
+    "no_call": 0,
+    "timeouts": 0,
+    "server_parse_errors": 0,
+    "fallbacks": 0,
+    "submitted": 1,
+    "median_latency_s": 1.383,
+    "p95_latency_s": 3.081,
+    "peak_memory_gb": null,
+    "load_s": 0.0,
+    "cloud_requests": 11,
+    "cloud_prompt_tokens": 49338,
+    "cloud_completion_tokens": 592,
+    "cloud_reasoning_tokens": 0,
+    "cloud_cost_usd": 0.0,
+    "providers": {
+      "Nvidia": 11
+    },
+    "answered_by": "nvidia/nemotron-3.5-super-vl:free",
+    "temperature": 0.0,
+    "rpm": 15.0,
+    "crashes": 0,
+    "per_scenario": {
+      "F2": 1.0
+    }
+  }
+]

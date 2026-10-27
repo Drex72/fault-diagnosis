@@ -1,0 +1,39 @@
+[
+  {
+    "model": "gemini-3.6-flash",
+    "model_version": "gemini-3.6-flash",
+    "server": "gemini",
+    "think": true,
+    "date": "2026-10-27T13:55:30+01:00",
+    "commit": "76a03ac4fdc94c4ff0ab0ca7cdcabfd41c37ad17",
+    "policy_hash": "88b28c1f4c8a",
+    "sessions": 1,
+    "llm_calls": 10,
+    "accuracy": 1.0,
+    "invalid_rate": 0.0,
+    "content_parsed": 0,
+    "no_call": 0,
+    "timeouts": 0,
+    "server_parse_errors": 0,
+    "fallbacks": 0,
+    "submitted": 1,
+    "median_latency_s": 3.6935000000000002,
+    "p95_latency_s": 5.365,
+    "peak_memory_gb": null,
+    "load_s": 0.0,
+    "cloud_requests": 12,
+    "cloud_prompt_tokens": 45290,
+    "cloud_completion_tokens": 331,
+    "cloud_reasoning_tokens": 0,
+    "cloud_cost_usd": 0.0,
+    "providers": {},
+    "answered_by": "gemini-3.6-flash",
+    "temperature": 0.0,
+    "rpm": 8,
+    "crashes": 0,
+    "per_scenario": {
+      "F2": 1.0
+    },
+    "stopped": "https://generativelanguage.googleapis.com/v1beta/openai/chat/completions: the daily request quota is used up (HTTP 429); continue with --resume once it resets (Google's free tier: midnight Pacific time): [{\n  \"error\": {\n    \"code\": 429,\n    \"message\": \"You exceeded your current quota, please check your plan and billing details. For more information on this error, head to: https://ai.google.dev/gemini-api/docs/rate-limits. To monitor your current usage, head to: https://ai.dev/rate-limit. \\n* Quota e"
+  }
+]

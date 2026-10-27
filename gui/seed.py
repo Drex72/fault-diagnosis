@@ -71,6 +71,7 @@ _ISSUES = [
     ("issue", "No board connected yet: hardware results not run", "docs/OWNER_TODO.md", "high"),
     ("issue", "Replace the TypeSafe API key used for the Jev run (it was shared in a chat)", "docs/OWNER_TODO.md step 29", "medium"),
     ("issue", "Optional: make a free Gemini key for the cloud comparison", "docs/OWNER_TODO.md steps 34 to 37", "low"),
+    ("issue", "Replace the Gemini and OpenRouter keys (both were shared in a chat)", "docs/OWNER_TODO.md step 38", "medium"),
 ]
 
 SEED = {

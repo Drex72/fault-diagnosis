@@ -57,6 +57,13 @@ Every change to existing code, with the reason. Newest first within a phase.
 - `docs/ARCHITECTURE.md`, `docs/RUNBOOK.md` (new).
 - `.github/workflows/ci.yml` (new): pytest on every push and pull request, Python 3.12, simulation and mock devices only.
 
+## Free cloud models, real runs (27 Oct 2026)
+
+- `faultdiag/agent.py`, `OpenAICompatLLM`: with an API key (cloud only), a request that gets no reply at all (connection refused or reset, DNS failure) is tried again after 5, 10 and 20 s before the run stops. Reason: the first real Gemini session stopped on a one-off DNS failure (`[Errno 8]`). Local servers still stop at once (tested).
+- `tests/test_gemini.py`: that retry, and OpenRouter's "free-models-per-day" refusal as a daily quota.
+- Docs: the real free limits and which free models worked (`docs/model-benchmark.md`, "Free cloud models"; `docs/RUNBOOK.md`; `docs/OWNER_TODO.md` steps 36 to 38; `docs/DECISIONS.md`; `docs/PROGRESS.md`). `gui/seed.py`: tracker item to replace the two keys shared in the chat.
+- Results: `results/model-bench/20261027-135344` (gemini-3.6-flash, 1 of 21 sessions, stopped on the daily quota, to be continued with `--resume`), `20261027-135706` and `20261027-141229` (no session finished), `20261027-141027` and `20261027-141143` (one F2 session each).
+
 ## Gemini's free tier (27 Oct 2026)
 
 - `faultdiag/gemini.py` (new): the key (`GEMINI_API_KEY`) and the check before a run: the model is listed (`GET /models`), and one small request with the run's settings is accepted; reasoning off on a Gemini 3 model is refused, so the check asks for `--think`.
