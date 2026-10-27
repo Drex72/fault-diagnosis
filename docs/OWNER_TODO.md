@@ -95,3 +95,16 @@ The upper-bound test: does even the strongest available model, planning on top o
    Or tell the maintainer the key is saved in `~/.openrouter-key`, and they run it.
 33. **Decide on the full comparison** from the short test's accuracy and cost (the full run is about 16 times the short test's tokens).
 
+## H. Optional, free: Gemini through Google AI Studio (needs internet, no money)
+
+The same kind of cloud comparison as section G, on Google's free tier. Gemini 3.8 Flash is the strongest free model; the top paid one (Gemini 4 Argon) is not free, so this tests a strong cloud model, not the very top one. Details in `docs/RUNBOOK.md`, "Gemini, free".
+
+34. **Make a free key.** Sign in at https://aistudio.google.com/apikey with a Google account and create an API key. No card is needed; do not turn on billing, so it stays free.
+35. **Save the key on this laptop without showing it**, outside the repository (the command asks for it; nothing appears on screen):
+   `read -rs "k?Gemini key: " && printf '%s' "$k" > ~/.gemini-key && chmod 600 ~/.gemini-key && unset k`
+   Do not paste the key into a chat or any file in this folder.
+36. **Short test** (the same 21 sessions as every other planner, about 20 to 30 minutes):
+   `GEMINI_API_KEY="$(cat ~/.gemini-key)" .venv/bin/python scripts/bench_models.py --server gemini --models gemini-3.8-flash --think --timeout 180`
+   Or tell the maintainer the key is saved in `~/.gemini-key`, and they run it. If it stops with "the daily request quota is used up", run the command it prints (it ends with `--resume` and the results folder) after 8 am the next day.
+37. **Decide on the full comparison** from the short test. On the free tier it needs about 2,000 requests, so several days of quota; `--resume` continues it each day.
+

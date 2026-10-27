@@ -7,6 +7,9 @@
     python scripts/bench_models.py --server jev --models jev-1.14.0   # cloud; needs TYPESAFE_API_KEY
     python scripts/bench_models.py --server openrouter --models anthropic/claude-opus-5.5 --think \
         --timeout 180                                                 # cloud; needs OPENROUTER_API_KEY
+    python scripts/bench_models.py --server gemini --models gemini-3.8-flash --think \
+        --timeout 180                                                 # cloud, free tier; needs GEMINI_API_KEY
+    python scripts/bench_models.py <same options> --resume results/model-bench/<timestamp>   # continue a stopped run
 
 Reports, per model: diagnosis accuracy on a fixed scenario set, invalid
 tool-call rate, replies parsed from plain text, timeouts, replies the server
@@ -16,12 +19,16 @@ Ollama's /api/ps (the data `ollama ps` prints) or, for llama.cpp, from the
 resident size of the llama-server process.
 
 Exit codes: 0 ok, 2 model server not reachable, 3 a requested model is not
-available (the others are still benchmarked).
+available (the others are still benchmarked), 4 stopped part way (the model
+server went away, a free daily quota ran out, or Ctrl-C): what ran is saved,
+continue with --resume.
 Results: results/model-bench/<timestamp>/ (sessions.jsonl, summary.json; with
---engine-only, engine_reference.json instead of summary.json).
+--engine-only, engine_reference.json instead of summary.json); FAULTDIAG_RESULTS_DIR
+replaces results/ (the tests use it).
 """
 import argparse
 import json
+import os
 import statistics
 import subprocess
 import sys
@@ -34,12 +41,13 @@ from pathlib import Path
 ROOT = Path(__file__).resolve().parent.parent
 sys.path.insert(0, str(ROOT))
 
-from faultdiag import jev, openrouter  # noqa: E402
+from faultdiag import gemini, jev  # noqa: E402
 from faultdiag.agent import Agent, OpenAICompatLLM  # noqa: E402
 from faultdiag.engine import BayesEngine  # noqa: E402
 from faultdiag.guard import load_policy  # noqa: E402
 from faultdiag.harness import run_trial  # noqa: E402
 from faultdiag.logsetup import get_logger  # noqa: E402
+from faultdiag.methods import CLOUD_CHAT, DEFAULT_URL  # noqa: E402
 from faultdiag.runmeta import LAGOS, lagos_now, ollama_model_version, run_meta  # noqa: E402
 
 DEFAULT_SCENARIOS = "F2,C1,C2,H1,H2,TF1,TF2"
@@ -116,17 +124,22 @@ def pct(xs, q):
     return sorted(xs)[int(q * (len(xs) - 1))] if xs else float("nan")
 
 
-def bench_model(model, args, policy, engine, out_f) -> dict:
+def bench_model(model, args, policy, engine, out_f, done=(), prev=None) -> dict:
+    """done: this model's records from the run being resumed (kept, not run again);
+    prev: its summary row from that run, whose cloud usage is added on.
+    Returns the summary row; "stopped" is set if the run ended part way."""
     cloud_meta = {}
     if args.server == "jev":  # cloud: nothing to load or to measure in this laptop's memory
         llm = jev.JevLLM(args.base_url, model, args.jev_key, timeout_s=args.timeout)
         version, load_s, mem = args.model_version or model, 0.0, None
-    elif args.server == "openrouter":  # cloud, checked in main(): settings per model
+    elif args.server in CLOUD_CHAT:  # cloud, checked in main(): settings per model
         cfg = args.cloud_cfg[model]
         llm = OpenAICompatLLM(args.base_url, model, timeout_s=args.timeout, temperature=cfg["temperature"],
-                              extra=cfg["extra"], api_key=args.cloud_key)
+                              extra=cfg["extra"], api_key=args.cloud_key,
+                              min_interval_s=60 / args.rpm if args.rpm else 0.0)
         version, load_s, mem = args.model_version or cfg["version"], 0.0, None
-        cloud_meta = {"server": "openrouter", "temperature": cfg["temperature"]}
+        cloud_meta = {"server": args.server, "temperature": cfg["temperature"],
+                      **({"rpm": args.rpm} if args.rpm else {})}
     else:
         extra = {}
         if not args.think:
@@ -145,22 +158,41 @@ def bench_model(model, args, policy, engine, out_f) -> dict:
         mem = PeakMemory(args.server, args.base_url, model)
         mem.start()
     meta = {**run_meta("sim", policy), "model": model, "model_version": version, "think": args.think, **cloud_meta}
+    differ = sorted({k for r in done for k in ("policy_hash", "model_version", "think") if r.get(k) != meta[k]})
+    if differ:
+        if mem:
+            mem.stop()
+        sys.exit(f"cannot resume {model}: {', '.join(differ)} differ from the run being resumed")
     agent = Agent(llm, engine)
-    recs = []
-    for s in args.scenarios.split(","):
-        for t in range(args.trials):
-            rec = run_trial(s, f"hybrid:{model}", agent.run, 5000 + t, policy, meta)
-            recs.append(rec)
-            out_f.write(json.dumps(rec, default=str) + "\n")
-            out_f.flush()
+    recs, seen, stopped = list(done), {(r["scenario"], r["seed"]) for r in done}, None
+    if done:
+        log.info("%s: %d sessions kept from the run being resumed", model, len(done))
+    try:
+        for s in args.scenarios.split(","):
+            for t in range(args.trials):
+                if (s, 5000 + t) in seen:
+                    continue
+                rec = run_trial(s, f"hybrid:{model}", agent.run, 5000 + t, policy, meta)
+                recs.append(rec)
+                out_f.write(json.dumps(rec, default=str) + "\n")
+                out_f.flush()
+    except (ConnectionError, KeyboardInterrupt) as exc:  # keep what ran; --resume continues from here
+        stopped = str(exc) or "stopped by Ctrl-C"
+        log.error("%s stopped after %d sessions: %s", model, len(recs), stopped)
     peak = mem.stop() if mem else None
+    if not recs:
+        return {"model": model, "sessions": 0, "stopped": stopped}
 
     stats = [r["agent_stats"] for r in recs if r["agent_stats"]]
     lat = [x for s in stats for x in s["latency_s"]]
     calls = sum(s["llm_calls"] for s in stats) or 1
+    prev = prev or {}
+    prev_providers = prev.get("providers") or {}
+    ran = [s for s in args.scenarios.split(",") if any(r["scenario"] == s for r in recs)]
     return {
         "model": model, "model_version": version, "server": args.server, "think": args.think,
-        "date": lagos_now(), "commit": meta["commit"], "policy_hash": meta["policy_hash"],
+        "date": lagos_now(), "commit": ",".join(dict.fromkeys(r["commit"] for r in recs)),
+        "policy_hash": meta["policy_hash"],
         "sessions": len(recs), "llm_calls": calls,
         "accuracy": sum(r["correct"] for r in recs) / len(recs),
         "invalid_rate": sum(s["invalid"] for s in stats) / calls,
@@ -173,16 +205,23 @@ def bench_model(model, args, policy, engine, out_f) -> dict:
         "median_latency_s": statistics.median(lat) if lat else float("nan"),
         "p95_latency_s": pct(lat, 0.95),
         "peak_memory_gb": round(peak / 1e9, 2) if peak is not None else None, "load_s": load_s,
-        **({"jev_input_tokens": llm.usage["input_tokens"], "jev_requests": llm.usage["requests"],
-            "answered_by": llm.answered_by} if args.server == "jev" else {}),
-        **({"cloud_requests": llm.usage["requests"], "cloud_prompt_tokens": llm.usage["prompt_tokens"],
-            "cloud_completion_tokens": llm.usage["completion_tokens"],
-            "cloud_reasoning_tokens": llm.usage["reasoning_tokens"], "cloud_cost_usd": round(llm.usage["cost"], 4),
-            "providers": llm.providers, "answered_by": llm.answered_by, **cloud_meta}
-           if args.server == "openrouter" else {}),
+        **({"jev_input_tokens": llm.usage["input_tokens"] + prev.get("jev_input_tokens", 0),
+            "jev_requests": llm.usage["requests"] + prev.get("jev_requests", 0),
+            "answered_by": llm.answered_by or prev.get("answered_by")} if args.server == "jev" else {}),
+        **({"cloud_requests": llm.usage["requests"] + prev.get("cloud_requests", 0),
+            "cloud_prompt_tokens": llm.usage["prompt_tokens"] + prev.get("cloud_prompt_tokens", 0),
+            "cloud_completion_tokens": llm.usage["completion_tokens"] + prev.get("cloud_completion_tokens", 0),
+            "cloud_reasoning_tokens": llm.usage["reasoning_tokens"] + prev.get("cloud_reasoning_tokens", 0),
+            "cloud_cost_usd": round(llm.usage["cost"] + prev.get("cloud_cost_usd", 0), 4),
+            "providers": {p: llm.providers.get(p, 0) + prev_providers.get(p, 0)
+                          for p in {**prev_providers, **llm.providers}},
+            "answered_by": llm.answered_by or prev.get("answered_by"), **cloud_meta}
+           if args.server in CLOUD_CHAT else {}),
         "crashes": sum(r["error"] is not None for r in recs),
-        "per_scenario": {s: sum(r["correct"] for r in recs if r["scenario"] == s) / args.trials
-                         for s in args.scenarios.split(",")},
+        "per_scenario": {s: sum(r["correct"] for r in recs if r["scenario"] == s)
+                         / sum(r["scenario"] == s for r in recs) for s in ran},
+        **({"resumed_sessions": len(done)} if done else {}),
+        **({"stopped": stopped} if stopped else {}),
     }
 
 
@@ -207,19 +246,26 @@ def main():
     ap.add_argument("--models", default=None, help="comma-separated; required unless --engine-only")
     ap.add_argument("--engine-only", action="store_true",
                     help="run method C alone on the same scenarios and seeds (no model server needed)")
-    ap.add_argument("--server", choices=["ollama", "llamacpp", "jev", "openrouter"], default="ollama",
+    ap.add_argument("--server", choices=list(DEFAULT_URL), default="ollama",
                     help="jev: TypeSafe's cloud decision model (internet and TYPESAFE_API_KEY needed); "
-                         "openrouter: cloud chat models such as anthropic/claude-opus-5.5 (OPENROUTER_API_KEY)")
+                         "openrouter: cloud chat models such as anthropic/claude-opus-5.5 (OPENROUTER_API_KEY); "
+                         "gemini: Google's Gemini, free tier for some models (GEMINI_API_KEY)")
     ap.add_argument("--base-url", default=None,
-                    help="default: Ollama on :11434, llama.cpp on :8080, Jev at TypeSafe, OpenRouter")
+                    help="default: Ollama on :11434, llama.cpp on :8080, Jev at TypeSafe, OpenRouter, Gemini")
     ap.add_argument("--scenarios", default=DEFAULT_SCENARIOS)
     ap.add_argument("--trials", type=int, default=3)
     ap.add_argument("--timeout", type=float, default=60, help="seconds per model reply")
     ap.add_argument("--think", action="store_true", help="leave a thinking model's reasoning on")
     ap.add_argument("--model-version", default=None, help="for llama.cpp: e.g. sha256 prefix of the GGUF")
+    ap.add_argument("--rpm", type=float, default=None,
+                    help="at most this many model requests a minute (cloud chat servers; gemini defaults to "
+                         f"{gemini.FREE_TIER_RPM})")
+    ap.add_argument("--resume", default=None, metavar="RUN_DIR",
+                    help="continue a stopped benchmark in RUN_DIR with the same options: recorded sessions are kept")
     args = ap.parse_args()
+    bench_root = Path(os.environ.get("FAULTDIAG_RESULTS_DIR", ROOT / "results")) / "model-bench"
     if args.engine_only:
-        out = ROOT / "results" / "model-bench" / datetime.now(LAGOS).strftime("%Y%m%d-%H%M%S")
+        out = bench_root / datetime.now(LAGOS).strftime("%Y%m%d-%H%M%S")
         out.mkdir(parents=True, exist_ok=True)
         with open(out / "sessions.jsonl", "a") as f:
             ref = engine_reference(args, load_policy(), BayesEngine(), f)
@@ -229,8 +275,9 @@ def main():
         return
     if not args.models:
         ap.error("--models is required unless --engine-only is given")
-    args.base_url = args.base_url or {"ollama": "http://localhost:11434/v1", "llamacpp": "http://localhost:8080/v1",
-                                      "jev": jev.DEFAULT_URL, "openrouter": openrouter.DEFAULT_URL}[args.server]
+    args.base_url = args.base_url or DEFAULT_URL[args.server]
+    if args.server == "gemini" and not args.rpm:
+        args.rpm = gemini.FREE_TIER_RPM
 
     args.cloud_cfg = {}
     if args.server == "jev":
@@ -241,15 +288,16 @@ def main():
             print(f"ERROR: {exc}", file=sys.stderr)
             sys.exit(2)
         pulled = None
-    elif args.server == "openrouter":
+    elif args.server in CLOUD_CHAT:
+        cloud = CLOUD_CHAT[args.server]
         try:
-            args.cloud_key = openrouter.api_key()
+            args.cloud_key = cloud.api_key()
         except ValueError as exc:
             print(f"ERROR: {exc}", file=sys.stderr)
             sys.exit(2)
         for m in args.models.split(","):
             try:
-                args.cloud_cfg[m] = openrouter.check(args.base_url, m, args.cloud_key, args.think)
+                args.cloud_cfg[m] = cloud.check(args.base_url, m, args.cloud_key, args.think)
             except ValueError as exc:
                 print(f"ERROR: {exc}", file=sys.stderr)
                 if "API key" in str(exc) or "cannot reach" in str(exc):
@@ -259,7 +307,7 @@ def main():
         pulled = preflight(args.server, args.base_url)
     models, missing = [], []
     for m in args.models.split(","):
-        if args.server == "openrouter" and m not in args.cloud_cfg:
+        if args.server in CLOUD_CHAT and m not in args.cloud_cfg:
             print(f"ERROR: skipping {m} (see above).", file=sys.stderr)
             missing.append(m)
         elif pulled is not None and m not in pulled and f"{m}:latest" not in pulled:
@@ -272,14 +320,42 @@ def main():
     if not models:
         sys.exit(3)
     policy, engine = load_policy(), BayesEngine()
-    out = ROOT / "results" / "model-bench" / datetime.now(LAGOS).strftime("%Y%m%d-%H%M%S")
+    done, prev = {}, {}
+    if args.resume:
+        out = Path(args.resume)
+        try:
+            lines = (out / "sessions.jsonl").read_text().splitlines()
+        except OSError as exc:
+            sys.exit(f"cannot resume {out}: {exc}")
+        wanted = {(s, 5000 + t) for s in args.scenarios.split(",") for t in range(args.trials)}
+        for r in map(json.loads, filter(None, lines)):
+            if r.get("method", "").startswith("hybrid:") and (r["scenario"], r["seed"]) in wanted:
+                done.setdefault(r["method"].removeprefix("hybrid:"), []).append(r)
+        if (out / "summary.json").exists():
+            prev = {r["model"]: r for r in json.loads((out / "summary.json").read_text())}
+        for m in done:
+            if m in models and m not in prev:
+                log.warning("%s: no summary row in %s, so cloud usage before the stop is not counted", m, out)
+    else:
+        out = bench_root / datetime.now(LAGOS).strftime("%Y%m%d-%H%M%S")
     out.mkdir(parents=True, exist_ok=True)
-    rows = []
+    rows = [r for m, r in prev.items() if m not in models]  # other models in a resumed run stay as they were
+    stopped = None
     with open(out / "sessions.jsonl", "a") as f:
         for m in models:
-            rows.append(bench_model(m, args, policy, engine, f))
+            p, d = prev.get(m), done.get(m, [])
+            if p and not p.get("stopped") and len(d) == len(args.scenarios.split(",")) * args.trials:
+                log.info("%s: already complete in %s", m, out)
+                rows.append(p)
+                continue
+            row = bench_model(m, args, policy, engine, f, d, p)
             unload(args.server, args.base_url, m)
+            if row["sessions"]:
+                rows.append(row)
             (out / "summary.json").write_text(json.dumps(rows, indent=2))
+            if row.get("stopped"):
+                stopped = (m, row)
+                break
 
     print("\nMODEL BENCHMARK (simulated bench, hybrid planner)\n")
     print("| Model | Version | Accuracy | Invalid call rate | Plain-text parsed | Timeouts | Unparseable | Fallbacks | "
@@ -287,15 +363,23 @@ def main():
     print("|---|---|---|---|---|---|---|---|---|---|---|---|")
     for r in rows:
         mem_gb = "cloud" if r["peak_memory_gb"] is None else f"{r['peak_memory_gb']:.1f}"
-        print(f"| {r['model']} | {r['model_version']} | {r['accuracy']:.0%} | {r['invalid_rate']:.1%} | "
+        print(f"| {r['model']}{' (partial)' if r.get('stopped') else ''} | {r['model_version']} | {r['accuracy']:.0%} | {r['invalid_rate']:.1%} | "
               f"{r['content_parsed']} | {r['timeouts']} | {r['server_parse_errors']} | {r['fallbacks']} | {r['median_latency_s']:.2f} | "
               f"{r['p95_latency_s']:.2f} | {mem_gb} | {r['crashes']} |")
     for r in rows:
         if "cloud_cost_usd" in r:
+            billing = (f"${r['cloud_cost_usd']:.2f} by OpenRouter's count; providers {r['providers']}"
+                       if r.get("server") == "openrouter" else f"{r.get('server')}, no charge reported")
             print(f"\n{r['model']}: {r['cloud_requests']} requests, {r['cloud_prompt_tokens']:,} input and "
                   f"{r['cloud_completion_tokens']:,} output tokens ({r['cloud_reasoning_tokens']:,} of them reasoning), "
-                  f"${r['cloud_cost_usd']:.2f} by OpenRouter's count; providers {r['providers']}")
+                  f"{billing}")
     print(f"\nSaved to {out}")
+    if stopped:
+        m, row = stopped
+        print(f"\nSTOPPED part way on {m} after {row['sessions']} of "
+              f"{len(args.scenarios.split(',')) * args.trials} sessions: {row['stopped']}\n"
+              f"Continue with the same options plus --resume {out}", file=sys.stderr)
+        sys.exit(4)
     if missing:
         sys.exit(3)
 

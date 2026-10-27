@@ -214,7 +214,7 @@ function pageLive(view) {
         h("label", {}, "Seed", h("input", { name: "seed", type: "number", min: 0, placeholder: "random" }))),
       h("div", { class: "form-row llm-only", style: "margin-top:.6rem" },
         h("label", {}, "Model", h("input", { name: "model", placeholder: "for example qwen3:8b", value: savedModel() })),
-        h("label", {}, "Model server", h("select", { name: "server" }, h("option", { value: "ollama" }, "Ollama"), h("option", { value: "llamacpp" }, "llama.cpp server"), h("option", { value: "jev" }, "Jev (TypeSafe cloud)"), h("option", { value: "openrouter" }, "OpenRouter (cloud)"))),
+        h("label", {}, "Model server", h("select", { name: "server" }, h("option", { value: "ollama" }, "Ollama"), h("option", { value: "llamacpp" }, "llama.cpp server"), h("option", { value: "jev" }, "Jev (TypeSafe cloud)"), h("option", { value: "openrouter" }, "OpenRouter (cloud)"), h("option", { value: "gemini" }, "Gemini (Google cloud, free tier)"))),
         h("label", { class: "check" }, h("input", { name: "think", type: "checkbox" }), "Thinking on")),
       h("label", { class: "check hw-run", style: "margin-top:.6rem" }, h("input", { name: "allow_stale_calibration", type: "checkbox" }), "Run even if the calibration is stale"),
       h("div", { class: "actions" },
@@ -635,7 +635,7 @@ async function pageModels(view) {
       h("section", { class: "panel" }, h("h2", {}, "Latest benchmark per model"), table(
         [th("Model"), th("Version"), th("Sessions", "num"), th("Correct", "num"), th("Invalid calls", "num"), th("Plain-text parsed", "num"), th("No call", "num"),
          th("Timeouts", "num"), th("Fallbacks", "num"), th("Median latency", "num"), th("p95 latency", "num"), th("Peak memory", "num"), th("Run")],
-        d.latest.map((m) => h("tr", {}, h("td", {}, h("b", {}, m.model), h("span", { class: "cell-sub" }, `${m.server}${m.think ? ", thinking on" : ""}`)),
+        d.latest.map((m) => h("tr", {}, h("td", {}, h("b", {}, m.model), h("span", { class: "cell-sub" }, `${m.server}${m.think ? ", thinking on" : ""}${m.stopped ? ", stopped part way (continue with --resume)" : ""}`)),
           h("td", {}, h("code", {}, m.model_version || "n/a")), h("td", { class: "num" }, m.sessions), h("td", { class: "num" }, pct(m.accuracy)),
           h("td", { class: "num" }, pct(m.invalid_rate)), h("td", { class: "num" }, m.content_parsed), h("td", { class: "num" }, m.no_call),
           h("td", { class: "num" }, m.timeouts), h("td", { class: "num" }, m.fallbacks), h("td", { class: "num" }, `${num(m.median_latency_s, 2)} s`),

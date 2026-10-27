@@ -57,6 +57,16 @@ Every change to existing code, with the reason. Newest first within a phase.
 - `docs/ARCHITECTURE.md`, `docs/RUNBOOK.md` (new).
 - `.github/workflows/ci.yml` (new): pytest on every push and pull request, Python 3.12, simulation and mock devices only.
 
+## Gemini's free tier (27 Oct 2026)
+
+- `faultdiag/gemini.py` (new): the key (`GEMINI_API_KEY`) and the check before a run: the model is listed (`GET /models`), and one small request with the run's settings is accepted; reasoning off on a Gemini 3 model is refused, so the check asks for `--think`.
+- `faultdiag/agent.py`, `OpenAICompatLLM`: `min_interval_s` spaces requests out (a free tier's per-minute limit); a 429 that names a per-day quota stops at once with a `--resume` hint instead of retrying; retry waits use Google's `retryDelay` when there is no `Retry-After` header; `last_wait_s` is the time a call spent waiting. `Agent`: that waiting is left out of the recorded reply latency (before, a retry's wait was counted; retries happen only with a key, so local runs are unchanged).
+- `faultdiag/methods.py`: `--server gemini` (8 requests a minute unless `--rpm`; records carry `server: gemini`, `temperature` and `rpm`). `_Observed` passes the wrapped client's counters through.
+- `scripts/run_experiment.py`: `--server gemini`, `--rpm`. `scripts/bench_models.py`: `--server gemini`, `--rpm`, `--resume` (sessions already recorded for a model are kept and not run again; its earlier cloud usage is added on); a model server that goes away, a used-up daily quota or Ctrl-C now saves a partial summary row marked `stopped` and exits 4 with the command to continue, where before it ended with a traceback; `FAULTDIAG_RESULTS_DIR` replaces `results/` as in `run_experiment.py`. Per-scenario accuracy divides by the sessions that ran, which is the same as before for a complete run.
+- `gui/static/app.js`: "Gemini (Google cloud, free tier)" in the Model server menu; a stopped benchmark row is marked on the Models page. `gui/seed.py`: tracker item for the optional key.
+- `tests/test_gemini.py` (new, 10 tests) against a fake Gemini: a full E session with pacing, latency without the waits, thought signatures sent back and the key in no record or log; the checks; a per-minute limit waited out; a per-day limit stopping without retries; the benchmark stopping on the quota and finishing with `--resume`.
+- Docs: `docs/DECISIONS.md`, `docs/RUNBOOK.md`, `docs/OWNER_TODO.md` section H (steps 34 to 37), `README.md`, `docs/ARCHITECTURE.md`, `docs/PROGRESS.md`.
+
 ## Cloud chat models through OpenRouter (27 Oct 2026)
 
 - `faultdiag/openrouter.py` (new): the key (`OPENROUTER_API_KEY`) and the check before a run: the key is accepted (`GET /key`), the model exists and calls tools, and which request fields it accepts (`GET /models`). Reason: the owner asked for an upper-bound test with a frontier cloud model (`docs/DECISIONS.md`).

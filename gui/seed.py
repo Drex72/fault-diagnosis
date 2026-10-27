@@ -70,6 +70,7 @@ _ISSUES = [
     ("risk", "Unpowered USB hub may brown out the relay coils", "item 7", "low"),
     ("issue", "No board connected yet: hardware results not run", "docs/OWNER_TODO.md", "high"),
     ("issue", "Replace the TypeSafe API key used for the Jev run (it was shared in a chat)", "docs/OWNER_TODO.md step 29", "medium"),
+    ("issue", "Optional: make a free Gemini key for the cloud comparison", "docs/OWNER_TODO.md steps 34 to 37", "low"),
 ]
 
 SEED = {

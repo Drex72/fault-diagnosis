@@ -83,24 +83,33 @@ class LLMBadOutput(ValueError):
 _PARSE_ERROR = re.compile(r"syntax error|failed to parse|parsing|unmarshal|invalid character", re.I)
 # Cloud servers only (an API key is set): a rate limit or a busy provider is waited out.
 RETRY_STATUS = {429, 500, 502, 503, 504, 524, 529}
+# A free tier's daily quota (Google: quotaId "...PerDay...", OpenRouter: "free-models-per-day"):
+# waiting a minute will not help.
+_PER_DAY = re.compile(r"per[ _-]?day", re.I)
+_RETRY_DELAY = re.compile(r'"retryDelay":\s*"(\d+(?:\.\d+)?)s"')
 
 
-def retry_after(exc, default: float) -> float:
-    """Seconds to wait from a Retry-After header (seconds form), capped at a minute."""
+def retry_after(exc, default: float, body: str = "") -> float:
+    """Seconds to wait from a Retry-After header (seconds form), or Google's "retryDelay"
+    in the error body, capped at a minute."""
     try:
         return min(60.0, float((exc.headers or {}).get("Retry-After")))
     except (TypeError, ValueError):
-        return default
+        m = _RETRY_DELAY.search(body)
+        return min(60.0, float(m.group(1))) if m else default
 
 
 class OpenAICompatLLM:
     def __init__(self, base_url: str, model: str, timeout_s: float = 180, temperature: float | None = 0.0,
-                 extra: dict | None = None, api_key: str | None = None, max_retries: int = 3):
+                 extra: dict | None = None, api_key: str | None = None, max_retries: int = 3,
+                 min_interval_s: float = 0.0):
         """extra: additional request fields, e.g. {"reasoning_effort": "none"} to
         switch off a thinking model's reasoning on Ollama. temperature None leaves it
-        out (cloud models that ignore it). api_key: for a cloud server (OpenRouter), sent
-        only in the request header; with a key, RETRY_STATUS replies are retried up to
-        max_retries times. Local servers get no retries, as before."""
+        out (cloud models that ignore it). api_key: for a cloud server (OpenRouter, Gemini),
+        sent only in the request header; with a key, RETRY_STATUS replies are retried up to
+        max_retries times. Local servers get no retries, as before. min_interval_s spaces
+        requests out (a free tier's requests-per-minute limit); last_wait_s is the time the
+        latest call spent waiting (pacing and retries), which the agent leaves out of latency."""
         self.url = base_url.rstrip("/") + "/chat/completions"
         self.model, self.timeout_s, self.temperature = model, timeout_s, temperature
         self.extra = extra or {}
@@ -108,28 +117,45 @@ class OpenAICompatLLM:
         if api_key:
             self._headers["Authorization"] = f"Bearer {api_key}"
         self.max_retries = max_retries if api_key else 0
+        self.min_interval_s, self._last_sent, self.last_wait_s = min_interval_s, None, 0.0
         self.usage = {"requests": 0, "prompt_tokens": 0, "completion_tokens": 0, "reasoning_tokens": 0, "cost": 0.0}
         self.answered_by, self.providers = None, {}
+
+    def _wait(self, seconds: float):
+        if seconds > 0:
+            time.sleep(seconds)
+            self.last_wait_s += seconds
 
     def __call__(self, messages: list[dict], tools: list[dict]) -> dict:
         fields = {"model": self.model, "messages": messages, "tools": tools, "stream": False, **self.extra}
         if self.temperature is not None:
             fields["temperature"] = self.temperature
         body = json.dumps(fields).encode()
+        self.last_wait_s = 0.0
         for attempt in range(self.max_retries + 1):
+            if self.min_interval_s and self._last_sent is not None:
+                gap = self._last_sent + self.min_interval_s - time.monotonic()
+                if gap > 0:
+                    log.debug("pacing: waiting %.1f s before the next request to %s", gap, self.url)
+                self._wait(gap)
+            self._last_sent = time.monotonic()
             req = urllib.request.Request(self.url, body, self._headers)
             try:
                 with urllib.request.urlopen(req, timeout=self.timeout_s) as resp:
                     out = json.loads(resp.read())
             except urllib.error.HTTPError as exc:  # server up, request refused (e.g. model not pulled)
-                detail = exc.read()[:300].decode("utf-8", "replace")
+                full = exc.read().decode("utf-8", "replace")
+                detail = full[:300]
                 if exc.code >= 500 and _PARSE_ERROR.search(detail):
                     raise LLMBadOutput(f"{self.url} could not parse the model's reply (HTTP {exc.code}): {detail}") from exc
+                if exc.code == 429 and _PER_DAY.search(full):
+                    raise LLMUnavailable(f"{self.url}: the daily request quota is used up (HTTP 429); continue with --resume "
+                                         f"once it resets (Google's free tier: midnight Pacific time): {detail}") from exc
                 if exc.code in RETRY_STATUS and attempt < self.max_retries:
-                    wait = retry_after(exc, 2 ** attempt)
+                    wait = retry_after(exc, 2 ** attempt, full)
                     log.warning("%s returned HTTP %d (attempt %d); asking again in %.0f s: %s",
                                 self.url, exc.code, attempt + 1, wait, detail)
-                    time.sleep(wait)
+                    self._wait(wait)
                     continue
                 hint = {401: "; check the API key", 402: "; out of credits",
                         403: "; the key is not allowed this model or has reached its limit"}.get(exc.code, "")
@@ -145,7 +171,7 @@ class OpenAICompatLLM:
             if err.get("code") in RETRY_STATUS and attempt < self.max_retries:
                 log.warning("%s returned an error (attempt %d); asking again in %d s: %s",
                             self.url, attempt + 1, 2 ** attempt, json.dumps(err)[:300])
-                time.sleep(2 ** attempt)
+                self._wait(2 ** attempt)
                 continue
             raise LLMUnavailable(f"{self.url} returned no reply: {json.dumps(out)[:300]}")
         self._count(out)
@@ -248,20 +274,20 @@ class Agent:
             try:
                 msg = self.llm(ctx, tools)
             except TimeoutError as exc:  # count as invalid and fall back at once: a retry would wait again
-                stats["latency_s"].append(round(time.perf_counter() - t0, 3))
+                stats["latency_s"].append(round(time.perf_counter() - t0 - getattr(self.llm, "last_wait_s", 0.0), 3))
                 stats["llm_calls"] += 1
                 stats["invalid"] += 1
                 stats["timeouts"] += 1
                 log.warning("model timed out (attempt %d): %s", attempt + 1, exc)
                 return None
             except LLMBadOutput as exc:  # same reply again at temperature 0, so fall back at once
-                stats["latency_s"].append(round(time.perf_counter() - t0, 3))
+                stats["latency_s"].append(round(time.perf_counter() - t0 - getattr(self.llm, "last_wait_s", 0.0), 3))
                 stats["llm_calls"] += 1
                 stats["invalid"] += 1
                 stats["server_parse_errors"] += 1
                 log.warning("server rejected the model's reply (attempt %d): %s", attempt + 1, exc)
                 return None
-            stats["latency_s"].append(round(time.perf_counter() - t0, 3))
+            stats["latency_s"].append(round(time.perf_counter() - t0 - getattr(self.llm, "last_wait_s", 0.0), 3))
             stats["llm_calls"] += 1
             assistant = {"role": "assistant", "content": msg.get("content") or ""}
             if msg.get("tool_calls"):

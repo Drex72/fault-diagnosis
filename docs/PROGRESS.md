@@ -12,11 +12,12 @@ Everything that can be done without the physical bench is done. The hardware run
 - Bench and injector ESP32 firmware (`firmware/`), with every electrical limit enforced on the board. The serial transport, mock devices, calibration, the blind hardware runner, and scripts for the firmware self-test, injector check and noise refit.
 - The offline dashboard (`gui/`): live session, experiments, models, calibration, project tracker.
 - Added after Phase 2, at the owner's request: Jev (TypeSafe's cloud decision model) as an optional planner for D and E (`--server jev`). Tested against a fake server, then run against the real service in simulation with the owner's key.
+- Also optional: cloud chat models as the planner, through OpenRouter (paid; `--server openrouter`) or Google's free Gemini tier (`--server gemini`). Both tested against fake servers; neither run against the real service yet (no key).
 - Docs: `README.md`, `docs/ARCHITECTURE.md`, `docs/HARDWARE.md`, `docs/RUNBOOK.md`, `docs/DECISIONS.md`, `docs/model-benchmark.md`, `docs/OWNER_TODO.md`, `CHANGELOG.md`. CI on GitHub runs the tests on every push.
 
 **Tested, and how (all run on 27 Oct 2026 unless noted):**
 
-- `.venv/bin/python -m pytest -q`: 87 passed. This covers the simulator, engine, guard, agent (with a scripted model and local fake servers, including a fake Jev), serial transport and scripts (against mock devices, including over a real pseudo-terminal), and the dashboard API (against a real server).
+- `.venv/bin/python -m pytest -q`: 108 passed. This covers the simulator, engine, guard, agent (with a scripted model and local fake servers, including fake Jev, OpenRouter and Gemini servers), serial transport and scripts (against mock devices, including over a real pseudo-terminal), and the dashboard API (against a real server).
 - Firmware logic, native unit tests (`pio test -e native`): bench 18 passed, injector 4 passed. Both firmwares compile for the ESP32.
 - Dashboard checked in a browser on 26 Oct with a mock-bench session, and at phone width.
 - A fresh clone from GitHub, set up with only the README, passes the tests, runs a simulated experiment and starts the dashboard (details under Phase 5).
@@ -239,6 +240,12 @@ How it was compared: `jev_compare.py` (a throwaway script, not in the repo) pair
 - The upper-bound test the owner asked for after the Jev results: if even the strongest model available cannot make the hybrid beat the engine, the finding is about the design, not the model. `--server openrouter` sends the agent's usual chat requests to OpenRouter with an API key (`faultdiag/openrouter.py`); first model `anthropic/claude-opus-5.5`, which always reasons (`--think`) and ignores temperature. Reasons: `docs/DECISIONS.md`.
 - Tested against a fake OpenRouter in `tests/test_openrouter.py` (11 tests, all passing), and the benchmark script end to end against the same fake in a scratch copy of the repository (2 sessions; tokens and cost recorded, the key in no output or file).
 - Not run against the real service: it needs the owner's OpenRouter key and credits (`docs/OWNER_TODO.md` steps 30 to 33). Estimated cost of the 21-session short test on Opus 5.5: about 1 million input tokens (from qwen3:8b's context sizes on the same sessions), so about 4 dollars of input plus 1 to 7 dollars of reasoning and output; the script prints the real figure.
+
+## After Phase 2: Gemini's free tier (27 Oct 2026; built, not yet run)
+
+- The owner has no OpenRouter credits, so the cloud comparison was added on Google's free tier too: `--server gemini`, model `gemini-3.8-flash`, the strongest free model (`faultdiag/gemini.py`; reasons in `docs/DECISIONS.md`). It is a strong cloud model, not the very top one (Gemini 4 Argon is paid only), so the OpenRouter upper-bound test above stays open.
+- Free-tier limits are handled: requests are spaced out (8 a minute by default), a per-minute limit is waited out, and a used-up daily quota stops the run with every finished session kept; `bench_models.py --resume` continues it. Waiting is not counted as reply latency.
+- Tested against a fake Gemini in `tests/test_gemini.py` (10 tests, all passing; the full suite is 108 passed). Not run against the real service: it needs the owner's free key (`docs/OWNER_TODO.md` steps 34 to 37).
 
 ## Phase 3: hardware (software done 26 Oct 2026; hardware runs waiting on the owner)
 

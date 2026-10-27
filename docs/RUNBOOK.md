@@ -58,6 +58,15 @@ OPENROUTER_API_KEY="$(cat ~/.openrouter-key)" .venv/bin/python scripts/bench_mod
 
 The first line asks for the key without showing it. Model names are OpenRouter's ids (https://openrouter.ai/models). Before any session the script checks the key, that the model exists and calls tools, and what it accepts: Claude Opus 5.5 and Sonnet 5.5 always reason, so they need `--think` (their default effort, high), and they ignore temperature, so it is not sent and the record says `temperature: null`. The summary prints the tokens used and OpenRouter's cost. A refused key, no credits (HTTP 402) or an unknown model stops the script before any session; rate limits and busy providers are waited out up to 3 times. For the full comparison, use `run_experiment.py` with the same `--server openrouter --model <id> --think` options. Set a credit limit on the key in OpenRouter's settings to cap what a run can spend. Steps for the owner: `docs/OWNER_TODO.md` steps 30 to 33.
 
+**Gemini, free (optional)**: Google's Gemini API has a free tier, so this cloud comparison costs nothing. Make a key at https://aistudio.google.com/apikey (a Google account is enough, no card), then save it and run:
+
+```bash
+read -rs "k?Gemini key: " && printf '%s' "$k" > ~/.gemini-key && chmod 600 ~/.gemini-key && unset k
+GEMINI_API_KEY="$(cat ~/.gemini-key)" .venv/bin/python scripts/bench_models.py --server gemini --models gemini-3.8-flash --think --timeout 180
+```
+
+Free models on 27 Oct 2026 include Gemini 3.8 Flash (the strongest free one), 3.5 Flash-Lite and 2.5 Flash; Gemini 4 Argon and 3.1 Pro are paid only, so this tests a strong cloud model, not the very top one. Gemini 3 models always reason, so `--think` is required. Before any session the script checks the key, that the model is listed, and sends one small request with the run's settings. The free tier limits requests per minute and per day (your limits: https://aistudio.google.com/rate-limit): the scripts send at most 8 requests a minute by default (`--rpm` changes it) and wait out a per-minute limit. When the day's quota runs out, the script stops at once, keeps every finished session, and prints the command to continue with `--resume` after the quota resets at midnight Pacific time (8 am in Lagos until 1 Nov 2026, then 9 am). The 21-session test is about 140 requests, about 20 to 30 minutes. The time spent waiting is left out of the recorded reply latency. Google may use free-tier requests to improve its products; they carry only simulated bench readings. For the full comparison, `run_experiment.py --methods llm,hybrid --server gemini --model gemini-3.8-flash --think` (about 2,000 requests, so several days of free quota, continued each day with `--resume`). Steps for the owner: `docs/OWNER_TODO.md` steps 34 to 37.
+
 ## After calibration
 
 Run after every new calibration record (`docs/OWNER_TODO.md` step 18).

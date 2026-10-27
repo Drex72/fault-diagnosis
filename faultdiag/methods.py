@@ -5,7 +5,7 @@
 """
 from __future__ import annotations
 
-from . import jev, openrouter
+from . import gemini, jev, openrouter
 from .agent import Agent, OpenAICompatLLM
 from .baselines import run_fixed, run_tree
 from .engine import BayesEngine
@@ -16,9 +16,11 @@ log = get_logger("methods")
 
 METHODS = ("fixed", "tree", "bayes", "llm", "hybrid")
 DEFAULT_URL = {"ollama": "http://localhost:11434/v1", "llamacpp": "http://localhost:8080/v1", "jev": jev.DEFAULT_URL,
-               "openrouter": openrouter.DEFAULT_URL}
-# jev: TypeSafe's cloud decision model (faultdiag/jev.py); openrouter: cloud chat models (faultdiag/openrouter.py)
+               "openrouter": openrouter.DEFAULT_URL, "gemini": gemini.DEFAULT_URL}
+# jev: TypeSafe's cloud decision model (faultdiag/jev.py); openrouter and gemini: cloud chat models
+# with an API key (faultdiag/openrouter.py, faultdiag/gemini.py)
 SERVERS = tuple(DEFAULT_URL)
+CLOUD_CHAT = {"openrouter": openrouter, "gemini": gemini}
 
 
 def llm_extra(server: str, think: bool) -> dict:
@@ -34,6 +36,11 @@ class _Observed:
     def __init__(self, llm, on_reply):
         self.llm, self.on_reply = llm, on_reply
 
+    def __getattr__(self, name):  # the wrapped client's counters (usage, last_wait_s)
+        if name == "llm":
+            raise AttributeError(name)
+        return getattr(self.llm, name)
+
     def __call__(self, messages, tools):
         msg = self.llm(messages, tools)
         try:
@@ -44,9 +51,11 @@ class _Observed:
 
 
 def build_methods(names, model: str | None = None, server: str = "ollama", base_url: str | None = None,
-                  think: bool = False, timeout_s: float = 180, model_version: str | None = None, on_reply=None):
+                  think: bool = False, timeout_s: float = 180, model_version: str | None = None, on_reply=None,
+                  rpm: float | None = None):
     """Returns (methods, method_meta): name -> fn(guard, seed), name -> record extras.
-    on_reply(message): optional, called with every model reply."""
+    on_reply(message): optional, called with every model reply. rpm: at most this many model
+    requests per minute, for a cloud chat server's rate limit (Gemini's free tier by default)."""
     base_url = base_url or DEFAULT_URL[server]
     engine = BayesEngine()
     methods, meta = {}, {}
@@ -70,18 +79,20 @@ def build_methods(names, model: str | None = None, server: str = "ollama", base_
                 methods[m] = agent.run
                 meta[m] = {"model": model, "think": False, "model_version": model_version or model, "server": "jev"}
                 continue
-            if server == "openrouter":  # key, model and settings checked once before the run
+            if server in CLOUD_CHAT:  # key, model and settings checked once before the run
                 if cloud is None:
-                    key = openrouter.api_key()
-                    cloud = {**openrouter.check(base_url, model, key, think), "key": key}
-                log.info("method %s: model %s on %s, request extras %s, temperature %s",
-                         m, model, base_url, cloud["extra"], cloud["temperature"])
+                    key = CLOUD_CHAT[server].api_key()
+                    cloud = {**CLOUD_CHAT[server].check(base_url, model, key, think), "key": key}
+                pace = rpm or (gemini.FREE_TIER_RPM if server == "gemini" else None)
+                log.info("method %s: model %s on %s, request extras %s, temperature %s, at most %s requests a minute",
+                         m, model, base_url, cloud["extra"], cloud["temperature"], pace or "any")
                 llm = OpenAICompatLLM(base_url, model, timeout_s=timeout_s, temperature=cloud["temperature"],
-                                      extra=cloud["extra"], api_key=cloud["key"])
+                                      extra=cloud["extra"], api_key=cloud["key"],
+                                      min_interval_s=60 / pace if pace else 0.0)
                 agent = Agent(_Observed(llm, on_reply) if on_reply else llm, engine if m == "hybrid" else None)
                 methods[m] = agent.run
                 meta[m] = {"model": model, "think": think, "model_version": model_version or cloud["version"],
-                           "server": "openrouter", "temperature": cloud["temperature"]}
+                           "server": server, "temperature": cloud["temperature"], **({"rpm": pace} if pace else {})}
                 continue
             extra = llm_extra(server, think)
             log.info("method %s: model %s on %s, request extras %s", m, model, base_url, extra)
