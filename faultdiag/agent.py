@@ -15,6 +15,7 @@ import re
 import time
 import urllib.error
 import urllib.request
+from datetime import datetime, timezone
 
 from .evidence import check_evidence
 from .logsetup import get_logger
@@ -87,6 +88,7 @@ RETRY_STATUS = {429, 500, 502, 503, 504, 524, 529}
 # waiting a minute will not help.
 _PER_DAY = re.compile(r"per[ _-]?day", re.I)
 _RETRY_DELAY = re.compile(r'"retryDelay":\s*"(\d+(?:\.\d+)?)s"')
+_RESET = re.compile(r'"X-RateLimit-Reset":\s*"?(\d{10,13})')
 
 
 def retry_after(exc, default: float, body: str = "") -> float:
@@ -97,6 +99,17 @@ def retry_after(exc, default: float, body: str = "") -> float:
     except (TypeError, ValueError):
         m = _RETRY_DELAY.search(body)
         return min(60.0, float(m.group(1))) if m else default
+
+
+def quota_reset(exc, body: str = "") -> str:
+    """When a used-up daily quota comes back: the X-RateLimit-Reset time if the reply gives one
+    (OpenRouter sends it in milliseconds, also inside the error body), else Google's documented reset."""
+    m = _RESET.search(body)
+    try:
+        t = float((exc.headers or {}).get("X-RateLimit-Reset") or (m.group(1) if m else None))
+    except (TypeError, ValueError):
+        return "Google's free tier: midnight Pacific time" if "RESOURCE_EXHAUSTED" in body else "when the provider's day ends"
+    return datetime.fromtimestamp(t / 1000 if t > 1e11 else t, timezone.utc).strftime("at %d %b %Y %H:%M UTC")
 
 
 class OpenAICompatLLM:
@@ -150,7 +163,7 @@ class OpenAICompatLLM:
                     raise LLMBadOutput(f"{self.url} could not parse the model's reply (HTTP {exc.code}): {detail}") from exc
                 if exc.code == 429 and _PER_DAY.search(full):
                     raise LLMUnavailable(f"{self.url}: the daily request quota is used up (HTTP 429); continue with --resume "
-                                         f"once it resets (Google's free tier: midnight Pacific time): {detail}") from exc
+                                         f"once it resets ({quota_reset(exc, full)}): {detail}") from exc
                 if exc.code in RETRY_STATUS and attempt < self.max_retries:
                     wait = retry_after(exc, 2 ** attempt, full)
                     log.warning("%s returned HTTP %d (attempt %d); asking again in %.0f s: %s",

@@ -201,12 +201,18 @@ def test_network_drop_is_retried_only_for_cloud(clock):
     assert clock.slept == [5, 10, 20]
 
 
-@pytest.mark.parametrize("reply", [_quota("Day", "3600s"),   # Google; and OpenRouter's free models:
-                                   (429, {"error": {"code": 429, "message": "Rate limit exceeded: free-models-per-day"}})])
-def test_daily_quota_stops_with_resume_hint(fake, clock, reply):
+@pytest.mark.parametrize("reply, when", [
+    (_quota("Day", "3600s"), "Google's free tier: midnight Pacific time"),
+    # OpenRouter's free models, as refused on 27 Oct 2026 (reset in milliseconds, inside the body)
+    ((429, {"error": {"code": 429, "message": "Rate limit exceeded: free-models-per-day",
+                      "metadata": {"headers": {"X-RateLimit-Limit": "50", "X-RateLimit-Remaining": "0",
+                                               "X-RateLimit-Reset": "1793145600000"}}}}),
+     "at 28 Oct 2026 00:00 UTC")])
+def test_daily_quota_stops_with_resume_hint(fake, clock, reply, when):
     _Fake.script = [reply]
-    with pytest.raises(LLMUnavailable, match="daily request quota.*--resume"):
+    with pytest.raises(LLMUnavailable, match="daily request quota.*--resume") as exc:
         OpenAICompatLLM(fake, FLASH, api_key=KEY)([{"role": "user", "content": "{}"}], openai_tools(AGENT_TOOLS))
+    assert f"once it resets ({when})" in str(exc.value)
     assert clock.slept == [] and len(_posts()) == 1   # no retries burn the next day's quota
 
 

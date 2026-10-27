@@ -1,0 +1,41 @@
+[
+  {
+    "model": "poolside/laguna-s-2.1:free",
+    "model_version": "poolside/laguna-s-2.1-20260720",
+    "server": "openrouter",
+    "think": false,
+    "date": "2026-10-27T14:42:59+01:00",
+    "commit": "ad6b376e28af3e6ff2627576dac23482b86c4a14",
+    "policy_hash": "88b28c1f4c8a",
+    "sessions": 1,
+    "llm_calls": 6,
+    "accuracy": 1.0,
+    "invalid_rate": 0.0,
+    "content_parsed": 0,
+    "no_call": 0,
+    "timeouts": 0,
+    "server_parse_errors": 0,
+    "fallbacks": 0,
+    "submitted": 1,
+    "median_latency_s": 6.184,
+    "p95_latency_s": 7.411,
+    "peak_memory_gb": null,
+    "load_s": 0.0,
+    "cloud_requests": 11,
+    "cloud_prompt_tokens": 29551,
+    "cloud_completion_tokens": 1748,
+    "cloud_reasoning_tokens": 0,
+    "cloud_cost_usd": 0.0,
+    "providers": {
+      "Poolside": 11
+    },
+    "answered_by": "poolside/laguna-s-2.1:free",
+    "temperature": 0.0,
+    "rpm": 15.0,
+    "crashes": 0,
+    "per_scenario": {
+      "F2": 1.0
+    },
+    "stopped": "https://openrouter.ai/api/v1/chat/completions: the daily request quota is used up (HTTP 429); continue with --resume once it resets (Google's free tier: midnight Pacific time): {\"error\":{\"message\":\"Rate limit exceeded: free-models-per-day. Add 10 credits to unlock 1000 free model requests per day\",\"code\":429,\"metadata\":{\"headers\":{\"X-RateLimit-Limit\":\"50\",\"X-RateLimit-Remaining\":\"0\",\"X-RateLimit-Reset\":\"1793145600000\"},\"limit_source\":\"openrouter_free_tier_daily\",\"remedy_hi"
+  }
+]

@@ -57,6 +57,10 @@ Every change to existing code, with the reason. Newest first within a phase.
 - `docs/ARCHITECTURE.md`, `docs/RUNBOOK.md` (new).
 - `.github/workflows/ci.yml` (new): pytest on every push and pull request, Python 3.12, simulation and mock devices only.
 
+## Laguna S 2.1 full benchmark (27 Oct 2026)
+
+- `faultdiag/agent.py`: new `quota_reset(exc, body)`. The daily-quota stop message now says when the quota comes back from the reply's `X-RateLimit-Reset` (OpenRouter sends it in milliseconds, also inside the error body), and names Google's midnight-Pacific reset only for Google's `RESOURCE_EXHAUSTED` replies. Reason: the first day of the Laguna run (`results/model-bench/20261027-144018`, `summary.json` "stopped") told the reader OpenRouter's quota resets at midnight Pacific; OpenRouter's own header said 28 Oct 2026 00:00 UTC (01:00 in Lagos). `tests/test_gemini.py`: the OpenRouter case carries the real reset metadata and both cases check the text.
+
 ## Dashboard screenshots for the manual (27 Oct 2026)
 
 - `gui/static/style.css`: tool names in the step tables (live session and the experiments drill-down) no longer break mid-word. Reason: the screenshots for the manual showed `read_vo` / `ltage` on two lines whenever a load-test reading made the Reading column wide. The tracker's Delete / Add column stays pinned to the right edge of the table while the other columns scroll sideways. Reason: the tracker tables are wider than their box, and with overlay scrollbars (macOS) nothing showed that they scroll: on the Lab equipment tab Delete showed as "D" and Add as a blank sliver, and on the Parts tab the column was not visible at all.
