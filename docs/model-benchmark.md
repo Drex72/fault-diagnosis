@@ -78,6 +78,8 @@ What it shows:
 
 Runs at commit `76a03ac`. The two OpenRouter runs record `76a03ac+dirty`: during them only `docs/RUNBOOK.md`, `docs/OWNER_TODO.md` and the tracker seed list (`gui/seed.py`) were edited; no code they ran changed. Logs: kept outside the repository (scratch), the records are in the run folders.
 
+**Full benchmark on Laguna S 2.1 (in progress).** Started 27 Oct 2026 in `results/model-bench/20261027-144018`: the 21 sessions above, at most 15 requests a minute. The key had 10 of its 50 free requests left that day (the screening used the rest), so the run goes on once or twice a day with `--resume` (a scheduled task in the Claude app, 09:00 and 16:00 Lagos time, that first checks the key's remaining free requests). The first start at 14:40 was stopped after a few seconds with no session recorded, because it had no `--rpm`; it was resumed in the same folder with `--rpm 15`. At about 10 requests a session it needs about four days of quota, and the free listing ends on 31 Oct 2026, so it may finish only in part; it is written up here either way.
+
 ## Setup
 
 | Item | Value |
