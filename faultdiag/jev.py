@@ -34,6 +34,7 @@ log = get_logger("jev")
 DEFAULT_URL = "https://api.typesafe.ai/v1"
 KEY_ENV = "TYPESAFE_API_KEY"
 MAX_OPTIONS = 255           # Jev's limit for one choice question
+CHECK_TIMEOUT_S = 15        # the key check before a run
 RETRY_STATUS = {429, 500, 502, 503, 524, 529}  # rate limit or a busy service: wait and ask again
 SUBMIT = "submit_diagnosis"
 HEALTHY = "healthy (no faulty element)"
@@ -135,18 +136,21 @@ class JevLLM:
     def check(self) -> set:
         """Before a run: the key works and the service answers. Returns the model names listed."""
         req = urllib.request.Request(self.base + "/models", headers=self._headers)
+        log.info("checking the API key and the Jev service at %s (up to %d s)", self.base, CHECK_TIMEOUT_S)
         try:
-            with urllib.request.urlopen(req, timeout=15) as resp:
+            with urllib.request.urlopen(req, timeout=CHECK_TIMEOUT_S) as resp:
                 names = _strings(json.loads(resp.read()))
         except urllib.error.HTTPError as exc:
-            if exc.code in (401, 403):
-                raise ValueError(f"Jev refused the API key (HTTP {exc.code}); check {KEY_ENV}") from exc
+            if exc.code in (401, 403):  # TypeSafe answers 403 "authentication_error" for a missing or bad key
+                detail = exc.read()[:300].decode("utf-8", "replace")
+                raise ValueError(f"Jev refused the API key (HTTP {exc.code}); check {KEY_ENV}: {detail}") from exc
             log.warning("could not list Jev models (HTTP %d); going on", exc.code)
             return set()
         except (urllib.error.URLError, TimeoutError) as exc:
-            raise ValueError(f"cannot reach Jev at {self.base} (internet needed): {exc}") from exc
+            raise ValueError(f"cannot reach Jev at {self.base} within {CHECK_TIMEOUT_S} s (internet needed): {exc}") from exc
         if names and self.model not in names:
             log.warning("model %s is not in this key's list %s; aliases may not be listed", self.model, sorted(names))
+        log.info("Jev answered: key accepted")
         return names
 
     def __call__(self, messages: list[dict], tools: list[dict]) -> dict:

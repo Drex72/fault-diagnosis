@@ -66,6 +66,7 @@ Every change to existing code, with the reason. Newest first within a phase.
 - `gui/static/app.js`: "Jev (TypeSafe cloud)" in the Model server list. `gui/seed.py`: a tracker issue for the key.
 - `tests/test_jev.py` (new, 9 tests) against a fake Jev server: the options cover the tool contract and validate, a full D and E session, the key stays out of records and logs, a missing or refused key stops before the run, rate limits are waited out, a service that stays down stops the run, an answer outside the options counts as invalid and E falls back, and the loop-detection turn asks only for the diagnosis.
 - Docs: `docs/DECISIONS.md`, `docs/RUNBOOK.md` ("Jev"), `docs/OWNER_TODO.md` steps 24 to 28, `README.md`, `docs/ARCHITECTURE.md`.
+- `faultdiag/jev.py`: the key check before a run now says in the terminal what it is waiting for (up to 15 s) and that the key was accepted, and a refused key shows Jev's own message (TypeSafe answers HTTP 403 "authentication_error" for a missing or bad key). Reason: the owner's first run waited silently in the connection to Jev and looked frozen; checked from this laptop the same connection then took 0.35 s, so it was the network at that moment.
 
 ## Phase 2 final simulation run (27 Oct 2026)
 
