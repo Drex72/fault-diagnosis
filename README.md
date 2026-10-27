@@ -52,6 +52,8 @@ ollama pull qwen3:8b
 
 Thinking is switched off by default (`--think` turns it on). For llama.cpp, start `llama-server` and pass `--server llamacpp` (see [docs/RUNBOOK.md](docs/RUNBOOK.md)). The model choice and its reasons are in [docs/model-benchmark.md](docs/model-benchmark.md).
 
+Optional, cloud: `--server jev --model jev-1.14.0` uses TypeSafe's Jev decision model instead of a local model, for comparison. It needs the internet and `TYPESAFE_API_KEY` set in your terminal ([docs/RUNBOOK.md](docs/RUNBOOK.md), "Jev").
+
 ## With the hardware bench
 
 Building, flashing, calibrating and running the bench is a numbered checklist in [docs/OWNER_TODO.md](docs/OWNER_TODO.md). Wiring, pin map and safety layers are in [docs/HARDWARE.md](docs/HARDWARE.md). Without a board, the whole hardware path runs against mock devices:
@@ -76,6 +78,7 @@ faultdiag/               the diagnosis package
   mockdevice.py          mock bench and injector firmware for tests
   injector.py            fault-injection controller client
   engine.py baselines.py agent.py methods.py   methods A to E
+  jev.py                 optional cloud planner for D and E (TypeSafe's Jev)
   harness.py hwrun.py    scenarios, blind grading, summaries
   calib.py               calibration records
 firmware/bench/          ESP32 bench firmware (PlatformIO); enforces every electrical limit

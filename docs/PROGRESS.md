@@ -11,11 +11,12 @@ Everything that can be done without the physical bench is done. The hardware run
 - Two new frozen held-out faults, H3 (main wiring resistance) and H4 (failing source current sensor), run once in simulation.
 - Bench and injector ESP32 firmware (`firmware/`), with every electrical limit enforced on the board. The serial transport, mock devices, calibration, the blind hardware runner, and scripts for the firmware self-test, injector check and noise refit.
 - The offline dashboard (`gui/`): live session, experiments, models, calibration, project tracker.
+- Added after Phase 2, at the owner's request: Jev (TypeSafe's cloud decision model) as an optional planner for D and E (`--server jev`). Tested against a fake server only; not yet run against the real service, because there is no API key on this laptop.
 - Docs: `README.md`, `docs/ARCHITECTURE.md`, `docs/HARDWARE.md`, `docs/RUNBOOK.md`, `docs/DECISIONS.md`, `docs/model-benchmark.md`, `docs/OWNER_TODO.md`, `CHANGELOG.md`. CI on GitHub runs the tests on every push.
 
 **Tested, and how (all run on 27 Oct 2026 unless noted):**
 
-- `.venv/bin/python -m pytest -q`: 78 passed. This covers the simulator, engine, guard, agent (with a scripted model and a local fake server), serial transport and scripts (against mock devices, including over a real pseudo-terminal), and the dashboard API (against a real server).
+- `.venv/bin/python -m pytest -q`: 87 passed. This covers the simulator, engine, guard, agent (with a scripted model and local fake servers, including a fake Jev), serial transport and scripts (against mock devices, including over a real pseudo-terminal), and the dashboard API (against a real server).
 - Firmware logic, native unit tests (`pio test -e native`): bench 18 passed, injector 4 passed. Both firmwares compile for the ESP32.
 - Dashboard checked in a browser on 26 Oct with a mock-bench session, and at phone width.
 - A fresh clone from GitHub, set up with only the README, passes the tests, runs a simulated experiment and starts the dashboard (details under Phase 5).
@@ -41,7 +42,7 @@ Everything that can be done without the physical bench is done. The hardware run
 4. Calibrate against the multimeter.
 5. Run on the bench.
 
-Every hardware result below is "not yet run".
+Every hardware result below is "not yet run". Optionally, a TypeSafe API key for the Jev comparison (steps 24 to 28).
 
 **Commands once the bench is wired**, run from the repository folder; `<bench port>` and `<injector port>` come from `.pio-venv/bin/pio device list`:
 
@@ -160,6 +161,12 @@ Agent statistics (from the records): D made 1516 model calls, none invalid, medi
 The known engine weaknesses are unchanged and were not tuned: H2 is diagnosed as lamp connection plus motor stall in 10 of 10, TF1 is not separated from C2 without the probe, and F4 is missed 3 times in 10.
 
 Caveats: simulation only; one model (8B, thinking off) chosen in Phase 1; 10 trials per scenario; the prompts were not changed after H3 and H4 were run. H3 and H4 have now been seen in simulation; the hardware final run (`docs/OWNER_TODO.md` step 22) still uses them once.
+
+## After Phase 2: Jev as a cloud planner (27 Oct 2026; built, not yet run)
+
+- The owner asked to try Jev, TypeSafe's cloud decision model, before a general cloud model. `faultdiag/jev.py` puts it behind the agent's model interface: each turn Jev chooses the next call from the 31 concrete calls the tool contract allows (or submitting), then the fault set from 154 options. The agent loop, guard, engine fallback and loop detection are the same as for qwen3:8b. Reasons and details: `docs/DECISIONS.md`.
+- Tested against a fake Jev server in `tests/test_jev.py` (9 tests, all passing): full D and E sessions, the key never in a record or log, a missing or refused key, rate limits, a service that stays down, answers outside the options.
+- Not run against the real Jev: no API key on this laptop. Steps for the owner: `docs/OWNER_TODO.md` steps 24 to 28. The full run uses the same scenarios and seeds as the Phase 2 run, so its D and E results pair with qwen3:8b's session by session.
 
 ## Phase 3: hardware (software done 26 Oct 2026; hardware runs waiting on the owner)
 

@@ -29,7 +29,7 @@ from faultdiag.harness import state_for_faults  # noqa: E402
 from faultdiag.hwrun import grade_dir, hardware_scenarios, run_hardware  # noqa: E402
 from faultdiag.injector import InjectorClient  # noqa: E402
 from faultdiag.logsetup import get_logger  # noqa: E402
-from faultdiag.methods import build_methods  # noqa: E402
+from faultdiag.methods import SERVERS, build_methods  # noqa: E402
 from faultdiag.mockdevice import MockBenchDevice, MockInjectorDevice, MockLink  # noqa: E402
 from faultdiag.runmeta import LAGOS  # noqa: E402
 from faultdiag.serialbench import BenchError, SerialBench, SerialLink, cli_prober  # noqa: E402
@@ -49,7 +49,8 @@ def main():
     ap.add_argument("--trials", type=int, default=3)
     ap.add_argument("--seed0", type=int, default=0)
     ap.add_argument("--settle", type=float, default=2.0, help="seconds after switching a fault")
-    ap.add_argument("--server", choices=["ollama", "llamacpp"], default="ollama")
+    ap.add_argument("--server", choices=SERVERS, default="ollama",
+                    help="jev: TypeSafe's cloud decision model (internet and TYPESAFE_API_KEY needed)")
     ap.add_argument("--base-url", default=None)
     ap.add_argument("--model", default=None)
     ap.add_argument("--model-version", default=None)

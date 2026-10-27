@@ -5,6 +5,7 @@
 """
 from __future__ import annotations
 
+from . import jev
 from .agent import Agent, OpenAICompatLLM
 from .baselines import run_fixed, run_tree
 from .engine import BayesEngine
@@ -14,7 +15,8 @@ from .runmeta import ollama_model_version
 log = get_logger("methods")
 
 METHODS = ("fixed", "tree", "bayes", "llm", "hybrid")
-DEFAULT_URL = {"ollama": "http://localhost:11434/v1", "llamacpp": "http://localhost:8080/v1"}
+DEFAULT_URL = {"ollama": "http://localhost:11434/v1", "llamacpp": "http://localhost:8080/v1", "jev": jev.DEFAULT_URL}
+SERVERS = tuple(DEFAULT_URL)  # jev: TypeSafe's cloud decision model, see faultdiag/jev.py
 
 
 def llm_extra(server: str, think: bool) -> dict:
@@ -46,6 +48,7 @@ def build_methods(names, model: str | None = None, server: str = "ollama", base_
     base_url = base_url or DEFAULT_URL[server]
     engine = BayesEngine()
     methods, meta = {}, {}
+    jev_llm = None
     for m in names:
         if m == "fixed":
             methods[m] = run_fixed
@@ -56,6 +59,15 @@ def build_methods(names, model: str | None = None, server: str = "ollama", base_
         elif m in ("llm", "hybrid"):
             if not model:
                 raise ValueError(f"a model name is needed for method {m}")
+            if server == "jev":  # one client for D and E, checked once before the run
+                if jev_llm is None:
+                    jev_llm = jev.JevLLM(base_url, model, jev.api_key(), timeout_s=timeout_s)
+                    jev_llm.check()
+                log.info("method %s: Jev model %s on %s", m, model, base_url)
+                agent = Agent(_Observed(jev_llm, on_reply) if on_reply else jev_llm, engine if m == "hybrid" else None)
+                methods[m] = agent.run
+                meta[m] = {"model": model, "think": False, "model_version": model_version or model, "server": "jev"}
+                continue
             extra = llm_extra(server, think)
             log.info("method %s: model %s on %s, request extras %s", m, model, base_url, extra)
             llm = OpenAICompatLLM(base_url, model, timeout_s=timeout_s, extra=extra)

@@ -4,6 +4,7 @@
     python scripts/bench_models.py --server llamacpp --base-url http://localhost:8080/v1 \
         --models bonsai-8b --model-version <sha256 prefix of the GGUF>
     python scripts/bench_models.py --engine-only    # method C alone on the same seeds, no model
+    python scripts/bench_models.py --server jev --models jev-1.14.0   # cloud; needs TYPESAFE_API_KEY
 
 Reports, per model: diagnosis accuracy on a fixed scenario set, invalid
 tool-call rate, replies parsed from plain text, timeouts, replies the server
@@ -31,6 +32,7 @@ from pathlib import Path
 ROOT = Path(__file__).resolve().parent.parent
 sys.path.insert(0, str(ROOT))
 
+from faultdiag import jev  # noqa: E402
 from faultdiag.agent import Agent, OpenAICompatLLM  # noqa: E402
 from faultdiag.engine import BayesEngine  # noqa: E402
 from faultdiag.guard import load_policy  # noqa: E402
@@ -113,24 +115,27 @@ def pct(xs, q):
 
 
 def bench_model(model, args, policy, engine, out_f) -> dict:
-    extra = {}
-    if not args.think:
-        extra = ({"reasoning_effort": "none"} if args.server == "ollama"
-                 else {"chat_template_kwargs": {"enable_thinking": False}})
-    llm = OpenAICompatLLM(args.base_url, model, timeout_s=args.timeout, extra=extra)
-    version = args.model_version or ollama_model_version(args.base_url, model)
+    if args.server == "jev":  # cloud: nothing to load or to measure in this laptop's memory
+        llm = jev.JevLLM(args.base_url, model, args.jev_key, timeout_s=args.timeout)
+        version, load_s, mem = args.model_version or model, 0.0, None
+    else:
+        extra = {}
+        if not args.think:
+            extra = ({"reasoning_effort": "none"} if args.server == "ollama"
+                     else {"chat_template_kwargs": {"enable_thinking": False}})
+        llm = OpenAICompatLLM(args.base_url, model, timeout_s=args.timeout, extra=extra)
+        version = args.model_version or ollama_model_version(args.base_url, model)
+
+        # Warm-up: load the model before timing, so p95 is not just the load time.
+        t0 = time.perf_counter()
+        try:
+            llm([{"role": "user", "content": "Reply with OK."}], [])
+        except TimeoutError:
+            log.warning("warm-up for %s timed out", model)
+        load_s = round(time.perf_counter() - t0, 1)
+        mem = PeakMemory(args.server, args.base_url, model)
+        mem.start()
     meta = {**run_meta("sim", policy), "model": model, "model_version": version, "think": args.think}
-
-    # Warm-up: load the model before timing, so p95 is not just the load time.
-    t0 = time.perf_counter()
-    try:
-        llm([{"role": "user", "content": "Reply with OK."}], [])
-    except TimeoutError:
-        log.warning("warm-up for %s timed out", model)
-    load_s = round(time.perf_counter() - t0, 1)
-
-    mem = PeakMemory(args.server, args.base_url, model)
-    mem.start()
     agent = Agent(llm, engine)
     recs = []
     for s in args.scenarios.split(","):
@@ -139,7 +144,7 @@ def bench_model(model, args, policy, engine, out_f) -> dict:
             recs.append(rec)
             out_f.write(json.dumps(rec, default=str) + "\n")
             out_f.flush()
-    peak = mem.stop()
+    peak = mem.stop() if mem else None
 
     stats = [r["agent_stats"] for r in recs if r["agent_stats"]]
     lat = [x for s in stats for x in s["latency_s"]]
@@ -158,7 +163,9 @@ def bench_model(model, args, policy, engine, out_f) -> dict:
         "submitted": sum("evidence" in r["diagnosis"] for r in recs),
         "median_latency_s": statistics.median(lat) if lat else float("nan"),
         "p95_latency_s": pct(lat, 0.95),
-        "peak_memory_gb": round(peak / 1e9, 2), "load_s": load_s,
+        "peak_memory_gb": round(peak / 1e9, 2) if peak is not None else None, "load_s": load_s,
+        **({"jev_input_tokens": llm.usage["input_tokens"], "jev_requests": llm.usage["requests"],
+            "answered_by": llm.answered_by} if args.server == "jev" else {}),
         "crashes": sum(r["error"] is not None for r in recs),
         "per_scenario": {s: sum(r["correct"] for r in recs if r["scenario"] == s) / args.trials
                          for s in args.scenarios.split(",")},
@@ -186,8 +193,9 @@ def main():
     ap.add_argument("--models", default=None, help="comma-separated; required unless --engine-only")
     ap.add_argument("--engine-only", action="store_true",
                     help="run method C alone on the same scenarios and seeds (no model server needed)")
-    ap.add_argument("--server", choices=["ollama", "llamacpp"], default="ollama")
-    ap.add_argument("--base-url", default=None, help="default: Ollama on :11434, llama.cpp on :8080")
+    ap.add_argument("--server", choices=["ollama", "llamacpp", "jev"], default="ollama",
+                    help="jev: TypeSafe's cloud decision model (internet and TYPESAFE_API_KEY needed)")
+    ap.add_argument("--base-url", default=None, help="default: Ollama on :11434, llama.cpp on :8080, Jev at TypeSafe")
     ap.add_argument("--scenarios", default=DEFAULT_SCENARIOS)
     ap.add_argument("--trials", type=int, default=3)
     ap.add_argument("--timeout", type=float, default=60, help="seconds per model reply")
@@ -205,10 +213,19 @@ def main():
         return
     if not args.models:
         ap.error("--models is required unless --engine-only is given")
-    args.base_url = args.base_url or ("http://localhost:11434/v1" if args.server == "ollama"
-                                      else "http://localhost:8080/v1")
+    args.base_url = args.base_url or {"ollama": "http://localhost:11434/v1", "llamacpp": "http://localhost:8080/v1",
+                                      "jev": jev.DEFAULT_URL}[args.server]
 
-    pulled = preflight(args.server, args.base_url)
+    if args.server == "jev":
+        try:
+            args.jev_key = jev.api_key()
+            jev.JevLLM(args.base_url, args.models.split(",")[0], args.jev_key).check()
+        except ValueError as exc:
+            print(f"ERROR: {exc}", file=sys.stderr)
+            sys.exit(2)
+        pulled = None
+    else:
+        pulled = preflight(args.server, args.base_url)
     models, missing = [], []
     for m in args.models.split(","):
         if pulled is not None and m not in pulled and f"{m}:latest" not in pulled:
@@ -235,9 +252,10 @@ def main():
           "Median latency (s) | p95 latency (s) | Peak memory (GB) | Crashes |")
     print("|---|---|---|---|---|---|---|---|---|---|---|---|")
     for r in rows:
+        mem_gb = "cloud" if r["peak_memory_gb"] is None else f"{r['peak_memory_gb']:.1f}"
         print(f"| {r['model']} | {r['model_version']} | {r['accuracy']:.0%} | {r['invalid_rate']:.1%} | "
               f"{r['content_parsed']} | {r['timeouts']} | {r['server_parse_errors']} | {r['fallbacks']} | {r['median_latency_s']:.2f} | "
-              f"{r['p95_latency_s']:.2f} | {r['peak_memory_gb']:.1f} | {r['crashes']} |")
+              f"{r['p95_latency_s']:.2f} | {mem_gb} | {r['crashes']} |")
     print(f"\nSaved to {out}")
     if missing:
         sys.exit(3)

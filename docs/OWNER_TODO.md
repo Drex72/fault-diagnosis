@@ -66,3 +66,17 @@ Commands are run from the repository folder (`fault-diagnosis/`) on the laptop.
    When the script asks for a human probe, put the meter leads where it says and type the reading within the time shown.
 22. **Final hardware run** (includes H3 and H4, once only): the same command with `--final`.
 23. Results go to `results/hardware/<date-time>/` with `summary.md`. Tell the maintainer, so `docs/PROGRESS.md` gets the hardware table.
+
+## F. Optional: the Jev comparison (cloud, needs internet and a paid key)
+
+24. **Get a TypeSafe API key** from the TypeSafe console (https://console.typesafe.ai). It is paid by use: $0.042 per million input tokens on 27 Oct 2026. Our rough estimate for the full comparison below is about 20 million tokens, so about one dollar; the short test prints the tokens it used. One guide said new sign-ups were paused in September 2026, so this may take a wait. Keep the key out of every file in this folder and out of chats.
+25. **Put the key in the terminal you will run from** (only that terminal sees it): `export TYPESAFE_API_KEY=<your key>`. Check the internet is on.
+26. **Short test** (21 sessions, the same as the Phase 1 benchmark):
+   `.venv/bin/python scripts/bench_models.py --server jev --models jev-1.14.0`
+   It stops at once with a clear message if the key is missing or refused.
+27. **Full comparison in simulation** (D and E with Jev, the same 17 scenarios and seeds as the qwen3:8b run):
+   `.venv/bin/python scripts/run_experiment.py --methods llm,hybrid --server jev --model jev-1.14.0 --trials 10 --final`
+   If it stops (internet or service problem), run the same command with `--resume results/<that run's folder>`.
+28. **Tell the maintainer** the two results folders (`results/model-bench/<date-time>/` and `results/<date-time>/`), so `docs/PROGRESS.md` gets the comparison.
+
+To watch a Jev session in the dashboard, start it from the same terminal after step 25 (`.venv/bin/python -m gui --open`), then on Live session choose Model server "Jev (TypeSafe cloud)" and Model `jev-1.14.0`.

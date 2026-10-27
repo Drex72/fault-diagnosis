@@ -39,6 +39,16 @@ shasum -a 256 models/bonsai-8b/Bonsai-8B-Q1_0.gguf | cut -c1-12
 
 `--jinja` makes llama-server use the model's own chat template, which carries the tool-calling format. `-c 16384` gives each request a 16k-token window, enough for a full 20-step session (the agent trims its context above about 12k tokens). The `models/` folder is git-ignored.
 
+**Jev (cloud, optional)**: TypeSafe's decision model, as a comparison only. It needs the internet and an API key, so it is not part of the offline demo. Set the key in the terminal you run from, then pass `--server jev`:
+
+```bash
+export TYPESAFE_API_KEY=<your key>
+.venv/bin/python scripts/bench_models.py --server jev --models jev-1.14.0
+.venv/bin/python scripts/run_experiment.py --methods llm,hybrid --server jev --model jev-1.14.0 --trials 10 --final
+```
+
+Jev picks each next measurement, and then the diagnosis, from a fixed list of options (`faultdiag/jev.py`), so it never sends a malformed call. A missing or refused key stops the script before any session. To use it from the dashboard, start `python -m gui` from the same terminal and choose Model server "Jev (TypeSafe cloud)". Steps for the owner: `docs/OWNER_TODO.md` steps 24 to 28.
+
 ## After calibration
 
 Run after every new calibration record (`docs/OWNER_TODO.md` step 18).

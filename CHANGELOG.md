@@ -57,6 +57,16 @@ Every change to existing code, with the reason. Newest first within a phase.
 - `docs/ARCHITECTURE.md`, `docs/RUNBOOK.md` (new).
 - `.github/workflows/ci.yml` (new): pytest on every push and pull request, Python 3.12, simulation and mock devices only.
 
+## Jev as a cloud planner (27 Oct 2026)
+
+- `faultdiag/jev.py` (new): `JevLLM` puts TypeSafe's Jev decision model behind the interface `Agent` uses for a chat model. Each turn it asks Jev to choose the next call from every concrete call the tool contract allows, or submitting; on submitting it asks for the fault set (healthy, one element or two). Reason: the owner asked to try Jev as a cloud planner after the Phase 2 results (`docs/DECISIONS.md`).
+- `faultdiag/methods.py`: `build_methods(server="jev")` builds D and E on one `JevLLM`, checks the key and the service once before the run, and records `server: jev` and the model name as the version; new `SERVERS`. Ollama and llama.cpp are unchanged.
+- `scripts/run_experiment.py`, `scripts/run_hardware.py`: `--server jev`.
+- `scripts/bench_models.py`: `--server jev` (key and service checked first, exit 2 if either fails; no warm-up or memory sampling for a cloud model, the table shows "cloud"; tokens used saved in `summary.json`).
+- `gui/static/app.js`: "Jev (TypeSafe cloud)" in the Model server list. `gui/seed.py`: a tracker issue for the key.
+- `tests/test_jev.py` (new, 9 tests) against a fake Jev server: the options cover the tool contract and validate, a full D and E session, the key stays out of records and logs, a missing or refused key stops before the run, rate limits are waited out, a service that stays down stops the run, an answer outside the options counts as invalid and E falls back, and the loop-detection turn asks only for the diagnosis.
+- Docs: `docs/DECISIONS.md`, `docs/RUNBOOK.md` ("Jev"), `docs/OWNER_TODO.md` steps 24 to 28, `README.md`, `docs/ARCHITECTURE.md`.
+
 ## Phase 2 final simulation run (27 Oct 2026)
 
 No code changed. The run used commit `cd32167` throughout.
