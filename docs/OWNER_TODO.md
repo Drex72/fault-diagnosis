@@ -62,7 +62,7 @@ Commands are run from the repository folder (`fault-diagnosis/`) on the laptop.
 19. **Charge the battery fully**, then disconnect the charger.
 20. **Healthy check:** `.venv/bin/python scripts/run_hardware.py --port <bench port> --injector-port <injector port> --methods bayes --scenarios healthy --trials 2`. Expect "healthy" both times. If not, the simulator's healthy values do not match the bench (see `docs/OPEN_QUESTIONS.md`); report it before going on.
 21. **Development hardware run** (no frozen held-out faults):
-   `.venv/bin/python scripts/run_hardware.py --port <bench port> --injector-port <injector port> --methods fixed,tree,bayes,llm,hybrid --model <chosen model> --trials 3`
+   `.venv/bin/python scripts/run_hardware.py --port <bench port> --injector-port <injector port> --methods fixed,tree,bayes,llm,hybrid --model qwen3:8b --trials 3`
    When the script asks for a human probe, put the meter leads where it says and type the reading within the time shown.
 22. **Final hardware run** (includes H3 and H4, once only): the same command with `--final`.
 23. Results go to `results/hardware/<date-time>/` with `summary.md`. Tell the maintainer, so `docs/PROGRESS.md` gets the hardware table.

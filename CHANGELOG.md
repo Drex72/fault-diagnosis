@@ -57,6 +57,13 @@ Every change to existing code, with the reason. Newest first within a phase.
 - `docs/ARCHITECTURE.md`, `docs/RUNBOOK.md` (new).
 - `.github/workflows/ci.yml` (new): pytest on every push and pull request, Python 3.12, simulation and mock devices only.
 
+## Phase 2 final simulation run (27 Oct 2026)
+
+No code changed. The run used commit `cd32167` throughout.
+- `results/20261026-213554/`: the full simulated comparison, 850 sessions including H3 and H4 (`--final`); `results/phase2-final-run.log` is its terminal output.
+- `docs/PROGRESS.md`: final status at the top (section 8 of `CLAUDE.md`) and the Phase 2 write-up with the per-scenario breakdown.
+- `docs/OWNER_TODO.md`: step 21 names the chosen model (`qwen3:8b`) instead of a placeholder.
+
 ## Phase 1 model benchmark (26 Oct 2026)
 
 - `faultdiag/agent.py`: new `LLMBadOutput`. An HTTP 5xx whose body says the server could not parse the model's reply (Ollama: "XML syntax error ... element <function> closed by </parameter>") now raises `LLMBadOutput` instead of `LLMUnavailable`; `Agent` counts it as an invalid call (`server_parse_errors`) and falls back to the engine at once, as for a timeout. Any other HTTP error is still fatal. Reason: the first benchmark run (`results/model-bench/20261026-144203`) stopped after 51 of 63 sessions when qwen3.5:9b wrote a malformed tool call in scenario H1: one bad answer from the model ended the whole run, and would have ended a long Phase 2 run the same way. The traceback in the terminal was the record of the old behaviour.
