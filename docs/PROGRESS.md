@@ -18,6 +18,7 @@ Everything that can be done without the physical bench is done. The hardware run
 - `.venv/bin/python -m pytest -q`: 78 passed. This covers the simulator, engine, guard, agent (with a scripted model and a local fake server), serial transport and scripts (against mock devices, including over a real pseudo-terminal), and the dashboard API (against a real server).
 - Firmware logic, native unit tests (`pio test -e native`): bench 18 passed, injector 4 passed. Both firmwares compile for the ESP32.
 - Dashboard checked in a browser on 26 Oct with a mock-bench session, and at phone width.
+- A fresh clone from GitHub, set up with only the README, passes the tests, runs a simulated experiment and starts the dashboard (details under Phase 5).
 - Not tested: anything on a real board or bench. `pio device list` shows no ESP32.
 
 **Simulation results** (`source: sim`, details under Phase 1 and Phase 2 below):
@@ -194,3 +195,4 @@ The owner's steps are in `docs/OWNER_TODO.md`.
 
 - `README.md` (quick start: venv, tests, a simulated experiment, the dashboard, local models, the mock hardware path), `docs/ARCHITECTURE.md` (components, data flow diagram, tool contract, safety layers), `docs/HARDWARE.md`, `docs/RUNBOOK.md` (demo from cold, offline checklist, local model servers, after calibration, troubleshooting), `docs/DECISIONS.md`, `docs/OWNER_TODO.md`, `CHANGELOG.md`.
 - CI: `.github/workflows/ci.yml` runs pytest on every push and pull request (Python 3.12, simulation and mock devices only). First run on GitHub: 72 passed in 55 s (run 40344688569).
+- Fresh-clone check (27 Oct 2026): cloned from GitHub into an empty folder and followed only the README quick start. Tests: 78 passed. `run_experiment.py --trials 10` printed the Phase 0 numbers. The dashboard started and served its page and `/api/status` (checked with curl on port 8799; not opened in a browser from the clone).
