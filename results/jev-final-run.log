@@ -1,0 +1,725 @@
+10:32:58 INFO    faultdiag.jev: checking the API key and the Jev service at https://api.typesafe.ai/v1 (up to 15 s)
+10:32:59 WARNING faultdiag.jev: model jev-1.14.0 is not in this key's list ['jev-latest', 'jev-preview']; aliases may not be listed
+10:32:59 INFO    faultdiag.jev: Jev answered: key accepted
+10:32:59 INFO    faultdiag.methods: method llm: Jev model jev-1.14.0 on https://api.typesafe.ai/v1
+10:32:59 INFO    faultdiag.methods: method hybrid: Jev model jev-1.14.0 on https://api.typesafe.ai/v1
+10:33:03 INFO    faultdiag.agent: submitted [], evidence: 
+10:33:03 INFO    faultdiag.harness: llm    healthy   seed=0   diagnosed    got=[] truth=[] cost=5 OK
+10:33:07 INFO    faultdiag.agent: submitted [], evidence: 
+10:33:07 INFO    faultdiag.harness: hybrid healthy   seed=0   diagnosed    got=[] truth=[] cost=3 OK
+10:33:12 INFO    faultdiag.agent: submitted [], evidence: 
+10:33:12 INFO    faultdiag.harness: llm    healthy   seed=1   diagnosed    got=[] truth=[] cost=5 OK
+10:33:16 INFO    faultdiag.agent: submitted [], evidence: 
+10:33:16 INFO    faultdiag.harness: hybrid healthy   seed=1   diagnosed    got=[] truth=[] cost=3 OK
+10:33:21 INFO    faultdiag.agent: submitted ['ground_return'], evidence: 
+10:33:21 INFO    faultdiag.harness: llm    healthy   seed=2   diagnosed    got=['ground_return'] truth=[] cost=15 WRONG
+10:33:25 INFO    faultdiag.agent: submitted [], evidence: 
+10:33:25 INFO    faultdiag.harness: hybrid healthy   seed=2   diagnosed    got=[] truth=[] cost=3 OK
+10:33:28 INFO    faultdiag.agent: submitted [], evidence: 
+10:33:28 INFO    faultdiag.harness: llm    healthy   seed=3   diagnosed    got=[] truth=[] cost=5 OK
+10:33:33 INFO    faultdiag.agent: submitted [], evidence: 
+10:33:33 INFO    faultdiag.harness: hybrid healthy   seed=3   diagnosed    got=[] truth=[] cost=6 OK
+10:33:37 INFO    faultdiag.agent: submitted ['ground_return'], evidence: 
+10:33:37 INFO    faultdiag.harness: llm    healthy   seed=4   diagnosed    got=['ground_return'] truth=[] cost=22 WRONG
+10:33:41 INFO    faultdiag.agent: submitted [], evidence: 
+10:33:41 INFO    faultdiag.harness: hybrid healthy   seed=4   diagnosed    got=[] truth=[] cost=3 OK
+10:33:45 INFO    faultdiag.agent: submitted [], evidence: 
+10:33:45 INFO    faultdiag.harness: llm    healthy   seed=5   diagnosed    got=[] truth=[] cost=5 OK
+10:33:49 INFO    faultdiag.agent: submitted [], evidence: 
+10:33:49 INFO    faultdiag.harness: hybrid healthy   seed=5   diagnosed    got=[] truth=[] cost=3 OK
+10:33:56 INFO    faultdiag.agent: submitted ['lamp_connection', 'ground_return'], evidence: 
+10:33:56 INFO    faultdiag.harness: llm    healthy   seed=6   diagnosed    got=['ground_return', 'lamp_connection'] truth=[] cost=15 WRONG
+10:33:59 INFO    faultdiag.agent: submitted [], evidence: 
+10:33:59 INFO    faultdiag.harness: hybrid healthy   seed=6   diagnosed    got=[] truth=[] cost=3 OK
+10:34:05 INFO    faultdiag.agent: submitted ['lamp_connection', 'ground_return'], evidence: 
+10:34:05 INFO    faultdiag.harness: llm    healthy   seed=7   diagnosed    got=['ground_return', 'lamp_connection'] truth=[] cost=15 WRONG
+10:34:08 INFO    faultdiag.agent: submitted [], evidence: 
+10:34:08 INFO    faultdiag.harness: hybrid healthy   seed=7   diagnosed    got=[] truth=[] cost=3 OK
+10:34:14 INFO    faultdiag.agent: submitted ['ground_return'], evidence: 
+10:34:14 INFO    faultdiag.harness: llm    healthy   seed=8   diagnosed    got=['ground_return'] truth=[] cost=15 WRONG
+10:34:18 INFO    faultdiag.agent: submitted [], evidence: 
+10:34:18 INFO    faultdiag.harness: hybrid healthy   seed=8   diagnosed    got=[] truth=[] cost=3 OK
+10:34:24 INFO    faultdiag.agent: submitted [], evidence: 
+10:34:24 INFO    faultdiag.harness: llm    healthy   seed=9   diagnosed    got=[] truth=[] cost=15 OK
+10:34:27 INFO    faultdiag.agent: submitted [], evidence: 
+10:34:27 INFO    faultdiag.harness: hybrid healthy   seed=9   diagnosed    got=[] truth=[] cost=3 OK
+10:34:31 INFO    faultdiag.agent: submitted ['battery'], evidence: 
+10:34:31 INFO    faultdiag.harness: llm    F1        seed=1000 diagnosed    got=['battery'] truth=['battery'] cost=5 OK
+10:34:36 INFO    faultdiag.agent: submitted ['battery'], evidence: 
+10:34:36 INFO    faultdiag.harness: hybrid F1        seed=1000 diagnosed    got=['battery'] truth=['battery'] cost=6 OK
+10:34:40 INFO    faultdiag.agent: submitted ['battery'], evidence: 
+10:34:40 INFO    faultdiag.harness: llm    F1        seed=1001 diagnosed    got=['battery'] truth=['battery'] cost=5 OK
+10:34:44 INFO    faultdiag.agent: submitted ['battery'], evidence: 
+10:34:44 INFO    faultdiag.harness: hybrid F1        seed=1001 diagnosed    got=['battery'] truth=['battery'] cost=6 OK
+10:34:48 INFO    faultdiag.agent: submitted ['battery'], evidence: 
+10:34:48 INFO    faultdiag.harness: llm    F1        seed=1002 diagnosed    got=['battery'] truth=['battery'] cost=5 OK
+10:34:52 INFO    faultdiag.agent: submitted ['battery'], evidence: 
+10:34:52 INFO    faultdiag.harness: hybrid F1        seed=1002 diagnosed    got=['battery'] truth=['battery'] cost=6 OK
+10:34:56 INFO    faultdiag.agent: submitted ['battery'], evidence: 
+10:34:56 INFO    faultdiag.harness: llm    F1        seed=1003 diagnosed    got=['battery'] truth=['battery'] cost=15 OK
+10:35:01 INFO    faultdiag.agent: submitted ['battery'], evidence: 
+10:35:01 INFO    faultdiag.harness: hybrid F1        seed=1003 diagnosed    got=['battery'] truth=['battery'] cost=6 OK
+10:35:07 INFO    faultdiag.agent: submitted ['battery'], evidence: 
+10:35:07 INFO    faultdiag.harness: llm    F1        seed=1004 diagnosed    got=['battery'] truth=['battery'] cost=15 OK
+10:35:12 INFO    faultdiag.agent: submitted ['battery'], evidence: 
+10:35:12 INFO    faultdiag.harness: hybrid F1        seed=1004 diagnosed    got=['battery'] truth=['battery'] cost=7 OK
+10:35:17 INFO    faultdiag.agent: submitted [], evidence: 
+10:35:17 INFO    faultdiag.harness: llm    F1        seed=1005 diagnosed    got=[] truth=['battery'] cost=22 WRONG
+10:35:21 INFO    faultdiag.agent: submitted ['battery'], evidence: 
+10:35:21 INFO    faultdiag.harness: hybrid F1        seed=1005 diagnosed    got=['battery'] truth=['battery'] cost=6 OK
+10:35:24 INFO    faultdiag.agent: submitted [], evidence: 
+10:35:24 INFO    faultdiag.harness: llm    F1        seed=1006 diagnosed    got=[] truth=['battery'] cost=2 WRONG
+10:35:29 INFO    faultdiag.agent: submitted ['battery'], evidence: 
+10:35:29 INFO    faultdiag.harness: hybrid F1        seed=1006 diagnosed    got=['battery'] truth=['battery'] cost=6 OK
+10:35:33 INFO    faultdiag.agent: submitted ['battery', 'ground_return'], evidence: 
+10:35:33 INFO    faultdiag.harness: llm    F1        seed=1007 diagnosed    got=['battery', 'ground_return'] truth=['battery'] cost=15 WRONG
+10:35:38 INFO    faultdiag.agent: submitted ['battery'], evidence: 
+10:35:38 INFO    faultdiag.harness: hybrid F1        seed=1007 diagnosed    got=['battery'] truth=['battery'] cost=6 OK
+10:35:42 INFO    faultdiag.agent: submitted ['battery', 'ground_return'], evidence: 
+10:35:42 INFO    faultdiag.harness: llm    F1        seed=1008 diagnosed    got=['battery', 'ground_return'] truth=['battery'] cost=15 WRONG
+10:35:47 INFO    faultdiag.agent: submitted ['battery', 'lamp_connection'], evidence: 
+10:35:47 INFO    faultdiag.harness: hybrid F1        seed=1008 diagnosed    got=['battery', 'lamp_connection'] truth=['battery'] cost=7 WRONG
+10:35:51 INFO    faultdiag.agent: submitted ['battery'], evidence: 
+10:35:51 INFO    faultdiag.harness: llm    F1        seed=1009 diagnosed    got=['battery'] truth=['battery'] cost=15 OK
+10:35:56 INFO    faultdiag.agent: submitted ['battery'], evidence: 
+10:35:56 INFO    faultdiag.harness: hybrid F1        seed=1009 diagnosed    got=['battery'] truth=['battery'] cost=6 OK
+10:35:59 INFO    faultdiag.agent: submitted ['battery'], evidence: 
+10:35:59 INFO    faultdiag.harness: llm    F1b       seed=2000 diagnosed    got=['battery'] truth=['battery'] cost=5 OK
+10:36:05 INFO    faultdiag.agent: submitted ['battery'], evidence: 
+10:36:05 INFO    faultdiag.harness: hybrid F1b       seed=2000 diagnosed    got=['battery'] truth=['battery'] cost=7 OK
+10:36:10 INFO    faultdiag.agent: submitted [], evidence: 
+10:36:10 INFO    faultdiag.harness: llm    F1b       seed=2001 diagnosed    got=[] truth=['battery'] cost=15 WRONG
+10:36:16 INFO    faultdiag.agent: submitted ['battery'], evidence: 
+10:36:16 INFO    faultdiag.harness: hybrid F1b       seed=2001 diagnosed    got=['battery'] truth=['battery'] cost=7 OK
+10:36:19 INFO    faultdiag.agent: submitted ['battery'], evidence: 
+10:36:19 INFO    faultdiag.harness: llm    F1b       seed=2002 diagnosed    got=['battery'] truth=['battery'] cost=5 OK
+10:36:23 INFO    faultdiag.agent: submitted [], evidence: 
+10:36:23 INFO    faultdiag.harness: hybrid F1b       seed=2002 diagnosed    got=[] truth=['battery'] cost=3 WRONG
+10:36:28 INFO    faultdiag.agent: submitted ['ground_return'], evidence: 
+10:36:28 INFO    faultdiag.harness: llm    F1b       seed=2003 diagnosed    got=['ground_return'] truth=['battery'] cost=15 WRONG
+10:36:34 INFO    faultdiag.agent: submitted ['battery'], evidence: 
+10:36:34 INFO    faultdiag.harness: hybrid F1b       seed=2003 diagnosed    got=['battery'] truth=['battery'] cost=7 OK
+10:36:39 INFO    faultdiag.agent: submitted ['ground_return'], evidence: 
+10:36:39 INFO    faultdiag.harness: llm    F1b       seed=2004 diagnosed    got=['ground_return'] truth=['battery'] cost=15 WRONG
+10:36:45 INFO    faultdiag.agent: submitted ['battery'], evidence: 
+10:36:45 INFO    faultdiag.harness: hybrid F1b       seed=2004 diagnosed    got=['battery'] truth=['battery'] cost=7 OK
+10:36:49 INFO    faultdiag.agent: submitted [], evidence: 
+10:36:49 INFO    faultdiag.harness: llm    F1b       seed=2005 diagnosed    got=[] truth=['battery'] cost=5 WRONG
+10:36:55 INFO    faultdiag.agent: submitted ['battery'], evidence: 
+10:36:55 INFO    faultdiag.harness: hybrid F1b       seed=2005 diagnosed    got=['battery'] truth=['battery'] cost=7 OK
+10:37:00 INFO    faultdiag.agent: submitted ['lamp_connection', 'ground_return'], evidence: 
+10:37:00 INFO    faultdiag.harness: llm    F1b       seed=2006 diagnosed    got=['ground_return', 'lamp_connection'] truth=['battery'] cost=15 WRONG
+10:37:04 INFO    faultdiag.agent: submitted [], evidence: 
+10:37:04 INFO    faultdiag.harness: hybrid F1b       seed=2006 diagnosed    got=[] truth=['battery'] cost=3 WRONG
+10:37:08 INFO    faultdiag.agent: submitted [], evidence: 
+10:37:08 INFO    faultdiag.harness: llm    F1b       seed=2007 diagnosed    got=[] truth=['battery'] cost=5 WRONG
+10:37:13 INFO    faultdiag.agent: submitted ['battery'], evidence: 
+10:37:13 INFO    faultdiag.harness: hybrid F1b       seed=2007 diagnosed    got=['battery'] truth=['battery'] cost=6 OK
+10:37:17 INFO    faultdiag.agent: submitted ['ground_return'], evidence: 
+10:37:17 INFO    faultdiag.harness: llm    F1b       seed=2008 diagnosed    got=['ground_return'] truth=['battery'] cost=15 WRONG
+10:37:22 INFO    faultdiag.agent: submitted ['battery'], evidence: 
+10:37:22 INFO    faultdiag.harness: hybrid F1b       seed=2008 diagnosed    got=['battery'] truth=['battery'] cost=6 OK
+10:37:26 INFO    faultdiag.agent: submitted [], evidence: 
+10:37:26 INFO    faultdiag.harness: llm    F1b       seed=2009 diagnosed    got=[] truth=['battery'] cost=5 WRONG
+10:37:32 INFO    faultdiag.agent: submitted ['battery'], evidence: 
+10:37:32 INFO    faultdiag.harness: hybrid F1b       seed=2009 diagnosed    got=['battery'] truth=['battery'] cost=6 OK
+10:37:36 INFO    faultdiag.agent: submitted ['motor_connection'], evidence: 
+10:37:36 INFO    faultdiag.harness: llm    F2        seed=3000 diagnosed    got=['motor_connection'] truth=['motor_connection'] cost=13 OK
+10:37:40 INFO    faultdiag.agent: submitted ['motor_connection'], evidence: 
+10:37:40 INFO    faultdiag.harness: hybrid F2        seed=3000 diagnosed    got=['motor_connection'] truth=['motor_connection'] cost=3 OK
+10:37:45 INFO    faultdiag.agent: submitted ['motor_connection', 'ground_return'], evidence: 
+10:37:45 INFO    faultdiag.harness: llm    F2        seed=3001 diagnosed    got=['ground_return', 'motor_connection'] truth=['motor_connection'] cost=15 WRONG
+10:37:49 INFO    faultdiag.agent: submitted ['motor_connection'], evidence: 
+10:37:49 INFO    faultdiag.harness: hybrid F2        seed=3001 diagnosed    got=['motor_connection'] truth=['motor_connection'] cost=3 OK
+10:37:55 INFO    faultdiag.agent: submitted ['motor_connection', 'ground_return'], evidence: 
+10:37:55 INFO    faultdiag.harness: llm    F2        seed=3002 diagnosed    got=['ground_return', 'motor_connection'] truth=['motor_connection'] cost=16 WRONG
+10:38:00 INFO    faultdiag.agent: submitted ['motor_connection'], evidence: 
+10:38:00 INFO    faultdiag.harness: hybrid F2        seed=3002 diagnosed    got=['motor_connection'] truth=['motor_connection'] cost=14 OK
+10:38:04 INFO    faultdiag.agent: submitted ['ground_return'], evidence: 
+10:38:04 INFO    faultdiag.harness: llm    F2        seed=3003 diagnosed    got=['ground_return'] truth=['motor_connection'] cost=22 WRONG
+10:38:09 INFO    faultdiag.agent: submitted ['motor_connection'], evidence: 
+10:38:09 INFO    faultdiag.harness: hybrid F2        seed=3003 diagnosed    got=['motor_connection'] truth=['motor_connection'] cost=14 OK
+10:38:15 INFO    faultdiag.agent: submitted ['motor_connection', 'ground_return'], evidence: 
+10:38:15 INFO    faultdiag.harness: llm    F2        seed=3004 diagnosed    got=['ground_return', 'motor_connection'] truth=['motor_connection'] cost=15 WRONG
+10:38:19 INFO    faultdiag.agent: submitted ['motor_connection'], evidence: 
+10:38:19 INFO    faultdiag.harness: hybrid F2        seed=3004 diagnosed    got=['motor_connection'] truth=['motor_connection'] cost=3 OK
+10:38:23 INFO    faultdiag.agent: submitted ['motor_connection'], evidence: 
+10:38:23 INFO    faultdiag.harness: llm    F2        seed=3005 diagnosed    got=['motor_connection'] truth=['motor_connection'] cost=13 OK
+10:38:29 INFO    faultdiag.agent: submitted ['motor_connection'], evidence: 
+10:38:29 INFO    faultdiag.harness: hybrid F2        seed=3005 diagnosed    got=['motor_connection'] truth=['motor_connection'] cost=15 OK
+10:38:35 INFO    faultdiag.agent: submitted ['motor_connection', 'ground_return'], evidence: 
+10:38:35 INFO    faultdiag.harness: llm    F2        seed=3006 diagnosed    got=['ground_return', 'motor_connection'] truth=['motor_connection'] cost=15 WRONG
+10:38:40 INFO    faultdiag.agent: submitted ['motor_connection'], evidence: 
+10:38:40 INFO    faultdiag.harness: hybrid F2        seed=3006 diagnosed    got=['motor_connection'] truth=['motor_connection'] cost=14 OK
+10:38:45 INFO    faultdiag.agent: submitted ['motor_connection'], evidence: 
+10:38:45 INFO    faultdiag.harness: llm    F2        seed=3007 diagnosed    got=['motor_connection'] truth=['motor_connection'] cost=13 OK
+10:38:48 INFO    faultdiag.agent: submitted ['motor_connection'], evidence: 
+10:38:48 INFO    faultdiag.harness: hybrid F2        seed=3007 diagnosed    got=['motor_connection'] truth=['motor_connection'] cost=3 OK
+10:38:52 INFO    faultdiag.agent: submitted [], evidence: 
+10:38:52 INFO    faultdiag.harness: llm    F2        seed=3008 diagnosed    got=[] truth=['motor_connection'] cost=5 WRONG
+10:38:57 INFO    faultdiag.agent: submitted ['motor_connection'], evidence: 
+10:38:57 INFO    faultdiag.harness: hybrid F2        seed=3008 diagnosed    got=['motor_connection'] truth=['motor_connection'] cost=5 OK
+10:39:01 INFO    faultdiag.agent: submitted [], evidence: 
+10:39:01 INFO    faultdiag.harness: llm    F2        seed=3009 diagnosed    got=[] truth=['motor_connection'] cost=5 WRONG
+10:39:05 INFO    faultdiag.agent: submitted ['motor_connection'], evidence: 
+10:39:05 INFO    faultdiag.harness: hybrid F2        seed=3009 diagnosed    got=['motor_connection'] truth=['motor_connection'] cost=13 OK
+10:39:08 INFO    faultdiag.agent: submitted [], evidence: 
+10:39:08 INFO    faultdiag.harness: llm    F3        seed=4000 diagnosed    got=[] truth=['motor'] cost=5 WRONG
+10:39:13 INFO    faultdiag.agent: submitted ['motor'], evidence: 
+10:39:13 INFO    faultdiag.harness: hybrid F3        seed=4000 diagnosed    got=['motor'] truth=['motor'] cost=4 OK
+10:39:16 INFO    faultdiag.agent: submitted [], evidence: 
+10:39:16 INFO    faultdiag.harness: llm    F3        seed=4001 diagnosed    got=[] truth=['motor'] cost=5 WRONG
+10:39:22 INFO    faultdiag.agent: submitted ['motor'], evidence: 
+10:39:22 INFO    faultdiag.harness: hybrid F3        seed=4001 diagnosed    got=['motor'] truth=['motor'] cost=5 OK
+10:39:27 INFO    faultdiag.agent: submitted ['motor_connection', 'ground_return'], evidence: 
+10:39:27 INFO    faultdiag.harness: llm    F3        seed=4002 diagnosed    got=['ground_return', 'motor_connection'] truth=['motor'] cost=15 WRONG
+10:39:32 INFO    faultdiag.agent: submitted ['motor'], evidence: 
+10:39:32 INFO    faultdiag.harness: hybrid F3        seed=4002 diagnosed    got=['motor'] truth=['motor'] cost=5 OK
+10:39:36 INFO    faultdiag.agent: submitted ['ground_return'], evidence: 
+10:39:36 INFO    faultdiag.harness: llm    F3        seed=4003 diagnosed    got=['ground_return'] truth=['motor'] cost=12 WRONG
+10:39:39 INFO    faultdiag.agent: submitted ['motor'], evidence: 
+10:39:39 INFO    faultdiag.harness: hybrid F3        seed=4003 diagnosed    got=['motor'] truth=['motor'] cost=3 OK
+10:39:43 INFO    faultdiag.agent: submitted [], evidence: 
+10:39:43 INFO    faultdiag.harness: llm    F3        seed=4004 diagnosed    got=[] truth=['motor'] cost=5 WRONG
+10:39:48 INFO    faultdiag.agent: submitted ['motor'], evidence: 
+10:39:48 INFO    faultdiag.harness: hybrid F3        seed=4004 diagnosed    got=['motor'] truth=['motor'] cost=5 OK
+10:39:53 INFO    faultdiag.agent: submitted ['motor_connection', 'ground_return'], evidence: 
+10:39:53 INFO    faultdiag.harness: llm    F3        seed=4005 diagnosed    got=['ground_return', 'motor_connection'] truth=['motor'] cost=15 WRONG
+10:39:59 INFO    faultdiag.agent: submitted ['motor'], evidence: 
+10:39:59 INFO    faultdiag.harness: hybrid F3        seed=4005 diagnosed    got=['motor'] truth=['motor'] cost=5 OK
+10:40:04 INFO    faultdiag.agent: submitted ['motor_connection', 'ground_return'], evidence: 
+10:40:04 INFO    faultdiag.harness: llm    F3        seed=4006 diagnosed    got=['ground_return', 'motor_connection'] truth=['motor'] cost=15 WRONG
+10:40:09 INFO    faultdiag.agent: submitted ['motor'], evidence: 
+10:40:09 INFO    faultdiag.harness: hybrid F3        seed=4006 diagnosed    got=['motor'] truth=['motor'] cost=5 OK
+10:40:13 INFO    faultdiag.agent: submitted [], evidence: 
+10:40:13 INFO    faultdiag.harness: llm    F3        seed=4007 diagnosed    got=[] truth=['motor'] cost=5 WRONG
+10:40:18 INFO    faultdiag.agent: submitted ['motor'], evidence: 
+10:40:18 INFO    faultdiag.harness: hybrid F3        seed=4007 diagnosed    got=['motor'] truth=['motor'] cost=5 OK
+10:40:21 INFO    faultdiag.agent: submitted [], evidence: 
+10:40:21 INFO    faultdiag.harness: llm    F3        seed=4008 diagnosed    got=[] truth=['motor'] cost=5 WRONG
+10:40:25 INFO    faultdiag.agent: submitted ['motor'], evidence: 
+10:40:25 INFO    faultdiag.harness: hybrid F3        seed=4008 diagnosed    got=['motor'] truth=['motor'] cost=3 OK
+10:40:29 INFO    faultdiag.agent: submitted ['ground_return'], evidence: 
+10:40:29 INFO    faultdiag.harness: llm    F3        seed=4009 diagnosed    got=['ground_return'] truth=['motor'] cost=15 WRONG
+10:40:34 INFO    faultdiag.agent: submitted ['motor'], evidence: 
+10:40:34 INFO    faultdiag.harness: hybrid F3        seed=4009 diagnosed    got=['motor'] truth=['motor'] cost=5 OK
+10:40:38 INFO    faultdiag.agent: submitted [], evidence: 
+10:40:38 INFO    faultdiag.harness: llm    F4        seed=5000 diagnosed    got=[] truth=['lamp_connection'] cost=5 WRONG
+10:40:42 INFO    faultdiag.agent: submitted ['lamp_connection'], evidence: 
+10:40:42 INFO    faultdiag.harness: hybrid F4        seed=5000 diagnosed    got=['lamp_connection'] truth=['lamp_connection'] cost=6 OK
+10:40:48 INFO    faultdiag.agent: submitted ['lamp_connection', 'ground_return'], evidence: 
+10:40:48 INFO    faultdiag.harness: llm    F4        seed=5001 diagnosed    got=['ground_return', 'lamp_connection'] truth=['lamp_connection'] cost=15 WRONG
+10:40:52 INFO    faultdiag.agent: submitted [], evidence: 
+10:40:52 INFO    faultdiag.harness: hybrid F4        seed=5001 diagnosed    got=[] truth=['lamp_connection'] cost=6 WRONG
+10:40:57 INFO    faultdiag.agent: submitted ['lamp_connection'], evidence: 
+10:40:57 INFO    faultdiag.harness: llm    F4        seed=5002 diagnosed    got=['lamp_connection'] truth=['lamp_connection'] cost=14 OK
+10:41:01 INFO    faultdiag.agent: submitted [], evidence: 
+10:41:01 INFO    faultdiag.harness: hybrid F4        seed=5002 diagnosed    got=[] truth=['lamp_connection'] cost=3 WRONG
+10:41:04 INFO    faultdiag.agent: submitted [], evidence: 
+10:41:04 INFO    faultdiag.harness: llm    F4        seed=5003 diagnosed    got=[] truth=['lamp_connection'] cost=5 WRONG
+10:41:08 INFO    faultdiag.agent: submitted [], evidence: 
+10:41:08 INFO    faultdiag.harness: hybrid F4        seed=5003 diagnosed    got=[] truth=['lamp_connection'] cost=3 WRONG
+10:41:11 INFO    faultdiag.agent: submitted [], evidence: 
+10:41:11 INFO    faultdiag.harness: llm    F4        seed=5004 diagnosed    got=[] truth=['lamp_connection'] cost=12 WRONG
+10:41:15 INFO    faultdiag.agent: submitted [], evidence: 
+10:41:15 INFO    faultdiag.harness: hybrid F4        seed=5004 diagnosed    got=[] truth=['lamp_connection'] cost=3 WRONG
+10:41:21 INFO    faultdiag.agent: submitted [], evidence: 
+10:41:21 INFO    faultdiag.harness: llm    F4        seed=5005 diagnosed    got=[] truth=['lamp_connection'] cost=15 WRONG
+10:41:25 INFO    faultdiag.agent: submitted ['lamp_connection'], evidence: 
+10:41:25 INFO    faultdiag.harness: hybrid F4        seed=5005 diagnosed    got=['lamp_connection'] truth=['lamp_connection'] cost=3 OK
+10:41:30 INFO    faultdiag.agent: submitted ['ground_return'], evidence: 
+10:41:30 INFO    faultdiag.harness: llm    F4        seed=5006 diagnosed    got=['ground_return'] truth=['lamp_connection'] cost=15 WRONG
+10:41:34 INFO    faultdiag.agent: submitted [], evidence: 
+10:41:34 INFO    faultdiag.harness: hybrid F4        seed=5006 diagnosed    got=[] truth=['lamp_connection'] cost=3 WRONG
+10:41:38 INFO    faultdiag.agent: submitted [], evidence: 
+10:41:38 INFO    faultdiag.harness: llm    F4        seed=5007 diagnosed    got=[] truth=['lamp_connection'] cost=5 WRONG
+10:41:42 INFO    faultdiag.agent: submitted [], evidence: 
+10:41:42 INFO    faultdiag.harness: hybrid F4        seed=5007 diagnosed    got=[] truth=['lamp_connection'] cost=3 WRONG
+10:41:53 INFO    faultdiag.agent: submitted [], evidence: 
+10:41:53 INFO    faultdiag.harness: llm    F4        seed=5008 diagnosed    got=[] truth=['lamp_connection'] cost=15 WRONG
+10:41:57 INFO    faultdiag.agent: submitted [], evidence: 
+10:41:57 INFO    faultdiag.harness: hybrid F4        seed=5008 diagnosed    got=[] truth=['lamp_connection'] cost=3 WRONG
+10:42:00 INFO    faultdiag.agent: submitted [], evidence: 
+10:42:00 INFO    faultdiag.harness: llm    F4        seed=5009 diagnosed    got=[] truth=['lamp_connection'] cost=12 WRONG
+10:42:03 INFO    faultdiag.agent: submitted ['lamp_connection'], evidence: 
+10:42:03 INFO    faultdiag.harness: hybrid F4        seed=5009 diagnosed    got=['lamp_connection'] truth=['lamp_connection'] cost=3 OK
+10:42:07 INFO    faultdiag.agent: submitted ['sensor_bus', 'sensor_motor'], evidence: 
+10:42:07 INFO    faultdiag.harness: llm    F5@motor  seed=6000 diagnosed    got=['sensor_bus', 'sensor_motor'] truth=['sensor_motor'] cost=13 WRONG
+10:42:12 INFO    faultdiag.agent: submitted ['sensor_motor'], evidence: 
+10:42:12 INFO    faultdiag.harness: hybrid F5@motor  seed=6000 diagnosed    got=['sensor_motor'] truth=['sensor_motor'] cost=4 OK
+10:42:16 INFO    faultdiag.agent: submitted ['sensor_bus', 'sensor_motor'], evidence: 
+10:42:16 INFO    faultdiag.harness: llm    F5@motor  seed=6001 diagnosed    got=['sensor_bus', 'sensor_motor'] truth=['sensor_motor'] cost=13 WRONG
+10:42:21 INFO    faultdiag.agent: submitted ['sensor_motor'], evidence: 
+10:42:21 INFO    faultdiag.harness: hybrid F5@motor  seed=6001 diagnosed    got=['sensor_motor'] truth=['sensor_motor'] cost=6 OK
+10:42:26 INFO    faultdiag.agent: submitted ['sensor_bus', 'sensor_motor'], evidence: 
+10:42:26 INFO    faultdiag.harness: llm    F5@motor  seed=6002 diagnosed    got=['sensor_bus', 'sensor_motor'] truth=['sensor_motor'] cost=23 WRONG
+10:42:30 INFO    faultdiag.agent: submitted ['sensor_motor'], evidence: 
+10:42:30 INFO    faultdiag.harness: hybrid F5@motor  seed=6002 diagnosed    got=['sensor_motor'] truth=['sensor_motor'] cost=6 OK
+10:42:34 INFO    faultdiag.agent: submitted ['sensor_bus', 'sensor_motor'], evidence: 
+10:42:34 INFO    faultdiag.harness: llm    F5@motor  seed=6003 diagnosed    got=['sensor_bus', 'sensor_motor'] truth=['sensor_motor'] cost=23 WRONG
+10:42:37 INFO    faultdiag.agent: submitted ['sensor_motor'], evidence: 
+10:42:37 INFO    faultdiag.harness: hybrid F5@motor  seed=6003 diagnosed    got=['sensor_motor'] truth=['sensor_motor'] cost=4 OK
+10:42:41 INFO    faultdiag.agent: submitted ['sensor_bus', 'sensor_motor'], evidence: 
+10:42:41 INFO    faultdiag.harness: llm    F5@motor  seed=6004 diagnosed    got=['sensor_bus', 'sensor_motor'] truth=['sensor_motor'] cost=13 WRONG
+10:42:46 INFO    faultdiag.agent: submitted ['sensor_motor'], evidence: 
+10:42:46 INFO    faultdiag.harness: hybrid F5@motor  seed=6004 diagnosed    got=['sensor_motor'] truth=['sensor_motor'] cost=4 OK
+10:42:49 INFO    faultdiag.agent: submitted [], evidence: 
+10:42:49 INFO    faultdiag.harness: llm    F5@motor  seed=6005 diagnosed    got=[] truth=['sensor_motor'] cost=12 WRONG
+10:42:53 INFO    faultdiag.agent: submitted ['sensor_motor'], evidence: 
+10:42:53 INFO    faultdiag.harness: hybrid F5@motor  seed=6005 diagnosed    got=['sensor_motor'] truth=['sensor_motor'] cost=12 OK
+10:42:56 INFO    faultdiag.agent: submitted ['sensor_bus', 'sensor_motor'], evidence: 
+10:42:56 INFO    faultdiag.harness: llm    F5@motor  seed=6006 diagnosed    got=['sensor_bus', 'sensor_motor'] truth=['sensor_motor'] cost=3 WRONG
+10:43:00 INFO    faultdiag.agent: submitted ['sensor_motor'], evidence: 
+10:43:00 INFO    faultdiag.harness: hybrid F5@motor  seed=6006 diagnosed    got=['sensor_motor'] truth=['sensor_motor'] cost=3 OK
+10:43:04 INFO    faultdiag.agent: submitted ['sensor_bus', 'sensor_motor'], evidence: 
+10:43:04 INFO    faultdiag.harness: llm    F5@motor  seed=6007 diagnosed    got=['sensor_bus', 'sensor_motor'] truth=['sensor_motor'] cost=13 WRONG
+10:43:09 INFO    faultdiag.agent: submitted ['sensor_motor'], evidence: 
+10:43:09 INFO    faultdiag.harness: hybrid F5@motor  seed=6007 diagnosed    got=['sensor_motor'] truth=['sensor_motor'] cost=13 OK
+10:43:13 INFO    faultdiag.agent: submitted [], evidence: 
+10:43:13 INFO    faultdiag.harness: llm    F5@motor  seed=6008 diagnosed    got=[] truth=['sensor_motor'] cost=5 WRONG
+10:43:16 INFO    faultdiag.agent: submitted ['sensor_motor'], evidence: 
+10:43:16 INFO    faultdiag.harness: hybrid F5@motor  seed=6008 diagnosed    got=['sensor_motor'] truth=['sensor_motor'] cost=12 OK
+10:43:21 INFO    faultdiag.agent: submitted ['sensor_bus', 'sensor_motor'], evidence: 
+10:43:21 INFO    faultdiag.harness: llm    F5@motor  seed=6009 diagnosed    got=['sensor_bus', 'sensor_motor'] truth=['sensor_motor'] cost=23 WRONG
+10:43:24 INFO    faultdiag.agent: submitted ['sensor_motor'], evidence: 
+10:43:24 INFO    faultdiag.harness: hybrid F5@motor  seed=6009 diagnosed    got=['sensor_motor'] truth=['sensor_motor'] cost=3 OK
+10:43:28 INFO    faultdiag.agent: submitted [], evidence: 
+10:43:28 INFO    faultdiag.harness: llm    F5@lamp   seed=7000 diagnosed    got=[] truth=['sensor_lamp'] cost=5 WRONG
+10:43:31 INFO    faultdiag.agent: submitted ['sensor_lamp'], evidence: 
+10:43:31 INFO    faultdiag.harness: hybrid F5@lamp   seed=7000 diagnosed    got=['sensor_lamp'] truth=['sensor_lamp'] cost=3 OK
+10:43:36 INFO    faultdiag.agent: submitted ['ground_return', 'sensor_lamp'], evidence: 
+10:43:36 INFO    faultdiag.harness: llm    F5@lamp   seed=7001 diagnosed    got=['ground_return', 'sensor_lamp'] truth=['sensor_lamp'] cost=14 WRONG
+10:43:39 INFO    faultdiag.agent: submitted ['sensor_lamp'], evidence: 
+10:43:39 INFO    faultdiag.harness: hybrid F5@lamp   seed=7001 diagnosed    got=['sensor_lamp'] truth=['sensor_lamp'] cost=2 OK
+10:43:44 INFO    faultdiag.agent: submitted ['lamp', 'sensor_lamp'], evidence: 
+10:43:44 INFO    faultdiag.harness: llm    F5@lamp   seed=7002 diagnosed    got=['lamp', 'sensor_lamp'] truth=['sensor_lamp'] cost=14 WRONG
+10:43:47 INFO    faultdiag.agent: submitted ['sensor_lamp'], evidence: 
+10:43:47 INFO    faultdiag.harness: hybrid F5@lamp   seed=7002 diagnosed    got=['sensor_lamp'] truth=['sensor_lamp'] cost=5 OK
+10:43:52 INFO    faultdiag.agent: submitted ['ground_return', 'sensor_lamp'], evidence: 
+10:43:52 INFO    faultdiag.harness: llm    F5@lamp   seed=7003 diagnosed    got=['ground_return', 'sensor_lamp'] truth=['sensor_lamp'] cost=14 WRONG
+10:43:56 INFO    faultdiag.agent: submitted ['sensor_lamp'], evidence: 
+10:43:56 INFO    faultdiag.harness: hybrid F5@lamp   seed=7003 diagnosed    got=['sensor_lamp'] truth=['sensor_lamp'] cost=5 OK
+10:44:01 INFO    faultdiag.agent: submitted ['lamp', 'sensor_lamp'], evidence: 
+10:44:01 INFO    faultdiag.harness: llm    F5@lamp   seed=7004 diagnosed    got=['lamp', 'sensor_lamp'] truth=['sensor_lamp'] cost=14 WRONG
+10:44:04 INFO    faultdiag.agent: submitted ['sensor_lamp'], evidence: 
+10:44:04 INFO    faultdiag.harness: hybrid F5@lamp   seed=7004 diagnosed    got=['sensor_lamp'] truth=['sensor_lamp'] cost=2 OK
+10:44:07 INFO    faultdiag.agent: submitted [], evidence: 
+10:44:07 INFO    faultdiag.harness: llm    F5@lamp   seed=7005 diagnosed    got=[] truth=['sensor_lamp'] cost=5 WRONG
+10:44:12 INFO    faultdiag.agent: submitted ['sensor_lamp'], evidence: 
+10:44:12 INFO    faultdiag.harness: hybrid F5@lamp   seed=7005 diagnosed    got=['sensor_lamp'] truth=['sensor_lamp'] cost=6 OK
+10:44:15 INFO    faultdiag.agent: submitted [], evidence: 
+10:44:15 INFO    faultdiag.harness: llm    F5@lamp   seed=7006 diagnosed    got=[] truth=['sensor_lamp'] cost=5 WRONG
+10:44:20 INFO    faultdiag.agent: submitted ['sensor_lamp'], evidence: 
+10:44:20 INFO    faultdiag.harness: hybrid F5@lamp   seed=7006 diagnosed    got=['sensor_lamp'] truth=['sensor_lamp'] cost=6 OK
+10:44:24 INFO    faultdiag.agent: submitted ['lamp', 'sensor_lamp'], evidence: 
+10:44:24 INFO    faultdiag.harness: llm    F5@lamp   seed=7007 diagnosed    got=['lamp', 'sensor_lamp'] truth=['sensor_lamp'] cost=4 WRONG
+10:44:28 INFO    faultdiag.agent: submitted ['sensor_lamp'], evidence: 
+10:44:28 INFO    faultdiag.harness: hybrid F5@lamp   seed=7007 diagnosed    got=['sensor_lamp'] truth=['sensor_lamp'] cost=3 OK
+10:44:31 INFO    faultdiag.agent: submitted ['ground_return'], evidence: 
+10:44:31 INFO    faultdiag.harness: llm    F5@lamp   seed=7008 diagnosed    got=['ground_return'] truth=['sensor_lamp'] cost=12 WRONG
+10:44:34 INFO    faultdiag.agent: submitted ['sensor_lamp'], evidence: 
+10:44:34 INFO    faultdiag.harness: hybrid F5@lamp   seed=7008 diagnosed    got=['sensor_lamp'] truth=['sensor_lamp'] cost=2 OK
+10:44:38 INFO    faultdiag.agent: submitted [], evidence: 
+10:44:38 INFO    faultdiag.harness: llm    F5@lamp   seed=7009 diagnosed    got=[] truth=['sensor_lamp'] cost=5 WRONG
+10:44:41 INFO    faultdiag.agent: submitted ['sensor_lamp'], evidence: 
+10:44:41 INFO    faultdiag.harness: hybrid F5@lamp   seed=7009 diagnosed    got=['sensor_lamp'] truth=['sensor_lamp'] cost=2 OK
+10:44:47 INFO    faultdiag.agent: submitted ['load', 'sensor_load'], evidence: 
+10:44:47 INFO    faultdiag.harness: llm    F5@load   seed=8000 diagnosed    got=['load', 'sensor_load'] truth=['sensor_load'] cost=25 WRONG
+10:44:50 INFO    faultdiag.agent: submitted ['sensor_load'], evidence: 
+10:44:50 INFO    faultdiag.harness: hybrid F5@load   seed=8000 diagnosed    got=['sensor_load'] truth=['sensor_load'] cost=3 OK
+10:44:56 INFO    faultdiag.agent: submitted ['load', 'sensor_load'], evidence: 
+10:44:56 INFO    faultdiag.harness: llm    F5@load   seed=8001 diagnosed    got=['load', 'sensor_load'] truth=['sensor_load'] cost=15 WRONG
+10:44:59 INFO    faultdiag.agent: submitted ['sensor_load'], evidence: 
+10:44:59 INFO    faultdiag.harness: hybrid F5@load   seed=8001 diagnosed    got=['sensor_load'] truth=['sensor_load'] cost=3 OK
+10:45:03 INFO    faultdiag.agent: submitted [], evidence: 
+10:45:03 INFO    faultdiag.harness: llm    F5@load   seed=8002 diagnosed    got=[] truth=['sensor_load'] cost=5 WRONG
+10:45:08 INFO    faultdiag.agent: submitted ['sensor_load'], evidence: 
+10:45:08 INFO    faultdiag.harness: hybrid F5@load   seed=8002 diagnosed    got=['sensor_load'] truth=['sensor_load'] cost=7 OK
+10:45:14 INFO    faultdiag.agent: submitted ['load', 'sensor_load'], evidence: 
+10:45:14 INFO    faultdiag.harness: llm    F5@load   seed=8003 diagnosed    got=['load', 'sensor_load'] truth=['sensor_load'] cost=25 WRONG
+10:45:18 INFO    faultdiag.agent: submitted ['sensor_load'], evidence: 
+10:45:18 INFO    faultdiag.harness: hybrid F5@load   seed=8003 diagnosed    got=['sensor_load'] truth=['sensor_load'] cost=3 OK
+10:45:23 INFO    faultdiag.agent: submitted ['load', 'sensor_load'], evidence: 
+10:45:23 INFO    faultdiag.harness: llm    F5@load   seed=8004 diagnosed    got=['load', 'sensor_load'] truth=['sensor_load'] cost=15 WRONG
+10:45:28 INFO    faultdiag.agent: submitted ['sensor_load'], evidence: 
+10:45:28 INFO    faultdiag.harness: hybrid F5@load   seed=8004 diagnosed    got=['sensor_load'] truth=['sensor_load'] cost=4 OK
+10:45:33 INFO    faultdiag.agent: submitted ['load', 'sensor_load'], evidence: 
+10:45:33 INFO    faultdiag.harness: llm    F5@load   seed=8005 diagnosed    got=['load', 'sensor_load'] truth=['sensor_load'] cost=15 WRONG
+10:45:38 INFO    faultdiag.agent: submitted ['sensor_load'], evidence: 
+10:45:38 INFO    faultdiag.harness: hybrid F5@load   seed=8005 diagnosed    got=['sensor_load'] truth=['sensor_load'] cost=4 OK
+10:45:44 INFO    faultdiag.agent: submitted ['load', 'sensor_load'], evidence: 
+10:45:44 INFO    faultdiag.harness: llm    F5@load   seed=8006 diagnosed    got=['load', 'sensor_load'] truth=['sensor_load'] cost=25 WRONG
+10:45:48 INFO    faultdiag.agent: submitted [], evidence: 
+10:45:48 INFO    faultdiag.harness: hybrid F5@load   seed=8006 diagnosed    got=[] truth=['sensor_load'] cost=6 WRONG
+10:45:54 INFO    faultdiag.agent: submitted ['load', 'sensor_load'], evidence: 
+10:45:54 INFO    faultdiag.harness: llm    F5@load   seed=8007 diagnosed    got=['load', 'sensor_load'] truth=['sensor_load'] cost=25 WRONG
+10:45:58 INFO    faultdiag.agent: submitted ['sensor_load'], evidence: 
+10:45:58 INFO    faultdiag.harness: hybrid F5@load   seed=8007 diagnosed    got=['sensor_load'] truth=['sensor_load'] cost=3 OK
+10:46:01 INFO    faultdiag.agent: submitted [], evidence: 
+10:46:01 INFO    faultdiag.harness: llm    F5@load   seed=8008 diagnosed    got=[] truth=['sensor_load'] cost=5 WRONG
+10:46:06 INFO    faultdiag.agent: submitted ['sensor_load'], evidence: 
+10:46:06 INFO    faultdiag.harness: hybrid F5@load   seed=8008 diagnosed    got=['sensor_load'] truth=['sensor_load'] cost=6 OK
+10:46:12 INFO    faultdiag.agent: submitted ['load', 'sensor_load'], evidence: 
+10:46:12 INFO    faultdiag.harness: llm    F5@load   seed=8009 diagnosed    got=['load', 'sensor_load'] truth=['sensor_load'] cost=25 WRONG
+10:46:16 INFO    faultdiag.agent: submitted ['sensor_load'], evidence: 
+10:46:16 INFO    faultdiag.harness: hybrid F5@load   seed=8009 diagnosed    got=['sensor_load'] truth=['sensor_load'] cost=3 OK
+10:46:20 INFO    faultdiag.agent: submitted ['battery', 'ground_return'], evidence: 
+10:46:20 INFO    faultdiag.harness: llm    C1        seed=9000 diagnosed    got=['battery', 'ground_return'] truth=['battery', 'motor'] cost=15 WRONG
+10:46:25 INFO    faultdiag.agent: submitted ['battery', 'motor'], evidence: 
+10:46:25 INFO    faultdiag.harness: hybrid C1        seed=9000 diagnosed    got=['battery', 'motor'] truth=['battery', 'motor'] cost=6 OK
+10:46:29 INFO    faultdiag.agent: submitted ['battery', 'ground_return'], evidence: 
+10:46:29 INFO    faultdiag.harness: llm    C1        seed=9001 diagnosed    got=['battery', 'ground_return'] truth=['battery', 'motor'] cost=15 WRONG
+10:46:32 INFO    faultdiag.agent: submitted ['battery', 'motor'], evidence: 
+10:46:32 INFO    faultdiag.harness: hybrid C1        seed=9001 diagnosed    got=['battery', 'motor'] truth=['battery', 'motor'] cost=5 OK
+10:46:35 INFO    faultdiag.agent: submitted [], evidence: 
+10:46:35 INFO    faultdiag.harness: llm    C1        seed=9002 diagnosed    got=[] truth=['battery', 'motor'] cost=2 WRONG
+10:46:41 INFO    faultdiag.agent: submitted ['battery', 'motor'], evidence: 
+10:46:41 INFO    faultdiag.harness: hybrid C1        seed=9002 diagnosed    got=['battery', 'motor'] truth=['battery', 'motor'] cost=7 OK
+10:46:45 INFO    faultdiag.agent: submitted ['battery', 'ground_return'], evidence: 
+10:46:45 INFO    faultdiag.harness: llm    C1        seed=9003 diagnosed    got=['battery', 'ground_return'] truth=['battery', 'motor'] cost=15 WRONG
+10:46:49 INFO    faultdiag.agent: submitted ['battery', 'motor'], evidence: 
+10:46:49 INFO    faultdiag.harness: hybrid C1        seed=9003 diagnosed    got=['battery', 'motor'] truth=['battery', 'motor'] cost=6 OK
+10:46:53 INFO    faultdiag.agent: submitted ['battery', 'ground_return'], evidence: 
+10:46:53 INFO    faultdiag.harness: llm    C1        seed=9004 diagnosed    got=['battery', 'ground_return'] truth=['battery', 'motor'] cost=15 WRONG
+10:46:57 INFO    faultdiag.agent: submitted ['battery', 'motor'], evidence: 
+10:46:57 INFO    faultdiag.harness: hybrid C1        seed=9004 diagnosed    got=['battery', 'motor'] truth=['battery', 'motor'] cost=5 OK
+10:47:02 INFO    faultdiag.agent: submitted ['battery', 'ground_return'], evidence: 
+10:47:02 INFO    faultdiag.harness: llm    C1        seed=9005 diagnosed    got=['battery', 'ground_return'] truth=['battery', 'motor'] cost=15 WRONG
+10:47:07 INFO    faultdiag.agent: submitted ['battery', 'motor'], evidence: 
+10:47:07 INFO    faultdiag.harness: hybrid C1        seed=9005 diagnosed    got=['battery', 'motor'] truth=['battery', 'motor'] cost=7 OK
+10:47:12 INFO    faultdiag.agent: submitted ['battery', 'ground_return'], evidence: 
+10:47:12 INFO    faultdiag.harness: llm    C1        seed=9006 diagnosed    got=['battery', 'ground_return'] truth=['battery', 'motor'] cost=15 WRONG
+10:47:16 INFO    faultdiag.agent: submitted ['battery', 'motor'], evidence: 
+10:47:16 INFO    faultdiag.harness: hybrid C1        seed=9006 diagnosed    got=['battery', 'motor'] truth=['battery', 'motor'] cost=6 OK
+10:47:20 INFO    faultdiag.agent: submitted ['battery'], evidence: 
+10:47:20 INFO    faultdiag.harness: llm    C1        seed=9007 diagnosed    got=['battery'] truth=['battery', 'motor'] cost=5 WRONG
+10:47:26 INFO    faultdiag.agent: submitted ['battery', 'motor'], evidence: 
+10:47:26 INFO    faultdiag.harness: hybrid C1        seed=9007 diagnosed    got=['battery', 'motor'] truth=['battery', 'motor'] cost=8 OK
+10:47:32 INFO    faultdiag.agent: submitted ['battery', 'ground_return'], evidence: 
+10:47:32 INFO    faultdiag.harness: llm    C1        seed=9008 diagnosed    got=['battery', 'ground_return'] truth=['battery', 'motor'] cost=25 WRONG
+10:47:38 INFO    faultdiag.agent: submitted ['battery', 'motor'], evidence: 
+10:47:38 INFO    faultdiag.harness: hybrid C1        seed=9008 diagnosed    got=['battery', 'motor'] truth=['battery', 'motor'] cost=7 OK
+10:47:42 INFO    faultdiag.agent: submitted ['battery', 'ground_return'], evidence: 
+10:47:42 INFO    faultdiag.harness: llm    C1        seed=9009 diagnosed    got=['battery', 'ground_return'] truth=['battery', 'motor'] cost=15 WRONG
+10:47:46 INFO    faultdiag.agent: submitted ['battery', 'motor'], evidence: 
+10:47:46 INFO    faultdiag.harness: hybrid C1        seed=9009 diagnosed    got=['battery', 'motor'] truth=['battery', 'motor'] cost=5 OK
+10:47:49 INFO    faultdiag.agent: submitted ['sensor_bus', 'sensor_motor'], evidence: 
+10:47:49 INFO    faultdiag.harness: llm    C2        seed=10000 diagnosed    got=['sensor_bus', 'sensor_motor'] truth=['motor_connection', 'sensor_motor'] cost=13 WRONG
+10:47:54 INFO    faultdiag.agent: submitted ['motor_connection', 'sensor_motor'], evidence: 
+10:47:54 INFO    faultdiag.harness: hybrid C2        seed=10000 diagnosed    got=['motor_connection', 'sensor_motor'] truth=['motor_connection', 'sensor_motor'] cost=13 OK
+10:47:58 INFO    faultdiag.agent: submitted ['sensor_bus', 'sensor_motor'], evidence: 
+10:47:58 INFO    faultdiag.harness: llm    C2        seed=10001 diagnosed    got=['sensor_bus', 'sensor_motor'] truth=['motor_connection', 'sensor_motor'] cost=13 WRONG
+10:48:02 INFO    faultdiag.agent: submitted ['motor_connection', 'sensor_motor'], evidence: 
+10:48:02 INFO    faultdiag.harness: hybrid C2        seed=10001 diagnosed    got=['motor_connection', 'sensor_motor'] truth=['motor_connection', 'sensor_motor'] cost=13 OK
+10:48:06 INFO    faultdiag.agent: submitted [], evidence: 
+10:48:06 INFO    faultdiag.harness: llm    C2        seed=10002 diagnosed    got=[] truth=['motor_connection', 'sensor_motor'] cost=5 WRONG
+10:48:12 INFO    faultdiag.agent: submitted ['motor_connection', 'sensor_motor'], evidence: 
+10:48:12 INFO    faultdiag.harness: hybrid C2        seed=10002 diagnosed    got=['motor_connection', 'sensor_motor'] truth=['motor_connection', 'sensor_motor'] cost=16 OK
+10:48:17 INFO    faultdiag.agent: submitted ['motor_connection', 'sensor_motor'], evidence: 
+10:48:17 INFO    faultdiag.harness: llm    C2        seed=10003 diagnosed    got=['motor_connection', 'sensor_motor'] truth=['motor_connection', 'sensor_motor'] cost=13 OK
+10:48:21 INFO    faultdiag.agent: submitted ['motor_connection', 'sensor_motor'], evidence: 
+10:48:21 INFO    faultdiag.harness: hybrid C2        seed=10003 diagnosed    got=['motor_connection', 'sensor_motor'] truth=['motor_connection', 'sensor_motor'] cost=12 OK
+10:48:25 INFO    faultdiag.agent: submitted ['sensor_bus', 'sensor_motor'], evidence: 
+10:48:25 INFO    faultdiag.harness: llm    C2        seed=10004 diagnosed    got=['sensor_bus', 'sensor_motor'] truth=['motor_connection', 'sensor_motor'] cost=13 WRONG
+10:48:29 INFO    faultdiag.agent: submitted ['sensor_motor'], evidence: 
+10:48:29 INFO    faultdiag.harness: hybrid C2        seed=10004 diagnosed    got=['sensor_motor'] truth=['motor_connection', 'sensor_motor'] cost=3 WRONG
+10:48:33 INFO    faultdiag.agent: submitted ['motor_connection', 'sensor_motor'], evidence: 
+10:48:33 INFO    faultdiag.harness: llm    C2        seed=10005 diagnosed    got=['motor_connection', 'sensor_motor'] truth=['motor_connection', 'sensor_motor'] cost=13 OK
+10:48:37 INFO    faultdiag.agent: submitted ['motor_connection', 'sensor_motor'], evidence: 
+10:48:37 INFO    faultdiag.harness: hybrid C2        seed=10005 diagnosed    got=['motor_connection', 'sensor_motor'] truth=['motor_connection', 'sensor_motor'] cost=12 OK
+10:48:41 INFO    faultdiag.agent: submitted ['sensor_bus', 'sensor_motor'], evidence: 
+10:48:41 INFO    faultdiag.harness: llm    C2        seed=10006 diagnosed    got=['sensor_bus', 'sensor_motor'] truth=['motor_connection', 'sensor_motor'] cost=13 WRONG
+10:48:47 INFO    faultdiag.agent: submitted ['motor_connection', 'sensor_motor'], evidence: 
+10:48:47 INFO    faultdiag.harness: hybrid C2        seed=10006 diagnosed    got=['motor_connection', 'sensor_motor'] truth=['motor_connection', 'sensor_motor'] cost=16 OK
+10:48:50 INFO    faultdiag.agent: submitted ['sensor_bus', 'sensor_motor'], evidence: 
+10:48:50 INFO    faultdiag.harness: llm    C2        seed=10007 diagnosed    got=['sensor_bus', 'sensor_motor'] truth=['motor_connection', 'sensor_motor'] cost=3 WRONG
+10:48:55 INFO    faultdiag.agent: submitted ['motor_connection', 'sensor_motor'], evidence: 
+10:48:55 INFO    faultdiag.harness: hybrid C2        seed=10007 diagnosed    got=['motor_connection', 'sensor_motor'] truth=['motor_connection', 'sensor_motor'] cost=15 OK
+10:48:59 INFO    faultdiag.agent: submitted ['sensor_bus', 'sensor_motor'], evidence: 
+10:48:59 INFO    faultdiag.harness: llm    C2        seed=10008 diagnosed    got=['sensor_bus', 'sensor_motor'] truth=['motor_connection', 'sensor_motor'] cost=13 WRONG
+10:49:04 INFO    faultdiag.agent: submitted ['sensor_motor'], evidence: 
+10:49:04 INFO    faultdiag.harness: hybrid C2        seed=10008 diagnosed    got=['sensor_motor'] truth=['motor_connection', 'sensor_motor'] cost=4 WRONG
+10:49:08 INFO    faultdiag.agent: submitted ['sensor_bus', 'sensor_motor'], evidence: 
+10:49:08 INFO    faultdiag.harness: llm    C2        seed=10009 diagnosed    got=['sensor_bus', 'sensor_motor'] truth=['motor_connection', 'sensor_motor'] cost=13 WRONG
+10:49:12 INFO    faultdiag.agent: submitted ['motor_connection'], evidence: 
+10:49:12 INFO    faultdiag.harness: hybrid C2        seed=10009 diagnosed    got=['motor_connection'] truth=['motor_connection', 'sensor_motor'] cost=13 WRONG
+10:49:17 INFO    faultdiag.agent: submitted [], evidence: 
+10:49:17 INFO    faultdiag.harness: llm    H1        seed=11000 diagnosed    got=[] truth=['ground_return'] cost=5 WRONG
+10:49:21 INFO    faultdiag.agent: submitted [], evidence: 
+10:49:21 INFO    faultdiag.harness: hybrid H1        seed=11000 diagnosed    got=[] truth=['ground_return'] cost=3 WRONG
+10:49:27 INFO    faultdiag.agent: submitted ['ground_return'], evidence: 
+10:49:27 INFO    faultdiag.harness: llm    H1        seed=11001 diagnosed    got=['ground_return'] truth=['ground_return'] cost=15 OK
+10:49:30 INFO    faultdiag.agent: submitted [], evidence: 
+10:49:30 INFO    faultdiag.harness: hybrid H1        seed=11001 diagnosed    got=[] truth=['ground_return'] cost=3 WRONG
+10:49:35 INFO    faultdiag.agent: submitted [], evidence: 
+10:49:35 INFO    faultdiag.harness: llm    H1        seed=11002 diagnosed    got=[] truth=['ground_return'] cost=5 WRONG
+10:49:39 INFO    faultdiag.agent: submitted [], evidence: 
+10:49:39 INFO    faultdiag.harness: hybrid H1        seed=11002 diagnosed    got=[] truth=['ground_return'] cost=3 WRONG
+10:49:45 INFO    faultdiag.agent: submitted ['ground_return'], evidence: 
+10:49:45 INFO    faultdiag.harness: llm    H1        seed=11003 diagnosed    got=['ground_return'] truth=['ground_return'] cost=15 OK
+10:49:49 INFO    faultdiag.agent: submitted [], evidence: 
+10:49:49 INFO    faultdiag.harness: hybrid H1        seed=11003 diagnosed    got=[] truth=['ground_return'] cost=3 WRONG
+10:49:52 INFO    faultdiag.agent: submitted [], evidence: 
+10:49:52 INFO    faultdiag.harness: llm    H1        seed=11004 diagnosed    got=[] truth=['ground_return'] cost=5 WRONG
+10:49:56 INFO    faultdiag.agent: submitted [], evidence: 
+10:49:56 INFO    faultdiag.harness: hybrid H1        seed=11004 diagnosed    got=[] truth=['ground_return'] cost=3 WRONG
+10:49:59 INFO    faultdiag.agent: submitted [], evidence: 
+10:49:59 INFO    faultdiag.harness: llm    H1        seed=11005 diagnosed    got=[] truth=['ground_return'] cost=5 WRONG
+10:50:03 INFO    faultdiag.agent: submitted [], evidence: 
+10:50:03 INFO    faultdiag.harness: hybrid H1        seed=11005 diagnosed    got=[] truth=['ground_return'] cost=3 WRONG
+10:50:08 INFO    faultdiag.agent: submitted ['ground_return'], evidence: 
+10:50:08 INFO    faultdiag.harness: llm    H1        seed=11006 diagnosed    got=['ground_return'] truth=['ground_return'] cost=15 OK
+10:50:13 INFO    faultdiag.agent: submitted ['ground_return'], evidence: 
+10:50:13 INFO    faultdiag.harness: hybrid H1        seed=11006 diagnosed    got=['ground_return'] truth=['ground_return'] cost=16 OK
+10:50:19 INFO    faultdiag.agent: submitted ['ground_return'], evidence: 
+10:50:19 INFO    faultdiag.harness: llm    H1        seed=11007 diagnosed    got=['ground_return'] truth=['ground_return'] cost=15 OK
+10:50:25 INFO    faultdiag.agent: submitted ['ground_return'], evidence: 
+10:50:25 INFO    faultdiag.harness: hybrid H1        seed=11007 diagnosed    got=['ground_return'] truth=['ground_return'] cost=16 OK
+10:50:30 INFO    faultdiag.agent: submitted ['ground_return'], evidence: 
+10:50:30 INFO    faultdiag.harness: llm    H1        seed=11008 diagnosed    got=['ground_return'] truth=['ground_return'] cost=15 OK
+10:50:33 INFO    faultdiag.agent: submitted [], evidence: 
+10:50:33 INFO    faultdiag.harness: hybrid H1        seed=11008 diagnosed    got=[] truth=['ground_return'] cost=3 WRONG
+10:50:37 INFO    faultdiag.agent: submitted [], evidence: 
+10:50:37 INFO    faultdiag.harness: llm    H1        seed=11009 diagnosed    got=[] truth=['ground_return'] cost=5 WRONG
+10:50:42 INFO    faultdiag.agent: submitted ['ground_return', 'unmonitored_load'], evidence: 
+10:50:42 INFO    faultdiag.harness: hybrid H1        seed=11009 diagnosed    got=['ground_return', 'unmonitored_load'] truth=['ground_return'] cost=16 WRONG
+10:50:48 INFO    faultdiag.agent: submitted ['ground_return'], evidence: 
+10:50:48 INFO    faultdiag.harness: llm    H2        seed=12000 diagnosed    got=['ground_return'] truth=['unmonitored_load'] cost=15 WRONG
+10:50:51 INFO    faultdiag.agent: submitted [], evidence: 
+10:50:51 INFO    faultdiag.harness: hybrid H2        seed=12000 diagnosed    got=[] truth=['unmonitored_load'] cost=3 WRONG
+10:50:57 INFO    faultdiag.agent: submitted ['ground_return'], evidence: 
+10:50:57 INFO    faultdiag.harness: llm    H2        seed=12001 diagnosed    got=['ground_return'] truth=['unmonitored_load'] cost=15 WRONG
+10:51:04 INFO    faultdiag.agent: submitted ['motor_connection', 'motor'], evidence: 
+10:51:04 INFO    faultdiag.harness: hybrid H2        seed=12001 diagnosed    got=['motor', 'motor_connection'] truth=['unmonitored_load'] cost=18 WRONG
+10:51:08 INFO    faultdiag.agent: submitted [], evidence: 
+10:51:08 INFO    faultdiag.harness: llm    H2        seed=12002 diagnosed    got=[] truth=['unmonitored_load'] cost=5 WRONG
+10:51:15 INFO    faultdiag.agent: submitted ['ground_return', 'unmonitored_load'], evidence: 
+10:51:15 INFO    faultdiag.harness: hybrid H2        seed=12002 diagnosed    got=['ground_return', 'unmonitored_load'] truth=['unmonitored_load'] cost=16 WRONG
+10:51:20 INFO    faultdiag.agent: submitted ['ground_return'], evidence: 
+10:51:20 INFO    faultdiag.harness: llm    H2        seed=12003 diagnosed    got=['ground_return'] truth=['unmonitored_load'] cost=15 WRONG
+10:51:24 INFO    faultdiag.agent: submitted ['motor', 'current_sensor_motor'], evidence: 
+10:51:24 INFO    faultdiag.harness: hybrid H2        seed=12003 diagnosed    got=['current_sensor_motor', 'motor'] truth=['unmonitored_load'] cost=13 WRONG
+10:51:30 INFO    faultdiag.agent: submitted ['ground_return'], evidence: 
+10:51:30 INFO    faultdiag.harness: llm    H2        seed=12004 diagnosed    got=['ground_return'] truth=['unmonitored_load'] cost=15 WRONG
+10:51:39 INFO    faultdiag.agent: submitted ['motor_connection', 'motor'], evidence: 
+10:51:39 INFO    faultdiag.harness: hybrid H2        seed=12004 diagnosed    got=['motor', 'motor_connection'] truth=['unmonitored_load'] cost=28 WRONG
+10:51:42 INFO    faultdiag.agent: submitted [], evidence: 
+10:51:42 INFO    faultdiag.harness: llm    H2        seed=12005 diagnosed    got=[] truth=['unmonitored_load'] cost=5 WRONG
+10:51:49 INFO    faultdiag.agent: submitted ['ground_return', 'unmonitored_load'], evidence: 
+10:51:49 INFO    faultdiag.harness: hybrid H2        seed=12005 diagnosed    got=['ground_return', 'unmonitored_load'] truth=['unmonitored_load'] cost=25 WRONG
+10:51:55 INFO    faultdiag.agent: submitted ['ground_return'], evidence: 
+10:51:55 INFO    faultdiag.harness: llm    H2        seed=12006 diagnosed    got=['ground_return'] truth=['unmonitored_load'] cost=15 WRONG
+10:51:59 INFO    faultdiag.agent: submitted [], evidence: 
+10:51:59 INFO    faultdiag.harness: hybrid H2        seed=12006 diagnosed    got=[] truth=['unmonitored_load'] cost=3 WRONG
+10:52:04 INFO    faultdiag.agent: submitted ['ground_return'], evidence: 
+10:52:04 INFO    faultdiag.harness: llm    H2        seed=12007 diagnosed    got=['ground_return'] truth=['unmonitored_load'] cost=15 WRONG
+10:52:08 INFO    faultdiag.agent: submitted [], evidence: 
+10:52:08 INFO    faultdiag.harness: hybrid H2        seed=12007 diagnosed    got=[] truth=['unmonitored_load'] cost=3 WRONG
+10:52:11 INFO    faultdiag.agent: submitted [], evidence: 
+10:52:11 INFO    faultdiag.harness: llm    H2        seed=12008 diagnosed    got=[] truth=['unmonitored_load'] cost=5 WRONG
+10:52:16 INFO    faultdiag.agent: submitted ['sensor_motor', 'current_sensor_motor'], evidence: 
+10:52:16 INFO    faultdiag.harness: hybrid H2        seed=12008 diagnosed    got=['current_sensor_motor', 'sensor_motor'] truth=['unmonitored_load'] cost=14 WRONG
+10:52:22 INFO    faultdiag.agent: submitted ['ground_return'], evidence: 
+10:52:22 INFO    faultdiag.harness: llm    H2        seed=12009 diagnosed    got=['ground_return'] truth=['unmonitored_load'] cost=15 WRONG
+10:52:28 INFO    faultdiag.agent: submitted ['motor', 'current_sensor_motor'], evidence: 
+10:52:28 INFO    faultdiag.harness: hybrid H2        seed=12009 diagnosed    got=['current_sensor_motor', 'motor'] truth=['unmonitored_load'] cost=17 WRONG
+10:52:32 INFO    faultdiag.agent: submitted [], evidence: 
+10:52:32 INFO    faultdiag.harness: llm    TF1       seed=13000 diagnosed    got=[] truth=['motor_connection'] cost=5 WRONG
+10:52:32 WARNING faultdiag.guard: step 1 read_voltage {'point': 'motor'} -> timeout: no response from instrument
+10:52:36 INFO    faultdiag.agent: submitted [], evidence: 
+10:52:36 INFO    faultdiag.harness: hybrid TF1       seed=13000 diagnosed    got=[] truth=['motor_connection'] cost=6 WRONG
+10:52:40 INFO    faultdiag.agent: submitted [], evidence: 
+10:52:40 INFO    faultdiag.harness: llm    TF1       seed=13001 diagnosed    got=[] truth=['motor_connection'] cost=5 WRONG
+10:52:40 WARNING faultdiag.guard: step 1 read_voltage {'point': 'motor'} -> timeout: no response from instrument
+10:52:46 INFO    faultdiag.agent: submitted [], evidence: 
+10:52:46 INFO    faultdiag.harness: hybrid TF1       seed=13001 diagnosed    got=[] truth=['motor_connection'] cost=17 WRONG
+10:52:49 INFO    faultdiag.agent: submitted [], evidence: 
+10:52:49 INFO    faultdiag.harness: llm    TF1       seed=13002 diagnosed    got=[] truth=['motor_connection'] cost=5 WRONG
+10:52:50 WARNING faultdiag.guard: step 1 read_voltage {'point': 'motor'} -> timeout: no response from instrument
+10:52:59 INFO    faultdiag.agent: submitted [], evidence: 
+10:52:59 INFO    faultdiag.harness: hybrid TF1       seed=13002 diagnosed    got=[] truth=['motor_connection'] cost=5 WRONG
+10:53:01 WARNING faultdiag.guard: step 3 read_voltage {'point': 'motor'} -> timeout: no response from instrument
+10:53:01 WARNING faultdiag.guard: step 4 read_voltage {'point': 'motor'} -> timeout: no response from instrument
+10:53:03 INFO    faultdiag.agent: submitted ['motor_connection', 'sensor_motor'], evidence: 
+10:53:03 INFO    faultdiag.harness: llm    TF1       seed=13003 diagnosed    got=['motor_connection', 'sensor_motor'] truth=['motor_connection'] cost=14 WRONG
+10:53:04 WARNING faultdiag.guard: step 1 read_voltage {'point': 'motor'} -> timeout: no response from instrument
+10:53:11 INFO    faultdiag.agent: submitted [], evidence: 
+10:53:11 INFO    faultdiag.harness: hybrid TF1       seed=13003 diagnosed    got=[] truth=['motor_connection'] cost=8 WRONG
+10:53:13 WARNING faultdiag.guard: step 3 read_voltage {'point': 'motor'} -> timeout: no response from instrument
+10:53:14 WARNING faultdiag.guard: step 4 read_voltage {'point': 'motor'} -> timeout: no response from instrument
+10:53:16 INFO    faultdiag.agent: submitted ['motor_connection', 'sensor_motor'], evidence: 
+10:53:16 INFO    faultdiag.harness: llm    TF1       seed=13004 diagnosed    got=['motor_connection', 'sensor_motor'] truth=['motor_connection'] cost=14 WRONG
+10:53:17 WARNING faultdiag.guard: step 1 read_voltage {'point': 'motor'} -> timeout: no response from instrument
+10:53:23 INFO    faultdiag.agent: submitted ['motor_connection'], evidence: 
+10:53:23 INFO    faultdiag.harness: hybrid TF1       seed=13004 diagnosed    got=['motor_connection'] truth=['motor_connection'] cost=18 OK
+10:53:26 INFO    faultdiag.agent: submitted ['ground_return'], evidence: 
+10:53:26 INFO    faultdiag.harness: llm    TF1       seed=13005 diagnosed    got=['ground_return'] truth=['motor_connection'] cost=12 WRONG
+10:53:27 WARNING faultdiag.guard: step 1 read_voltage {'point': 'motor'} -> timeout: no response from instrument
+10:53:32 INFO    faultdiag.agent: submitted [], evidence: 
+10:53:32 INFO    faultdiag.harness: hybrid TF1       seed=13005 diagnosed    got=[] truth=['motor_connection'] cost=7 WRONG
+10:53:35 INFO    faultdiag.agent: submitted [], evidence: 
+10:53:35 INFO    faultdiag.harness: llm    TF1       seed=13006 diagnosed    got=[] truth=['motor_connection'] cost=5 WRONG
+10:53:36 WARNING faultdiag.guard: step 1 read_voltage {'point': 'motor'} -> timeout: no response from instrument
+10:53:41 INFO    faultdiag.agent: submitted [], evidence: 
+10:53:41 INFO    faultdiag.harness: hybrid TF1       seed=13006 diagnosed    got=[] truth=['motor_connection'] cost=8 WRONG
+10:53:43 WARNING faultdiag.guard: step 3 read_voltage {'point': 'motor'} -> timeout: no response from instrument
+10:53:44 WARNING faultdiag.guard: step 4 read_voltage {'point': 'motor'} -> timeout: no response from instrument
+10:53:46 INFO    faultdiag.agent: submitted ['motor_connection', 'sensor_motor'], evidence: 
+10:53:46 INFO    faultdiag.harness: llm    TF1       seed=13007 diagnosed    got=['motor_connection', 'sensor_motor'] truth=['motor_connection'] cost=14 WRONG
+10:53:47 WARNING faultdiag.guard: step 1 read_voltage {'point': 'motor'} -> timeout: no response from instrument
+10:53:51 INFO    faultdiag.agent: submitted [], evidence: 
+10:53:51 INFO    faultdiag.harness: hybrid TF1       seed=13007 diagnosed    got=[] truth=['motor_connection'] cost=7 WRONG
+10:53:53 WARNING faultdiag.guard: step 3 read_voltage {'point': 'motor'} -> timeout: no response from instrument
+10:53:54 WARNING faultdiag.guard: step 4 read_voltage {'point': 'motor'} -> timeout: no response from instrument
+10:53:56 INFO    faultdiag.agent: submitted ['motor_connection', 'sensor_motor'], evidence: 
+10:53:56 INFO    faultdiag.harness: llm    TF1       seed=13008 diagnosed    got=['motor_connection', 'sensor_motor'] truth=['motor_connection'] cost=14 WRONG
+10:53:57 WARNING faultdiag.guard: step 1 read_voltage {'point': 'motor'} -> timeout: no response from instrument
+10:54:01 INFO    faultdiag.agent: submitted [], evidence: 
+10:54:01 INFO    faultdiag.harness: hybrid TF1       seed=13008 diagnosed    got=[] truth=['motor_connection'] cost=5 WRONG
+10:54:03 WARNING faultdiag.guard: step 3 read_voltage {'point': 'motor'} -> timeout: no response from instrument
+10:54:04 WARNING faultdiag.guard: step 4 read_voltage {'point': 'motor'} -> timeout: no response from instrument
+10:54:08 INFO    faultdiag.agent: submitted ['motor_connection', 'sensor_motor'], evidence: 
+10:54:08 INFO    faultdiag.harness: llm    TF1       seed=13009 diagnosed    got=['motor_connection', 'sensor_motor'] truth=['motor_connection'] cost=14 WRONG
+10:54:09 WARNING faultdiag.guard: step 1 read_voltage {'point': 'motor'} -> timeout: no response from instrument
+10:54:16 INFO    faultdiag.agent: submitted [], evidence: 
+10:54:16 INFO    faultdiag.harness: hybrid TF1       seed=13009 diagnosed    got=[] truth=['motor_connection'] cost=18 WRONG
+10:54:21 INFO    faultdiag.agent: submitted ['motor_connection', 'ground_return'], evidence: 
+10:54:21 INFO    faultdiag.harness: llm    TF2       seed=14000 diagnosed    got=['ground_return', 'motor_connection'] truth=['motor'] cost=15 WRONG
+10:54:27 INFO    faultdiag.agent: submitted ['ground_return', 'current_sensor_motor'], evidence: 
+10:54:27 INFO    faultdiag.harness: hybrid TF2       seed=14000 diagnosed    got=['current_sensor_motor', 'ground_return'] truth=['motor'] cost=15 WRONG
+10:54:34 INFO    faultdiag.agent: submitted ['motor_connection', 'ground_return'], evidence: 
+10:54:34 INFO    faultdiag.harness: llm    TF2       seed=14001 diagnosed    got=['ground_return', 'motor_connection'] truth=['motor'] cost=15 WRONG
+10:54:42 INFO    faultdiag.agent: submitted ['ground_return', 'current_sensor_motor'], evidence: 
+10:54:42 INFO    faultdiag.harness: hybrid TF2       seed=14001 diagnosed    got=['current_sensor_motor', 'ground_return'] truth=['motor'] cost=15 WRONG
+10:54:45 INFO    faultdiag.agent: submitted [], evidence: 
+10:54:45 INFO    faultdiag.harness: llm    TF2       seed=14002 diagnosed    got=[] truth=['motor'] cost=5 WRONG
+10:54:51 INFO    faultdiag.agent: submitted ['ground_return', 'current_sensor_motor'], evidence: 
+10:54:51 INFO    faultdiag.harness: hybrid TF2       seed=14002 diagnosed    got=['current_sensor_motor', 'ground_return'] truth=['motor'] cost=15 WRONG
+10:54:57 INFO    faultdiag.agent: submitted ['motor_connection', 'ground_return'], evidence: 
+10:54:57 INFO    faultdiag.harness: llm    TF2       seed=14003 diagnosed    got=['ground_return', 'motor_connection'] truth=['motor'] cost=15 WRONG
+10:55:04 INFO    faultdiag.agent: submitted ['ground_return', 'current_sensor_motor'], evidence: 
+10:55:04 INFO    faultdiag.harness: hybrid TF2       seed=14003 diagnosed    got=['current_sensor_motor', 'ground_return'] truth=['motor'] cost=15 WRONG
+10:55:09 INFO    faultdiag.agent: submitted ['motor_connection', 'ground_return'], evidence: 
+10:55:09 INFO    faultdiag.harness: llm    TF2       seed=14004 diagnosed    got=['ground_return', 'motor_connection'] truth=['motor'] cost=15 WRONG
+10:55:14 INFO    faultdiag.agent: submitted ['motor', 'current_sensor_motor'], evidence: 
+10:55:14 INFO    faultdiag.harness: hybrid TF2       seed=14004 diagnosed    got=['current_sensor_motor', 'motor'] truth=['motor'] cost=13 WRONG
+10:55:19 INFO    faultdiag.agent: submitted ['motor_connection', 'ground_return'], evidence: 
+10:55:19 INFO    faultdiag.harness: llm    TF2       seed=14005 diagnosed    got=['ground_return', 'motor_connection'] truth=['motor'] cost=15 WRONG
+10:55:26 INFO    faultdiag.agent: submitted ['motor', 'current_sensor_motor'], evidence: 
+10:55:26 INFO    faultdiag.harness: hybrid TF2       seed=14005 diagnosed    got=['current_sensor_motor', 'motor'] truth=['motor'] cost=15 WRONG
+10:55:31 INFO    faultdiag.agent: submitted ['motor_connection', 'ground_return'], evidence: 
+10:55:31 INFO    faultdiag.harness: llm    TF2       seed=14006 diagnosed    got=['ground_return', 'motor_connection'] truth=['motor'] cost=15 WRONG
+10:55:37 INFO    faultdiag.agent: submitted ['ground_return', 'current_sensor_motor'], evidence: 
+10:55:37 INFO    faultdiag.harness: hybrid TF2       seed=14006 diagnosed    got=['current_sensor_motor', 'ground_return'] truth=['motor'] cost=15 WRONG
+10:55:43 INFO    faultdiag.agent: submitted ['motor_connection', 'ground_return'], evidence: 
+10:55:43 INFO    faultdiag.harness: llm    TF2       seed=14007 diagnosed    got=['ground_return', 'motor_connection'] truth=['motor'] cost=15 WRONG
+10:55:47 INFO    faultdiag.agent: submitted ['lamp_connection', 'current_sensor_motor'], evidence: 
+10:55:47 INFO    faultdiag.harness: hybrid TF2       seed=14007 diagnosed    got=['current_sensor_motor', 'lamp_connection'] truth=['motor'] cost=13 WRONG
+10:55:51 INFO    faultdiag.agent: submitted [], evidence: 
+10:55:51 INFO    faultdiag.harness: llm    TF2       seed=14008 diagnosed    got=[] truth=['motor'] cost=5 WRONG
+10:55:55 INFO    faultdiag.agent: submitted ['motor', 'current_sensor_motor'], evidence: 
+10:55:55 INFO    faultdiag.harness: hybrid TF2       seed=14008 diagnosed    got=['current_sensor_motor', 'motor'] truth=['motor'] cost=13 WRONG
+10:55:59 INFO    faultdiag.agent: submitted [], evidence: 
+10:55:59 INFO    faultdiag.harness: llm    TF2       seed=14009 diagnosed    got=[] truth=['motor'] cost=5 WRONG
+10:56:05 INFO    faultdiag.agent: submitted ['ground_return', 'current_sensor_motor'], evidence: 
+10:56:05 INFO    faultdiag.harness: hybrid TF2       seed=14009 diagnosed    got=['current_sensor_motor', 'ground_return'] truth=['motor'] cost=15 WRONG
+10:56:10 INFO    faultdiag.agent: submitted ['main_wiring', 'ground_return'], evidence: 
+10:56:10 INFO    faultdiag.harness: llm    H3        seed=15000 diagnosed    got=['ground_return', 'main_wiring'] truth=['main_wiring'] cost=15 WRONG
+10:56:17 INFO    faultdiag.agent: submitted ['battery', 'motor_connection'], evidence: 
+10:56:17 INFO    faultdiag.harness: hybrid H3        seed=15000 diagnosed    got=['battery', 'motor_connection'] truth=['main_wiring'] cost=18 WRONG
+10:56:20 INFO    faultdiag.agent: submitted ['main_wiring'], evidence: 
+10:56:20 INFO    faultdiag.harness: llm    H3        seed=15001 diagnosed    got=['main_wiring'] truth=['main_wiring'] cost=12 OK
+10:56:26 INFO    faultdiag.agent: submitted ['battery', 'ground_return'], evidence: 
+10:56:26 INFO    faultdiag.harness: hybrid H3        seed=15001 diagnosed    got=['battery', 'ground_return'] truth=['main_wiring'] cost=16 WRONG
+10:56:29 INFO    faultdiag.agent: submitted ['main_wiring'], evidence: 
+10:56:29 INFO    faultdiag.harness: llm    H3        seed=15002 diagnosed    got=['main_wiring'] truth=['main_wiring'] cost=12 OK
+10:56:35 INFO    faultdiag.agent: submitted ['battery', 'motor_connection'], evidence: 
+10:56:35 INFO    faultdiag.harness: hybrid H3        seed=15002 diagnosed    got=['battery', 'motor_connection'] truth=['main_wiring'] cost=16 WRONG
+10:56:38 INFO    faultdiag.agent: submitted ['main_wiring'], evidence: 
+10:56:38 INFO    faultdiag.harness: llm    H3        seed=15003 diagnosed    got=['main_wiring'] truth=['main_wiring'] cost=12 OK
+10:56:45 INFO    faultdiag.agent: submitted ['battery', 'ground_return'], evidence: 
+10:56:45 INFO    faultdiag.harness: hybrid H3        seed=15003 diagnosed    got=['battery', 'ground_return'] truth=['main_wiring'] cost=27 WRONG
+10:56:50 INFO    faultdiag.agent: submitted [], evidence: 
+10:56:50 INFO    faultdiag.harness: llm    H3        seed=15004 diagnosed    got=[] truth=['main_wiring'] cost=25 WRONG
+10:56:56 INFO    faultdiag.agent: submitted ['battery', 'ground_return'], evidence: 
+10:56:56 INFO    faultdiag.harness: hybrid H3        seed=15004 diagnosed    got=['battery', 'ground_return'] truth=['main_wiring'] cost=17 WRONG
+10:57:00 INFO    faultdiag.agent: submitted [], evidence: 
+10:57:00 INFO    faultdiag.harness: llm    H3        seed=15005 diagnosed    got=[] truth=['main_wiring'] cost=15 WRONG
+10:57:06 INFO    faultdiag.agent: submitted ['battery', 'ground_return'], evidence: 
+10:57:06 INFO    faultdiag.harness: hybrid H3        seed=15005 diagnosed    got=['battery', 'ground_return'] truth=['main_wiring'] cost=26 WRONG
+10:57:10 INFO    faultdiag.agent: submitted ['main_wiring'], evidence: 
+10:57:10 INFO    faultdiag.harness: llm    H3        seed=15006 diagnosed    got=['main_wiring'] truth=['main_wiring'] cost=12 OK
+10:57:17 INFO    faultdiag.agent: submitted ['battery', 'ground_return'], evidence: 
+10:57:17 INFO    faultdiag.harness: hybrid H3        seed=15006 diagnosed    got=['battery', 'ground_return'] truth=['main_wiring'] cost=26 WRONG
+10:57:21 INFO    faultdiag.agent: submitted ['main_wiring'], evidence: 
+10:57:21 INFO    faultdiag.harness: llm    H3        seed=15007 diagnosed    got=['main_wiring'] truth=['main_wiring'] cost=12 OK
+10:57:26 INFO    faultdiag.agent: submitted ['motor_connection', 'sensor_lamp'], evidence: 
+10:57:26 INFO    faultdiag.harness: hybrid H3        seed=15007 diagnosed    got=['motor_connection', 'sensor_lamp'] truth=['main_wiring'] cost=15 WRONG
+10:57:30 INFO    faultdiag.agent: submitted [], evidence: 
+10:57:30 INFO    faultdiag.harness: llm    H3        seed=15008 diagnosed    got=[] truth=['main_wiring'] cost=15 WRONG
+10:57:37 INFO    faultdiag.agent: submitted ['battery', 'motor_connection'], evidence: 
+10:57:37 INFO    faultdiag.harness: hybrid H3        seed=15008 diagnosed    got=['battery', 'motor_connection'] truth=['main_wiring'] cost=26 WRONG
+10:57:40 INFO    faultdiag.agent: submitted ['main_wiring'], evidence: 
+10:57:40 INFO    faultdiag.harness: llm    H3        seed=15009 diagnosed    got=['main_wiring'] truth=['main_wiring'] cost=12 OK
+10:57:47 INFO    faultdiag.agent: submitted ['battery', 'ground_return'], evidence: 
+10:57:47 INFO    faultdiag.harness: hybrid H3        seed=15009 diagnosed    got=['battery', 'ground_return'] truth=['main_wiring'] cost=26 WRONG
+10:57:53 INFO    faultdiag.agent: submitted [], evidence: 
+10:57:53 INFO    faultdiag.harness: llm    H4        seed=16000 diagnosed    got=[] truth=['current_sensor_src'] cost=15 WRONG
+10:57:58 INFO    faultdiag.agent: submitted [], evidence: 
+10:57:58 INFO    faultdiag.harness: hybrid H4        seed=16000 diagnosed    got=[] truth=['current_sensor_src'] cost=3 WRONG
+10:58:01 INFO    faultdiag.agent: submitted [], evidence: 
+10:58:01 INFO    faultdiag.harness: llm    H4        seed=16001 diagnosed    got=[] truth=['current_sensor_src'] cost=5 WRONG
+10:58:05 INFO    faultdiag.agent: submitted [], evidence: 
+10:58:05 INFO    faultdiag.harness: hybrid H4        seed=16001 diagnosed    got=[] truth=['current_sensor_src'] cost=3 WRONG
+10:58:09 INFO    faultdiag.agent: submitted [], evidence: 
+10:58:09 INFO    faultdiag.harness: llm    H4        seed=16002 diagnosed    got=[] truth=['current_sensor_src'] cost=5 WRONG
+10:58:12 INFO    faultdiag.agent: submitted [], evidence: 
+10:58:12 INFO    faultdiag.harness: hybrid H4        seed=16002 diagnosed    got=[] truth=['current_sensor_src'] cost=3 WRONG
+10:58:15 INFO    faultdiag.agent: submitted ['ground_return'], evidence: 
+10:58:15 INFO    faultdiag.harness: llm    H4        seed=16003 diagnosed    got=['ground_return'] truth=['current_sensor_src'] cost=12 WRONG
+10:58:19 INFO    faultdiag.agent: submitted [], evidence: 
+10:58:19 INFO    faultdiag.harness: hybrid H4        seed=16003 diagnosed    got=[] truth=['current_sensor_src'] cost=3 WRONG
+10:58:25 INFO    faultdiag.agent: submitted ['ground_return'], evidence: 
+10:58:25 INFO    faultdiag.harness: llm    H4        seed=16004 diagnosed    got=['ground_return'] truth=['current_sensor_src'] cost=15 WRONG
+10:58:28 INFO    faultdiag.agent: submitted [], evidence: 
+10:58:28 INFO    faultdiag.harness: hybrid H4        seed=16004 diagnosed    got=[] truth=['current_sensor_src'] cost=3 WRONG
+10:58:34 INFO    faultdiag.agent: submitted ['ground_return'], evidence: 
+10:58:34 INFO    faultdiag.harness: llm    H4        seed=16005 diagnosed    got=['ground_return'] truth=['current_sensor_src'] cost=15 WRONG
+10:58:38 INFO    faultdiag.agent: submitted [], evidence: 
+10:58:38 INFO    faultdiag.harness: hybrid H4        seed=16005 diagnosed    got=[] truth=['current_sensor_src'] cost=3 WRONG
+10:58:43 INFO    faultdiag.agent: submitted [], evidence: 
+10:58:43 INFO    faultdiag.harness: llm    H4        seed=16006 diagnosed    got=[] truth=['current_sensor_src'] cost=5 WRONG
+10:58:48 INFO    faultdiag.agent: submitted ['battery', 'lamp_connection'], evidence: 
+10:58:48 INFO    faultdiag.harness: hybrid H4        seed=16006 diagnosed    got=['battery', 'lamp_connection'] truth=['current_sensor_src'] cost=16 WRONG
+10:58:54 INFO    faultdiag.agent: submitted ['ground_return'], evidence: 
+10:58:54 INFO    faultdiag.harness: llm    H4        seed=16007 diagnosed    got=['ground_return'] truth=['current_sensor_src'] cost=15 WRONG
+10:58:59 INFO    faultdiag.agent: submitted ['battery', 'lamp_connection'], evidence: 
+10:58:59 INFO    faultdiag.harness: hybrid H4        seed=16007 diagnosed    got=['battery', 'lamp_connection'] truth=['current_sensor_src'] cost=16 WRONG
+10:59:05 INFO    faultdiag.agent: submitted ['ground_return'], evidence: 
+10:59:05 INFO    faultdiag.harness: llm    H4        seed=16008 diagnosed    got=['ground_return'] truth=['current_sensor_src'] cost=15 WRONG
+10:59:08 INFO    faultdiag.agent: submitted [], evidence: 
+10:59:08 INFO    faultdiag.harness: hybrid H4        seed=16008 diagnosed    got=[] truth=['current_sensor_src'] cost=3 WRONG
+10:59:13 INFO    faultdiag.agent: submitted [], evidence: 
+10:59:13 INFO    faultdiag.harness: llm    H4        seed=16009 diagnosed    got=[] truth=['current_sensor_src'] cost=5 WRONG
+10:59:17 INFO    faultdiag.agent: submitted [], evidence: 
+10:59:17 INFO    faultdiag.harness: hybrid H4        seed=16009 diagnosed    got=[] truth=['current_sensor_src'] cost=3 WRONG
+10:59:17 INFO    faultdiag.harness: record fields: ['actions', 'agent_stats', 'commit', 'correct', 'cost', 'diagnosis', 'elements', 'error', 'history', 'method', 'model', 'model_version', 'policy_hash', 'rejections', 'scenario', 'seed', 'server', 'set', 'source', 'status', 'think', 'timestamp', 'truth', 'wall_s']
+
+SIMULATION RESULTS (not hardware)
+
+Source: sim
+
+| Test set | Method | n | Correct | Wrong | Inconclusive | Out-of-model flag | Mean cost | Mean cost (correct) |
+|---|---|---|---|---|---|---|---|---|
+| compound | hybrid | 20 | 85% | 15% | 0% | 0% | 8.9 | 9.4 |
+| compound | llm | 20 | 10% | 90% | 0% | 0% | 12.4 | 13.0 |
+| heldout | hybrid | 20 | 10% | 90% | 0% | 0% | 10.4 | 16.0 |
+| heldout | llm | 20 | 25% | 75% | 0% | 0% | 11.0 | 15.0 |
+| heldout_final | hybrid | 20 | 0% | 100% | 0% | 0% | 13.4 | nan |
+| heldout_final | llm | 20 | 30% | 70% | 0% | 0% | 12.4 | 12.0 |
+| single | hybrid | 90 | 88% | 12% | 0% | 0% | 5.2 | 5.4 |
+| single | llm | 90 | 19% | 81% | 0% | 0% | 12.1 | 9.3 |
+| toolfail | hybrid | 20 | 5% | 95% | 0% | 0% | 12.2 | 18.0 |
+| toolfail | llm | 20 | 0% | 100% | 0% | 0% | 11.1 | nan |
+
+Saved to /Users/apple/Documents/SIWES/fault-diagnosis/results/20261027-103259

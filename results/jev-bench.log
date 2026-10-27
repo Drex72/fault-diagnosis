@@ -1,0 +1,56 @@
+10:30:48 INFO    faultdiag.jev: checking the API key and the Jev service at https://api.typesafe.ai/v1 (up to 15 s)
+10:30:49 WARNING faultdiag.jev: model jev-1.14.0 is not in this key's list ['jev-latest', 'jev-preview']; aliases may not be listed
+10:30:49 INFO    faultdiag.jev: Jev answered: key accepted
+10:30:54 INFO    faultdiag.agent: submitted ['motor_connection'], evidence: 
+10:30:54 INFO    faultdiag.harness: hybrid:jev-1.14.0 F2        seed=5000 diagnosed    got=['motor_connection'] truth=['motor_connection'] cost=13 OK
+10:30:59 INFO    faultdiag.agent: submitted ['motor_connection'], evidence: 
+10:30:59 INFO    faultdiag.harness: hybrid:jev-1.14.0 F2        seed=5001 diagnosed    got=['motor_connection'] truth=['motor_connection'] cost=13 OK
+10:31:04 INFO    faultdiag.agent: submitted ['motor_connection'], evidence: 
+10:31:04 INFO    faultdiag.harness: hybrid:jev-1.14.0 F2        seed=5002 diagnosed    got=['motor_connection'] truth=['motor_connection'] cost=13 OK
+10:31:08 INFO    faultdiag.agent: submitted ['battery', 'motor'], evidence: 
+10:31:08 INFO    faultdiag.harness: hybrid:jev-1.14.0 C1        seed=5000 diagnosed    got=['battery', 'motor'] truth=['battery', 'motor'] cost=6 OK
+10:31:14 INFO    faultdiag.agent: submitted ['battery', 'motor'], evidence: 
+10:31:14 INFO    faultdiag.harness: hybrid:jev-1.14.0 C1        seed=5001 diagnosed    got=['battery', 'motor'] truth=['battery', 'motor'] cost=7 OK
+10:31:18 INFO    faultdiag.agent: submitted ['battery', 'motor'], evidence: 
+10:31:18 INFO    faultdiag.harness: hybrid:jev-1.14.0 C1        seed=5002 diagnosed    got=['battery', 'motor'] truth=['battery', 'motor'] cost=5 OK
+10:31:23 INFO    faultdiag.agent: submitted ['motor_connection', 'sensor_motor'], evidence: 
+10:31:23 INFO    faultdiag.harness: hybrid:jev-1.14.0 C2        seed=5000 diagnosed    got=['motor_connection', 'sensor_motor'] truth=['motor_connection', 'sensor_motor'] cost=15 OK
+10:31:26 INFO    faultdiag.agent: submitted ['sensor_motor'], evidence: 
+10:31:26 INFO    faultdiag.harness: hybrid:jev-1.14.0 C2        seed=5001 diagnosed    got=['sensor_motor'] truth=['motor_connection', 'sensor_motor'] cost=5 WRONG
+10:31:30 INFO    faultdiag.agent: submitted ['motor_connection', 'sensor_motor'], evidence: 
+10:31:30 INFO    faultdiag.harness: hybrid:jev-1.14.0 C2        seed=5002 diagnosed    got=['motor_connection', 'sensor_motor'] truth=['motor_connection', 'sensor_motor'] cost=12 OK
+10:31:35 INFO    faultdiag.agent: submitted [], evidence: 
+10:31:35 INFO    faultdiag.harness: hybrid:jev-1.14.0 H1        seed=5000 diagnosed    got=[] truth=['ground_return'] cost=3 WRONG
+10:31:38 INFO    faultdiag.agent: submitted [], evidence: 
+10:31:38 INFO    faultdiag.harness: hybrid:jev-1.14.0 H1        seed=5001 diagnosed    got=[] truth=['ground_return'] cost=3 WRONG
+10:31:42 INFO    faultdiag.agent: submitted [], evidence: 
+10:31:42 INFO    faultdiag.harness: hybrid:jev-1.14.0 H1        seed=5002 diagnosed    got=[] truth=['ground_return'] cost=3 WRONG
+10:31:49 INFO    faultdiag.agent: submitted ['unmonitored_load', 'sensor_src'], evidence: 
+10:31:49 INFO    faultdiag.harness: hybrid:jev-1.14.0 H2        seed=5000 diagnosed    got=['sensor_src', 'unmonitored_load'] truth=['unmonitored_load'] cost=16 WRONG
+10:31:56 INFO    faultdiag.agent: submitted ['ground_return', 'unmonitored_load'], evidence: 
+10:31:56 INFO    faultdiag.harness: hybrid:jev-1.14.0 H2        seed=5001 diagnosed    got=['ground_return', 'unmonitored_load'] truth=['unmonitored_load'] cost=16 WRONG
+10:32:03 INFO    faultdiag.agent: submitted ['ground_return'], evidence: 
+10:32:03 INFO    faultdiag.harness: hybrid:jev-1.14.0 H2        seed=5002 diagnosed    got=['ground_return'] truth=['unmonitored_load'] cost=17 WRONG
+10:32:03 WARNING faultdiag.guard: step 1 read_voltage {'point': 'motor'} -> timeout: no response from instrument
+10:32:09 INFO    faultdiag.agent: submitted [], evidence: 
+10:32:09 INFO    faultdiag.harness: hybrid:jev-1.14.0 TF1       seed=5000 diagnosed    got=[] truth=['motor_connection'] cost=17 WRONG
+10:32:10 WARNING faultdiag.guard: step 1 read_voltage {'point': 'motor'} -> timeout: no response from instrument
+10:32:14 INFO    faultdiag.agent: submitted [], evidence: 
+10:32:14 INFO    faultdiag.harness: hybrid:jev-1.14.0 TF1       seed=5001 diagnosed    got=[] truth=['motor_connection'] cost=7 WRONG
+10:32:15 WARNING faultdiag.guard: step 1 read_voltage {'point': 'motor'} -> timeout: no response from instrument
+10:32:20 INFO    faultdiag.agent: submitted [], evidence: 
+10:32:20 INFO    faultdiag.harness: hybrid:jev-1.14.0 TF1       seed=5002 diagnosed    got=[] truth=['motor_connection'] cost=7 WRONG
+10:32:26 INFO    faultdiag.agent: submitted ['motor', 'current_sensor_motor'], evidence: 
+10:32:26 INFO    faultdiag.harness: hybrid:jev-1.14.0 TF2       seed=5000 diagnosed    got=['current_sensor_motor', 'motor'] truth=['motor'] cost=24 WRONG
+10:32:32 INFO    faultdiag.agent: submitted ['motor', 'current_sensor_motor'], evidence: 
+10:32:32 INFO    faultdiag.harness: hybrid:jev-1.14.0 TF2       seed=5001 diagnosed    got=['current_sensor_motor', 'motor'] truth=['motor'] cost=23 WRONG
+10:32:38 INFO    faultdiag.agent: submitted ['ground_return', 'current_sensor_motor'], evidence: 
+10:32:38 INFO    faultdiag.harness: hybrid:jev-1.14.0 TF2       seed=5002 diagnosed    got=['current_sensor_motor', 'ground_return'] truth=['motor'] cost=15 WRONG
+
+MODEL BENCHMARK (simulated bench, hybrid planner)
+
+| Model | Version | Accuracy | Invalid call rate | Plain-text parsed | Timeouts | Unparseable | Fallbacks | Median latency (s) | p95 latency (s) | Peak memory (GB) | Crashes |
+|---|---|---|---|---|---|---|---|---|---|---|---|
+| jev-1.14.0 | jev-1.14.0 | 38% | 0.0% | 0 | 0 | 0 | 0 | 0.67 | 1.64 | cloud | 0 |
+
+Saved to /Users/apple/Documents/SIWES/fault-diagnosis/results/model-bench/20261027-103049

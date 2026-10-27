@@ -1,0 +1,38 @@
+[
+  {
+    "model": "jev-1.14.0",
+    "model_version": "jev-1.14.0",
+    "server": "jev",
+    "think": false,
+    "date": "2026-10-27T10:32:38+01:00",
+    "commit": "39143d510f7122e9f85631645fe1a09fb501e77a",
+    "policy_hash": "88b28c1f4c8a",
+    "sessions": 21,
+    "llm_calls": 117,
+    "accuracy": 0.38095238095238093,
+    "invalid_rate": 0.0,
+    "content_parsed": 0,
+    "no_call": 0,
+    "timeouts": 0,
+    "server_parse_errors": 0,
+    "fallbacks": 0,
+    "submitted": 21,
+    "median_latency_s": 0.672,
+    "p95_latency_s": 1.64,
+    "peak_memory_gb": null,
+    "load_s": 0.0,
+    "jev_input_tokens": 549431,
+    "jev_requests": 138,
+    "answered_by": "jev-1.14.0",
+    "crashes": 0,
+    "per_scenario": {
+      "F2": 1.0,
+      "C1": 1.0,
+      "C2": 0.6666666666666666,
+      "H1": 0.0,
+      "H2": 0.0,
+      "TF1": 0.0,
+      "TF2": 0.0
+    }
+  }
+]

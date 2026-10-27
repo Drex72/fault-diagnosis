@@ -78,5 +78,6 @@ Commands are run from the repository folder (`fault-diagnosis/`) on the laptop.
    `.venv/bin/python scripts/run_experiment.py --methods llm,hybrid --server jev --model jev-1.14.0 --trials 10 --final`
    If it stops (internet or service problem), run the same command with `--resume results/<that run's folder>`.
 28. **Tell the maintainer** the two results folders (`results/model-bench/<date-time>/` and `results/<date-time>/`), so `docs/PROGRESS.md` gets the comparison.
+29. **Replace the key.** Steps 24 to 28 were done on 27 Oct 2026 with the owner's key (`results/model-bench/20261027-103049`, `results/20261027-103259`; written up in `docs/PROGRESS.md`). That key was pasted into a chat, so in the TypeSafe console (https://console.typesafe.ai) revoke it and make a new one before any further Jev run. While there, check the usage page: it showed no requests during the run although Jev answered all of them. A tagged test request was sent at 09:52:38 UTC on 27 Oct 2026, request id `req_01a17cc6b35c76a38b1f3685a9b7832b`; if it does not appear either, the page is showing a different key or workspace.
 
 To watch a Jev session in the dashboard, start it from the same terminal after step 25 (`.venv/bin/python -m gui --open`), then on Live session choose Model server "Jev (TypeSafe cloud)" and Model `jev-1.14.0`.

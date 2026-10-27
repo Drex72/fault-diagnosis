@@ -69,7 +69,7 @@ _ISSUES = [
     ("risk", "Charger left connected can over-range the taps", "item 6", "low"),
     ("risk", "Unpowered USB hub may brown out the relay coils", "item 7", "low"),
     ("issue", "No board connected yet: hardware results not run", "docs/OWNER_TODO.md", "high"),
-    ("issue", "Jev comparison (cloud) needs a TypeSafe API key", "docs/OWNER_TODO.md steps 24 to 28", "low"),
+    ("issue", "Replace the TypeSafe API key used for the Jev run (it was shared in a chat)", "docs/OWNER_TODO.md step 29", "medium"),
 ]
 
 SEED = {

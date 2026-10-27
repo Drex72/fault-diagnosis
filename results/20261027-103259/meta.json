@@ -1,0 +1,46 @@
+{
+  "source": "sim",
+  "commit": "39143d510f7122e9f85631645fe1a09fb501e77a",
+  "policy_hash": "88b28c1f4c8a",
+  "started": "2026-10-27T10:32:59+01:00",
+  "methods": [
+    "llm",
+    "hybrid"
+  ],
+  "scenarios": [
+    "healthy",
+    "F1",
+    "F1b",
+    "F2",
+    "F3",
+    "F4",
+    "F5@motor",
+    "F5@lamp",
+    "F5@load",
+    "C1",
+    "C2",
+    "H1",
+    "H2",
+    "TF1",
+    "TF2",
+    "H3",
+    "H4"
+  ],
+  "trials": 10,
+  "seed0": 0,
+  "method_meta": {
+    "llm": {
+      "model": "jev-1.14.0",
+      "think": false,
+      "model_version": "jev-1.14.0",
+      "server": "jev"
+    },
+    "hybrid": {
+      "model": "jev-1.14.0",
+      "think": false,
+      "model_version": "jev-1.14.0",
+      "server": "jev"
+    }
+  },
+  "final": true
+}

@@ -11,7 +11,7 @@ Everything that can be done without the physical bench is done. The hardware run
 - Two new frozen held-out faults, H3 (main wiring resistance) and H4 (failing source current sensor), run once in simulation.
 - Bench and injector ESP32 firmware (`firmware/`), with every electrical limit enforced on the board. The serial transport, mock devices, calibration, the blind hardware runner, and scripts for the firmware self-test, injector check and noise refit.
 - The offline dashboard (`gui/`): live session, experiments, models, calibration, project tracker.
-- Added after Phase 2, at the owner's request: Jev (TypeSafe's cloud decision model) as an optional planner for D and E (`--server jev`). Tested against a fake server only; not yet run against the real service, because there is no API key on this laptop.
+- Added after Phase 2, at the owner's request: Jev (TypeSafe's cloud decision model) as an optional planner for D and E (`--server jev`). Tested against a fake server, then run against the real service in simulation with the owner's key.
 - Docs: `README.md`, `docs/ARCHITECTURE.md`, `docs/HARDWARE.md`, `docs/RUNBOOK.md`, `docs/DECISIONS.md`, `docs/model-benchmark.md`, `docs/OWNER_TODO.md`, `CHANGELOG.md`. CI on GitHub runs the tests on every push.
 
 **Tested, and how (all run on 27 Oct 2026 unless noted):**
@@ -33,6 +33,7 @@ Everything that can be done without the physical bench is done. The hardware run
   - E beats C only on the intermittent lamp, F4: 10 against 7.
   - Over all paired sessions: E right where C was wrong 4 times; C right where E was wrong 27 times.
 - The LLM alone (D) answers "ground return" in 161 of 170 sessions.
+- With Jev as the planner (`results/20261027-103259`, commit `39143d5`, same scenarios and seeds), correct out of 170: D 30, E 99. **E still does not beat C**: right where C was wrong 5 times, wrong where C was right 18 times. Held-out 2 of 40 (C 0), tool failures 1 of 20 (C 11), C2 7 of 10 (C 6). Jev alone named the frozen H3 fault (`main_wiring`) in 7 of 10 sessions, using the human probe; no other method named it. Details under "After Phase 2: Jev".
 
 **Waiting on the owner:** everything physical, as a numbered checklist in `docs/OWNER_TODO.md`, also shown on the dashboard's Project tracker page. In order:
 
@@ -42,7 +43,7 @@ Everything that can be done without the physical bench is done. The hardware run
 4. Calibrate against the multimeter.
 5. Run on the bench.
 
-Every hardware result below is "not yet run". Optionally, a TypeSafe API key for the Jev comparison (steps 24 to 28).
+Every hardware result below is "not yet run". The optional Jev comparison (steps 24 to 28) has been run in simulation; the owner should replace the API key, which was shared in a chat.
 
 **Commands once the bench is wired**, run from the repository folder; `<bench port>` and `<injector port>` come from `.pio-venv/bin/pio device list`:
 
@@ -162,11 +163,76 @@ The known engine weaknesses are unchanged and were not tuned: H2 is diagnosed as
 
 Caveats: simulation only; one model (8B, thinking off) chosen in Phase 1; 10 trials per scenario; the prompts were not changed after H3 and H4 were run. H3 and H4 have now been seen in simulation; the hardware final run (`docs/OWNER_TODO.md` step 22) still uses them once.
 
-## After Phase 2: Jev as a cloud planner (27 Oct 2026; built, not yet run)
+## After Phase 2: Jev as a cloud planner (27 Oct 2026; run in simulation)
 
 - The owner asked to try Jev, TypeSafe's cloud decision model, before a general cloud model. `faultdiag/jev.py` puts it behind the agent's model interface: each turn Jev chooses the next call from the 31 concrete calls the tool contract allows (or submitting), then the fault set from 154 options. The agent loop, guard, engine fallback and loop detection are the same as for qwen3:8b. Reasons and details: `docs/DECISIONS.md`.
 - Tested against a fake Jev server in `tests/test_jev.py` (9 tests, all passing): full D and E sessions, the key never in a record or log, a missing or refused key, rate limits, a service that stays down, answers outside the options.
-- Not run against the real Jev: no API key on this laptop. Steps for the owner: `docs/OWNER_TODO.md` steps 24 to 28. The full run uses the same scenarios and seeds as the Phase 2 run, so its D and E results pair with qwen3:8b's session by session.
+- Run against the real Jev on 27 Oct 2026 with the owner's key, model `jev-1.14.0` (Jev's replies name `jev-1.14.0` as the model that answered), code at commit `39143d5`. All `source: sim`.
+
+**Short benchmark** (the 21 Phase 1 sessions, seeds 5000 to 5002; `results/model-bench/20261027-103049`, log `results/jev-bench.log`): 8 of 21 correct (38%), against qwen3:8b 7 and the engine alone 11. Invalid calls 0%, median reply 0.67 s, p95 1.64 s, 138 requests, 549,431 input tokens. Row added to `docs/model-benchmark.md`.
+
+**Full comparison** (D and E with Jev, all 17 scenarios, 10 trials, `--final`; `results/20261027-103259`, log `results/jev-final-run.log`; 340 sessions from 10:32 to 10:59, once, without `--resume`). The scenarios and seeds are the Phase 2 run's, so every session pairs with C and with qwen3:8b's D and E on the same seed (170 pairs per method). Correct, out of n:
+
+| Test set | n | C (engine) | D qwen3:8b | E qwen3:8b | D Jev | E Jev |
+|---|---|---|---|---|---|---|
+| single | 90 | 85 | 6 | 72 | 17 | 79 |
+| compound | 20 | 16 | 0 | 9 | 2 | 17 |
+| heldout (H1, H2) | 20 | 0 | 10 | 0 | 5 | 2 |
+| toolfail | 20 | 11 | 0 | 8 | 0 | 1 |
+| heldout_final (H3, H4) | 20 | 0 | 0 | 0 | 6 | 0 |
+| **total** | 170 | **112** | 16 | 89 | 30 | **99** |
+
+Per scenario (correct of 10):
+
+| Scenario | C | D qwen3:8b | E qwen3:8b | D Jev | E Jev |
+|---|---|---|---|---|---|
+| healthy | 9 | 0 | 1 | 5 | 10 |
+| F1 | 10 | 3 | 10 | 6 | 9 |
+| F1b | 10 | 0 | 9 | 2 | 8 |
+| F2 | 10 | 0 | 10 | 3 | 10 |
+| F3 | 10 | 0 | 10 | 0 | 10 |
+| F4 | 7 | 3 | 10 | 1 | 3 |
+| F5@motor | 9 | 0 | 5 | 0 | 10 |
+| F5@lamp | 10 | 0 | 7 | 0 | 10 |
+| F5@load | 10 | 0 | 10 | 0 | 9 |
+| C1 | 10 | 0 | 8 | 0 | 10 |
+| C2 | 6 | 0 | 1 | 2 | 7 |
+| H1 | 0 | 10 | 0 | 5 | 2 |
+| H2 | 0 | 0 | 0 | 0 | 0 |
+| TF1 | 1 | 0 | 1 | 0 | 1 |
+| TF2 | 10 | 0 | 7 | 0 | 0 |
+| H3 | 0 | 0 | 0 | 6 | 0 |
+| H4 | 0 | 0 | 0 | 0 | 0 |
+
+What it shows:
+
+- **With Jev planning, the hybrid still does not beat the engine.** E Jev 99, C 112. Over the paired sessions, E Jev was right where C was wrong 5 times, and C was right where E Jev was wrong 18 times (exact two-sided sign test, p = 0.011). By condition of the research question:
+  - Held-out faults: E Jev 2 of 40 (both H1, answering `ground_return`), C 0. Neither got H2, H3 or H4.
+  - Tool failures: E Jev 1 of 20, C 11. On TF2 (motor stalled, motor current sensor returning garbage) E Jev named the broken sensor `current_sensor_motor` in all 10 sessions, but paired it with a wrong second element in 7 (`ground_return` 6, `lamp_connection` 1) and with the stall in 3; the truth is the stall alone. On TF1 it answered healthy 9 times.
+  - Human measurement needed (C2): E Jev 7, C 6 of 10; paired, 1 against 0. Too few to call a difference.
+  - E Jev also misses the intermittent lamp (F4) more often than C: 3 against 7 (it answered healthy 7 times).
+- **Jev is the better planner on top of the engine, but not significantly.** E Jev 99 against E qwen3:8b 89; paired 28 against 18 (p = 0.18). It never sent an invalid call (0 of 1,799 model calls), never fell back to the engine, never looped, and its median reply took 0.68 s (p95 1.60 s) against qwen3:8b's 4.7 s.
+- **Jev alone (D) is still weak, but less one-track than qwen3:8b alone.** 30 against 16 of 170 (paired 24 against 10, p = 0.024). It answered `ground_return` in 60 of 170 sessions; qwen3:8b alone did in 161.
+- **The one held-out success: Jev alone named the frozen H3 fault.** D Jev answered `main_wiring` in 7 of 10 H3 sessions (6 exactly right, 1 with `ground_return` added) and in no other scenario. Each of the 6 used the human probe. No method in Phase 2 (A to E) named `main_wiring` at all. With the engine's report in front of it (E), Jev followed the engine's in-model hypotheses instead (`battery` plus `ground_return` 6 times) and got none. On H1 too, D Jev was right in all 5 sessions where it used the probe and in none of the 5 where it did not. This is 10 sessions per scenario and suggests the engine's report pulls the planner towards in-model answers; it is an observation, not a tested claim.
+- Probes: D Jev used the human probe in 115 of 170 sessions, E Jev in 51. Mean cost of 40: D Jev 11.9, E Jev 8.0; in Phase 2, C 7.2, D qwen3:8b 18.8, E qwen3:8b 14.7.
+
+Secondary view, not the score: sessions that named at least one true element, on faulty scenarios. It shows where an answer was half right; the exact-set grading above stays the result.
+
+| Test set | n | C | D qwen3:8b | E qwen3:8b | D Jev | E Jev |
+|---|---|---|---|---|---|---|
+| single (faulty) | 80 | 77 | 7 | 80 | 40 | 70 |
+| compound | 20 | 20 | 0 | 20 | 18 | 20 |
+| heldout | 20 | 0 | 10 | 0 | 5 | 5 |
+| toolfail | 20 | 12 | 0 | 8 | 5 | 4 |
+| heldout_final | 20 | 0 | 0 | 0 | 7 | 0 |
+
+On H2 (hidden parasitic load) E Jev named `unmonitored_load` twice, the only sessions of any method to name it, but each time with `ground_return` added, so they count as wrong.
+
+**For the research question nothing changes:** with either planner, E does not beat C on held-out faults, on tool failures, or when a human measurement is needed.
+
+Caveats: simulation only; 10 trials per scenario; Jev is a cloud service, used only for this comparison (the demo and every default stay offline with qwen3:8b). Nothing was tuned for Jev: it gets the same tool descriptions and bench description as the chat models. H3 and H4 have now been run by a second planner, once, with nothing changed before or after. The full run's token use was not recorded (`run_experiment.py` does not save it; `bench_models.py` does). It made 2,139 requests (1,799 next-step choices plus 340 diagnoses); at the benchmark's average of about 4,000 input tokens per request that is about 8.5 million tokens, about $0.36 at the listed price, an estimate. The owner's TypeSafe dashboard showed no requests during the run, although every reply came from Jev with its probabilities and token counts; one tagged test request (`jev-latest`, 09:52:38 UTC, request id `req_01a17cc6b35c76a38b1f3685a9b7832b`) was sent so the owner can check the dashboard.
+
+How it was compared: `jev_compare.py` (a throwaway script, not in the repo) pairs records by scenario and seed. To check any number above, read the two `sessions.jsonl` files: each record has `method`, `scenario`, `seed`, `truth`, `elements` and `correct`.
 
 ## Phase 3: hardware (software done 26 Oct 2026; hardware runs waiting on the owner)
 

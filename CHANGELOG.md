@@ -59,6 +59,9 @@ Every change to existing code, with the reason. Newest first within a phase.
 
 ## Jev as a cloud planner (27 Oct 2026)
 
+- Jev run against the real service with the owner's key (no code change for the run): `results/model-bench/20261027-103049` with `results/jev-bench.log`, and `results/20261027-103259` with `results/jev-final-run.log`. Written up in `docs/PROGRESS.md`, `docs/model-benchmark.md` (Jev row), `docs/DECISIONS.md` ("Jev run done").
+- `gui/seed.py`: the first-run tracker issue "Jev comparison needs a TypeSafe API key" is now "Replace the TypeSafe API key used for the Jev run", medium. Reason: the comparison has run, and the key was shared in a chat. Only new tracker databases see it; an existing one keeps its rows. `docs/OWNER_TODO.md`: step 29 (replace the key; check the TypeSafe usage page against a tagged request id).
+
 - `faultdiag/jev.py` (new): `JevLLM` puts TypeSafe's Jev decision model behind the interface `Agent` uses for a chat model. Each turn it asks Jev to choose the next call from every concrete call the tool contract allows, or submitting; on submitting it asks for the fault set (healthy, one element or two). Reason: the owner asked to try Jev as a cloud planner after the Phase 2 results (`docs/DECISIONS.md`).
 - `faultdiag/methods.py`: `build_methods(server="jev")` builds D and E on one `JevLLM`, checks the key and the service once before the run, and records `server: jev` and the model name as the version; new `SERVERS`. Ollama and llama.cpp are unchanged.
 - `scripts/run_experiment.py`, `scripts/run_hardware.py`: `--server jev`.

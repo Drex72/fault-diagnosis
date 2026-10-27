@@ -16,6 +16,7 @@ Final benchmark, agent at commit `30dffe4` (`results/model-bench/20261026-194448
 | qwen3:8b | 7 | 33% | 2.1% | 0 | 0 | 0 | 0 | 4.74 | 8.18 | 8.1 | 16.7 |
 | bonsai-8b (1-bit) | 4 | 19% | 0.0% | 0 | 0 | 0 | 0 | 3.38 | 6.81 | 15.1 | 16.2 |
 | llama3.2:3b | 0 | 0% | 41.2% | 8 | 0 | 0 | 35 | 4.10 | 7.21 | 4.2 | 31.1 |
+| jev-1.14.0 (cloud, added 27 Oct) | 8 | 38% | 0.0% | 0 | 0 | 0 | 0 | 0.67 | 1.64 | cloud | 11.4 |
 
 Per scenario (correct of 3):
 
@@ -25,6 +26,9 @@ Per scenario (correct of 3):
 | qwen3:8b | 2 | 2 | 0 | 0 | 0 | 1 | 2 |
 | bonsai-8b | 0 | 0 | 1 | 0 | 0 | 1 | 2 |
 | llama3.2:3b | 0 | 0 | 0 | 0 | 0 | 0 | 0 |
+| jev-1.14.0 | 3 | 3 | 2 | 0 | 0 | 0 | 0 |
+
+**Jev, added on 27 Oct 2026 after Phase 2** (`results/model-bench/20261027-103049`, commit `39143d5`, log `results/jev-bench.log`). Not a local model: TypeSafe's cloud decision model, run at the owner's request as a comparison only (`docs/DECISIONS.md`). It does not change the choice of qwen3:8b for the offline demo. Same sessions and seeds as the table above; 138 requests and 549,431 input tokens (from Jev's replies); no memory figure, because it does not run on this laptop. It matched the engine on F2, C1 and C2 and scored nothing on H1, H2, TF1 and TF2. On H2 it named `unmonitored_load` in 2 of 3 sessions but each time added a second, wrong element; on TF2 it named the broken `current_sensor_motor` every time, twice with the stall. The full comparison is in `docs/PROGRESS.md` ("After Phase 2: Jev").
 
 What the table shows:
 
