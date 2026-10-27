@@ -14,7 +14,7 @@ How the pieces fit: where a measurement comes from, what checks it on the way, w
 | Tool contract | `tools.py`, `config/policy.json` | Tool schemas (shared with the LLM), costs, per-session limits, pulse bounds |
 | Guard | `guard.py` | Every call from every method passes here: schema check, limits, budget, history, logging |
 | Methods | `baselines.py` (A, B), `engine.py` (C), `agent.py` (D, E), `methods.py` | Choose measurements and submit a diagnosis |
-| Cloud planner (optional) | `jev.py` | Puts TypeSafe's Jev decision model behind the agent's model interface, for comparison only |
+| Cloud planners (optional) | `jev.py`, `openrouter.py` | Put TypeSafe's Jev decision model, or a cloud chat model through OpenRouter (Claude, GPT, Gemini), behind the agent's model interface, for comparison only |
 | Harness | `harness.py`, `hwrun.py` | Scenarios, seeds, blind ground truth, grading, summary tables |
 | Calibration | `calib.py`, `scripts/calibrate.py`, `scripts/refit_noise.py` | Gain and offset per channel, dated records, freshness check |
 | Dashboard | `gui/` | Live sessions, experiment results, models, calibration, project tracker |

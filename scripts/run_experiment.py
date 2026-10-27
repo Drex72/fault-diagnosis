@@ -4,6 +4,8 @@
     python scripts/run_experiment.py --methods fixed,tree,bayes,llm,hybrid --model qwen3:8b --trials 10 --final
     python scripts/run_experiment.py <same options> --resume results/<timestamp>   # continue a stopped run
     python scripts/run_experiment.py --methods llm,hybrid --server jev --model jev-1.14.0 --trials 10   # cloud, needs TYPESAFE_API_KEY
+    python scripts/run_experiment.py --methods llm,hybrid --server openrouter --model anthropic/claude-opus-5.5 \
+        --think --trials 10   # cloud, needs OPENROUTER_API_KEY
 
 Results go to results/<timestamp>/ (summary.md and sessions.jsonl); FAULTDIAG_RESULTS_DIR
 replaces results/ (the tests use it).
@@ -33,8 +35,10 @@ def main():
                     help="final evaluation: also run the frozen held-out set (H3, H4)")
     ap.add_argument("--trials", type=int, default=5)
     ap.add_argument("--server", choices=SERVERS, default="ollama",
-                    help="jev: TypeSafe's cloud decision model (internet and TYPESAFE_API_KEY needed)")
-    ap.add_argument("--base-url", default=None, help="default: Ollama on :11434, llama.cpp on :8080, Jev at TypeSafe")
+                    help="jev: TypeSafe's cloud decision model (internet and TYPESAFE_API_KEY needed); "
+                         "openrouter: cloud chat models such as anthropic/claude-opus-5.5 (OPENROUTER_API_KEY)")
+    ap.add_argument("--base-url", default=None,
+                    help="default: Ollama on :11434, llama.cpp on :8080, Jev at TypeSafe, OpenRouter")
     ap.add_argument("--model", default=None, help="model name (e.g. qwen3:8b, or jev-1.14.0), needed for llm and hybrid")
     ap.add_argument("--model-version", default=None, help="for llama.cpp: e.g. sha256 prefix of the GGUF")
     ap.add_argument("--think", action="store_true", help="leave a thinking model's reasoning on")

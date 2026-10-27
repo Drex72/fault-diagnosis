@@ -214,7 +214,7 @@ function pageLive(view) {
         h("label", {}, "Seed", h("input", { name: "seed", type: "number", min: 0, placeholder: "random" }))),
       h("div", { class: "form-row llm-only", style: "margin-top:.6rem" },
         h("label", {}, "Model", h("input", { name: "model", placeholder: "for example qwen3:8b", value: savedModel() })),
-        h("label", {}, "Model server", h("select", { name: "server" }, h("option", { value: "ollama" }, "Ollama"), h("option", { value: "llamacpp" }, "llama.cpp server"), h("option", { value: "jev" }, "Jev (TypeSafe cloud)"))),
+        h("label", {}, "Model server", h("select", { name: "server" }, h("option", { value: "ollama" }, "Ollama"), h("option", { value: "llamacpp" }, "llama.cpp server"), h("option", { value: "jev" }, "Jev (TypeSafe cloud)"), h("option", { value: "openrouter" }, "OpenRouter (cloud)"))),
         h("label", { class: "check" }, h("input", { name: "think", type: "checkbox" }), "Thinking on")),
       h("label", { class: "check hw-run", style: "margin-top:.6rem" }, h("input", { name: "allow_stale_calibration", type: "checkbox" }), "Run even if the calibration is stale"),
       h("div", { class: "actions" },

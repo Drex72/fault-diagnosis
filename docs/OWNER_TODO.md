@@ -81,3 +81,17 @@ Commands are run from the repository folder (`fault-diagnosis/`) on the laptop.
 29. **Replace the key.** Steps 24 to 28 were done on 27 Oct 2026 with the owner's key (`results/model-bench/20261027-103049`, `results/20261027-103259`; written up in `docs/PROGRESS.md`). That key was pasted into a chat, so in the TypeSafe console (https://console.typesafe.ai) revoke it and make a new one before any further Jev run. While there, check the usage page: it showed no requests during the run although Jev answered all of them. A tagged test request was sent at 09:52:38 UTC on 27 Oct 2026, request id `req_01a17cc6b35c76a38b1f3685a9b7832b`; if it does not appear either, the page is showing a different key or workspace.
 
 To watch a Jev session in the dashboard, start it from the same terminal after step 25 (`.venv/bin/python -m gui --open`), then on Live session choose Model server "Jev (TypeSafe cloud)" and Model `jev-1.14.0`.
+
+## G. Optional: a top cloud model through OpenRouter (needs internet and paid credits)
+
+The upper-bound test: does even the strongest available model, planning on top of the engine, beat the engine alone? Details in `docs/RUNBOOK.md`, "Cloud chat models through OpenRouter".
+
+30. **Make an OpenRouter account and key** at https://openrouter.ai/settings/keys. Add credits at https://openrouter.ai/settings/credits: about 20 US dollars covers the short test on Claude Opus 5.5 with room to spare (our estimate is 5 to 12 dollars; the script prints the real cost). On the key, set a credit limit (for example 20 dollars) so no run can spend more.
+31. **Save the key on this laptop without showing it**, outside the repository (the command asks for it; nothing appears on screen):
+   `read -rs "k?OpenRouter key: " && printf '%s' "$k" > ~/.openrouter-key && chmod 600 ~/.openrouter-key && unset k`
+   Do not paste the key into a chat or any file in this folder.
+32. **Short test** (the same 21 sessions as every other planner):
+   `OPENROUTER_API_KEY="$(cat ~/.openrouter-key)" .venv/bin/python scripts/bench_models.py --server openrouter --models anthropic/claude-opus-5.5 --think --timeout 180`
+   Or tell the maintainer the key is saved in `~/.openrouter-key`, and they run it.
+33. **Decide on the full comparison** from the short test's accuracy and cost (the full run is about 16 times the short test's tokens).
+

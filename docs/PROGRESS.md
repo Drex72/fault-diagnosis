@@ -234,6 +234,12 @@ Caveats: simulation only; 10 trials per scenario; Jev is a cloud service, used o
 
 How it was compared: `jev_compare.py` (a throwaway script, not in the repo) pairs records by scenario and seed. To check any number above, read the two `sessions.jsonl` files: each record has `method`, `scenario`, `seed`, `truth`, `elements` and `correct`.
 
+## After Phase 2: a top cloud model through OpenRouter (27 Oct 2026; built, not yet run)
+
+- The upper-bound test the owner asked for after the Jev results: if even the strongest model available cannot make the hybrid beat the engine, the finding is about the design, not the model. `--server openrouter` sends the agent's usual chat requests to OpenRouter with an API key (`faultdiag/openrouter.py`); first model `anthropic/claude-opus-5.5`, which always reasons (`--think`) and ignores temperature. Reasons: `docs/DECISIONS.md`.
+- Tested against a fake OpenRouter in `tests/test_openrouter.py` (11 tests, all passing), and the benchmark script end to end against the same fake in a scratch copy of the repository (2 sessions; tokens and cost recorded, the key in no output or file).
+- Not run against the real service: it needs the owner's OpenRouter key and credits (`docs/OWNER_TODO.md` steps 30 to 33). Estimated cost of the 21-session short test on Opus 5.5: about 1 million input tokens (from qwen3:8b's context sizes on the same sessions), so about 4 dollars of input plus 1 to 7 dollars of reasoning and output; the script prints the real figure.
+
 ## Phase 3: hardware (software done 26 Oct 2026; hardware runs waiting on the owner)
 
 Done and tested without a board:

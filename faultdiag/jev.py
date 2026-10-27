@@ -24,7 +24,7 @@ import time
 import urllib.error
 import urllib.request
 
-from .agent import LLMBadOutput, LLMUnavailable
+from .agent import LLMBadOutput, LLMUnavailable, retry_after
 from .logsetup import get_logger
 from .measure import DEFAULT_PULSE_MS
 from .tools import ELEMENTS
@@ -102,14 +102,6 @@ def render_state(messages: list[dict]) -> dict:
 def _top(ans: dict, n: int = 3) -> str:
     probs = sorted((ans.get("probabilities") or {}).items(), key=lambda kv: -kv[1])[:n]
     return "; ".join(f"{k} ({v:.2f})" for k, v in probs) or ans["choice"]
-
-
-def _retry_after(exc, default: float) -> float:
-    """Seconds to wait from a Retry-After header (seconds form), capped at a minute."""
-    try:
-        return min(60.0, float((exc.headers or {}).get("Retry-After")))
-    except (TypeError, ValueError):
-        return default
 
 
 def _strings(obj) -> set:
@@ -201,7 +193,7 @@ class JevLLM:
             except urllib.error.HTTPError as exc:
                 detail = exc.read()[:300].decode("utf-8", "replace")
                 if exc.code in RETRY_STATUS and attempt < self.max_retries:
-                    wait = _retry_after(exc, 2 ** attempt)
+                    wait = retry_after(exc, 2 ** attempt)
                     log.warning("Jev returned HTTP %d (attempt %d); asking again in %.0f s: %s",
                                 exc.code, attempt + 1, wait, detail)
                     time.sleep(wait)

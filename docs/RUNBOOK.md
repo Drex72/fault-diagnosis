@@ -49,6 +49,15 @@ export TYPESAFE_API_KEY=<your key>
 
 Jev picks each next measurement, and then the diagnosis, from a fixed list of options (`faultdiag/jev.py`), so it never sends a malformed call. A missing or refused key stops the script before any session. To use it from the dashboard, start `python -m gui` from the same terminal and choose Model server "Jev (TypeSafe cloud)". Steps for the owner: `docs/OWNER_TODO.md` steps 24 to 28.
 
+**Cloud chat models through OpenRouter (optional)**: Claude, GPT or Gemini as the planner for D and E, as a comparison only (an upper bound for what a model can add). One OpenRouter key covers all of them; it needs the internet and is paid per token, so it is not part of the offline demo. Keep the key in a file outside the repository, readable only by you, and pass it in for one command at a time:
+
+```bash
+read -rs "k?OpenRouter key: " && printf '%s' "$k" > ~/.openrouter-key && chmod 600 ~/.openrouter-key && unset k
+OPENROUTER_API_KEY="$(cat ~/.openrouter-key)" .venv/bin/python scripts/bench_models.py --server openrouter --models anthropic/claude-opus-5.5 --think --timeout 180
+```
+
+The first line asks for the key without showing it. Model names are OpenRouter's ids (https://openrouter.ai/models). Before any session the script checks the key, that the model exists and calls tools, and what it accepts: Claude Opus 5.5 and Sonnet 5.5 always reason, so they need `--think` (their default effort, high), and they ignore temperature, so it is not sent and the record says `temperature: null`. The summary prints the tokens used and OpenRouter's cost. A refused key, no credits (HTTP 402) or an unknown model stops the script before any session; rate limits and busy providers are waited out up to 3 times. For the full comparison, use `run_experiment.py` with the same `--server openrouter --model <id> --think` options. Set a credit limit on the key in OpenRouter's settings to cap what a run can spend. Steps for the owner: `docs/OWNER_TODO.md` steps 30 to 33.
+
 ## After calibration
 
 Run after every new calibration record (`docs/OWNER_TODO.md` step 18).

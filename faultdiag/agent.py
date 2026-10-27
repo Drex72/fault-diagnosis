@@ -81,33 +81,90 @@ class LLMBadOutput(ValueError):
 
 # Ollama and llama-server error texts for a reply they could not parse into a tool call.
 _PARSE_ERROR = re.compile(r"syntax error|failed to parse|parsing|unmarshal|invalid character", re.I)
+# Cloud servers only (an API key is set): a rate limit or a busy provider is waited out.
+RETRY_STATUS = {429, 500, 502, 503, 504, 524, 529}
+
+
+def retry_after(exc, default: float) -> float:
+    """Seconds to wait from a Retry-After header (seconds form), capped at a minute."""
+    try:
+        return min(60.0, float((exc.headers or {}).get("Retry-After")))
+    except (TypeError, ValueError):
+        return default
 
 
 class OpenAICompatLLM:
-    def __init__(self, base_url: str, model: str, timeout_s: float = 180, temperature: float = 0.0,
-                 extra: dict | None = None):
+    def __init__(self, base_url: str, model: str, timeout_s: float = 180, temperature: float | None = 0.0,
+                 extra: dict | None = None, api_key: str | None = None, max_retries: int = 3):
         """extra: additional request fields, e.g. {"reasoning_effort": "none"} to
-        switch off a thinking model's reasoning on Ollama."""
+        switch off a thinking model's reasoning on Ollama. temperature None leaves it
+        out (cloud models that ignore it). api_key: for a cloud server (OpenRouter), sent
+        only in the request header; with a key, RETRY_STATUS replies are retried up to
+        max_retries times. Local servers get no retries, as before."""
         self.url = base_url.rstrip("/") + "/chat/completions"
         self.model, self.timeout_s, self.temperature = model, timeout_s, temperature
         self.extra = extra or {}
+        self._headers = {"Content-Type": "application/json"}
+        if api_key:
+            self._headers["Authorization"] = f"Bearer {api_key}"
+        self.max_retries = max_retries if api_key else 0
+        self.usage = {"requests": 0, "prompt_tokens": 0, "completion_tokens": 0, "reasoning_tokens": 0, "cost": 0.0}
+        self.answered_by, self.providers = None, {}
 
     def __call__(self, messages: list[dict], tools: list[dict]) -> dict:
-        body = json.dumps({"model": self.model, "messages": messages, "tools": tools,
-                           "temperature": self.temperature, "stream": False, **self.extra}).encode()
-        req = urllib.request.Request(self.url, body, {"Content-Type": "application/json"})
-        try:
-            with urllib.request.urlopen(req, timeout=self.timeout_s) as resp:
-                return json.loads(resp.read())["choices"][0]["message"]
-        except urllib.error.HTTPError as exc:  # server up, request refused (e.g. model not pulled)
-            detail = exc.read()[:300].decode("utf-8", "replace")
-            if exc.code >= 500 and _PARSE_ERROR.search(detail):
-                raise LLMBadOutput(f"{self.url} could not parse the model's reply (HTTP {exc.code}): {detail}") from exc
-            raise LLMUnavailable(f"{self.url} returned HTTP {exc.code}: {detail}") from exc
-        except urllib.error.URLError as exc:
-            if isinstance(exc.reason, TimeoutError):
-                raise TimeoutError(f"no reply from {self.model} within {self.timeout_s} s") from exc
-            raise LLMUnavailable(f"cannot reach model server at {self.url}: {exc.reason}") from exc
+        fields = {"model": self.model, "messages": messages, "tools": tools, "stream": False, **self.extra}
+        if self.temperature is not None:
+            fields["temperature"] = self.temperature
+        body = json.dumps(fields).encode()
+        for attempt in range(self.max_retries + 1):
+            req = urllib.request.Request(self.url, body, self._headers)
+            try:
+                with urllib.request.urlopen(req, timeout=self.timeout_s) as resp:
+                    out = json.loads(resp.read())
+            except urllib.error.HTTPError as exc:  # server up, request refused (e.g. model not pulled)
+                detail = exc.read()[:300].decode("utf-8", "replace")
+                if exc.code >= 500 and _PARSE_ERROR.search(detail):
+                    raise LLMBadOutput(f"{self.url} could not parse the model's reply (HTTP {exc.code}): {detail}") from exc
+                if exc.code in RETRY_STATUS and attempt < self.max_retries:
+                    wait = retry_after(exc, 2 ** attempt)
+                    log.warning("%s returned HTTP %d (attempt %d); asking again in %.0f s: %s",
+                                self.url, exc.code, attempt + 1, wait, detail)
+                    time.sleep(wait)
+                    continue
+                hint = {401: "; check the API key", 402: "; out of credits",
+                        403: "; the key is not allowed this model or has reached its limit"}.get(exc.code, "")
+                raise LLMUnavailable(f"{self.url} returned HTTP {exc.code}{hint}: {detail}") from exc
+            except urllib.error.URLError as exc:
+                if isinstance(exc.reason, TimeoutError):
+                    raise TimeoutError(f"no reply from {self.model} within {self.timeout_s} s") from exc
+                raise LLMUnavailable(f"cannot reach model server at {self.url}: {exc.reason}") from exc
+            if out.get("choices"):
+                break
+            # OpenRouter can answer 200 with the provider's error instead of a reply
+            err = out.get("error") or {}
+            if err.get("code") in RETRY_STATUS and attempt < self.max_retries:
+                log.warning("%s returned an error (attempt %d); asking again in %d s: %s",
+                            self.url, attempt + 1, 2 ** attempt, json.dumps(err)[:300])
+                time.sleep(2 ** attempt)
+                continue
+            raise LLMUnavailable(f"{self.url} returned no reply: {json.dumps(out)[:300]}")
+        self._count(out)
+        return out["choices"][0]["message"]
+
+    def _count(self, out: dict):
+        u = out.get("usage") or {}
+        self.usage["requests"] += 1
+        self.usage["prompt_tokens"] += int(u.get("prompt_tokens") or 0)
+        self.usage["completion_tokens"] += int(u.get("completion_tokens") or 0)
+        self.usage["reasoning_tokens"] += int((u.get("completion_tokens_details") or {}).get("reasoning_tokens") or 0)
+        self.usage["cost"] += float(u.get("cost") or 0)
+        if out.get("provider"):
+            self.providers[out["provider"]] = self.providers.get(out["provider"], 0) + 1
+        log.debug("request %d to %s: usage %s, provider %s", self.usage["requests"], self.url, u, out.get("provider"))
+        if out.get("model") and out["model"] != self.answered_by:
+            if out["model"] != self.model:
+                log.info("asked for %s, answered by %s", self.model, out["model"])
+            self.answered_by = out["model"]
 
 
 def parse_call(msg: dict):
@@ -209,6 +266,10 @@ class Agent:
             assistant = {"role": "assistant", "content": msg.get("content") or ""}
             if msg.get("tool_calls"):
                 assistant["tool_calls"] = msg["tool_calls"][:1]
+            if msg.get("reasoning_details"):  # cloud reasoning models (OpenRouter) need it back with their call
+                for m in messages:  # only the latest is needed; this keeps the context size comparable
+                    m.pop("reasoning_details", None)
+                assistant["reasoning_details"] = msg["reasoning_details"]
             messages.append(assistant)
             try:
                 name, args, call_id, how = parse_call(msg)

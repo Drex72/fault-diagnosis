@@ -5,6 +5,8 @@
         --models bonsai-8b --model-version <sha256 prefix of the GGUF>
     python scripts/bench_models.py --engine-only    # method C alone on the same seeds, no model
     python scripts/bench_models.py --server jev --models jev-1.14.0   # cloud; needs TYPESAFE_API_KEY
+    python scripts/bench_models.py --server openrouter --models anthropic/claude-opus-5.5 --think \
+        --timeout 180                                                 # cloud; needs OPENROUTER_API_KEY
 
 Reports, per model: diagnosis accuracy on a fixed scenario set, invalid
 tool-call rate, replies parsed from plain text, timeouts, replies the server
@@ -32,7 +34,7 @@ from pathlib import Path
 ROOT = Path(__file__).resolve().parent.parent
 sys.path.insert(0, str(ROOT))
 
-from faultdiag import jev  # noqa: E402
+from faultdiag import jev, openrouter  # noqa: E402
 from faultdiag.agent import Agent, OpenAICompatLLM  # noqa: E402
 from faultdiag.engine import BayesEngine  # noqa: E402
 from faultdiag.guard import load_policy  # noqa: E402
@@ -115,9 +117,16 @@ def pct(xs, q):
 
 
 def bench_model(model, args, policy, engine, out_f) -> dict:
+    cloud_meta = {}
     if args.server == "jev":  # cloud: nothing to load or to measure in this laptop's memory
         llm = jev.JevLLM(args.base_url, model, args.jev_key, timeout_s=args.timeout)
         version, load_s, mem = args.model_version or model, 0.0, None
+    elif args.server == "openrouter":  # cloud, checked in main(): settings per model
+        cfg = args.cloud_cfg[model]
+        llm = OpenAICompatLLM(args.base_url, model, timeout_s=args.timeout, temperature=cfg["temperature"],
+                              extra=cfg["extra"], api_key=args.cloud_key)
+        version, load_s, mem = args.model_version or cfg["version"], 0.0, None
+        cloud_meta = {"server": "openrouter", "temperature": cfg["temperature"]}
     else:
         extra = {}
         if not args.think:
@@ -135,7 +144,7 @@ def bench_model(model, args, policy, engine, out_f) -> dict:
         load_s = round(time.perf_counter() - t0, 1)
         mem = PeakMemory(args.server, args.base_url, model)
         mem.start()
-    meta = {**run_meta("sim", policy), "model": model, "model_version": version, "think": args.think}
+    meta = {**run_meta("sim", policy), "model": model, "model_version": version, "think": args.think, **cloud_meta}
     agent = Agent(llm, engine)
     recs = []
     for s in args.scenarios.split(","):
@@ -166,6 +175,11 @@ def bench_model(model, args, policy, engine, out_f) -> dict:
         "peak_memory_gb": round(peak / 1e9, 2) if peak is not None else None, "load_s": load_s,
         **({"jev_input_tokens": llm.usage["input_tokens"], "jev_requests": llm.usage["requests"],
             "answered_by": llm.answered_by} if args.server == "jev" else {}),
+        **({"cloud_requests": llm.usage["requests"], "cloud_prompt_tokens": llm.usage["prompt_tokens"],
+            "cloud_completion_tokens": llm.usage["completion_tokens"],
+            "cloud_reasoning_tokens": llm.usage["reasoning_tokens"], "cloud_cost_usd": round(llm.usage["cost"], 4),
+            "providers": llm.providers, "answered_by": llm.answered_by, **cloud_meta}
+           if args.server == "openrouter" else {}),
         "crashes": sum(r["error"] is not None for r in recs),
         "per_scenario": {s: sum(r["correct"] for r in recs if r["scenario"] == s) / args.trials
                          for s in args.scenarios.split(",")},
@@ -193,9 +207,11 @@ def main():
     ap.add_argument("--models", default=None, help="comma-separated; required unless --engine-only")
     ap.add_argument("--engine-only", action="store_true",
                     help="run method C alone on the same scenarios and seeds (no model server needed)")
-    ap.add_argument("--server", choices=["ollama", "llamacpp", "jev"], default="ollama",
-                    help="jev: TypeSafe's cloud decision model (internet and TYPESAFE_API_KEY needed)")
-    ap.add_argument("--base-url", default=None, help="default: Ollama on :11434, llama.cpp on :8080, Jev at TypeSafe")
+    ap.add_argument("--server", choices=["ollama", "llamacpp", "jev", "openrouter"], default="ollama",
+                    help="jev: TypeSafe's cloud decision model (internet and TYPESAFE_API_KEY needed); "
+                         "openrouter: cloud chat models such as anthropic/claude-opus-5.5 (OPENROUTER_API_KEY)")
+    ap.add_argument("--base-url", default=None,
+                    help="default: Ollama on :11434, llama.cpp on :8080, Jev at TypeSafe, OpenRouter")
     ap.add_argument("--scenarios", default=DEFAULT_SCENARIOS)
     ap.add_argument("--trials", type=int, default=3)
     ap.add_argument("--timeout", type=float, default=60, help="seconds per model reply")
@@ -214,8 +230,9 @@ def main():
     if not args.models:
         ap.error("--models is required unless --engine-only is given")
     args.base_url = args.base_url or {"ollama": "http://localhost:11434/v1", "llamacpp": "http://localhost:8080/v1",
-                                      "jev": jev.DEFAULT_URL}[args.server]
+                                      "jev": jev.DEFAULT_URL, "openrouter": openrouter.DEFAULT_URL}[args.server]
 
+    args.cloud_cfg = {}
     if args.server == "jev":
         try:
             args.jev_key = jev.api_key()
@@ -224,11 +241,28 @@ def main():
             print(f"ERROR: {exc}", file=sys.stderr)
             sys.exit(2)
         pulled = None
+    elif args.server == "openrouter":
+        try:
+            args.cloud_key = openrouter.api_key()
+        except ValueError as exc:
+            print(f"ERROR: {exc}", file=sys.stderr)
+            sys.exit(2)
+        for m in args.models.split(","):
+            try:
+                args.cloud_cfg[m] = openrouter.check(args.base_url, m, args.cloud_key, args.think)
+            except ValueError as exc:
+                print(f"ERROR: {exc}", file=sys.stderr)
+                if "API key" in str(exc) or "cannot reach" in str(exc):
+                    sys.exit(2)
+        pulled = None
     else:
         pulled = preflight(args.server, args.base_url)
     models, missing = [], []
     for m in args.models.split(","):
-        if pulled is not None and m not in pulled and f"{m}:latest" not in pulled:
+        if args.server == "openrouter" and m not in args.cloud_cfg:
+            print(f"ERROR: skipping {m} (see above).", file=sys.stderr)
+            missing.append(m)
+        elif pulled is not None and m not in pulled and f"{m}:latest" not in pulled:
             print(f"ERROR: model {m} is not pulled on this Ollama server; run `ollama pull {m}`. Skipping it.",
                   file=sys.stderr)
             missing.append(m)
@@ -256,6 +290,11 @@ def main():
         print(f"| {r['model']} | {r['model_version']} | {r['accuracy']:.0%} | {r['invalid_rate']:.1%} | "
               f"{r['content_parsed']} | {r['timeouts']} | {r['server_parse_errors']} | {r['fallbacks']} | {r['median_latency_s']:.2f} | "
               f"{r['p95_latency_s']:.2f} | {mem_gb} | {r['crashes']} |")
+    for r in rows:
+        if "cloud_cost_usd" in r:
+            print(f"\n{r['model']}: {r['cloud_requests']} requests, {r['cloud_prompt_tokens']:,} input and "
+                  f"{r['cloud_completion_tokens']:,} output tokens ({r['cloud_reasoning_tokens']:,} of them reasoning), "
+                  f"${r['cloud_cost_usd']:.2f} by OpenRouter's count; providers {r['providers']}")
     print(f"\nSaved to {out}")
     if missing:
         sys.exit(3)

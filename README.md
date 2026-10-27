@@ -52,7 +52,7 @@ ollama pull qwen3:8b
 
 Thinking is switched off by default (`--think` turns it on). For llama.cpp, start `llama-server` and pass `--server llamacpp` (see [docs/RUNBOOK.md](docs/RUNBOOK.md)). The model choice and its reasons are in [docs/model-benchmark.md](docs/model-benchmark.md).
 
-Optional, cloud: `--server jev --model jev-1.14.0` uses TypeSafe's Jev decision model instead of a local model, for comparison. It needs the internet and `TYPESAFE_API_KEY` set in your terminal ([docs/RUNBOOK.md](docs/RUNBOOK.md), "Jev").
+Optional, cloud: `--server jev --model jev-1.14.0` uses TypeSafe's Jev decision model instead of a local model, for comparison. It needs the internet and `TYPESAFE_API_KEY` set in your terminal ([docs/RUNBOOK.md](docs/RUNBOOK.md), "Jev"). Likewise `--server openrouter --model anthropic/claude-opus-5.5 --think` uses a cloud chat model through OpenRouter, with `OPENROUTER_API_KEY` ([docs/RUNBOOK.md](docs/RUNBOOK.md), "Cloud chat models through OpenRouter").
 
 ## With the hardware bench
 
@@ -79,6 +79,7 @@ faultdiag/               the diagnosis package
   injector.py            fault-injection controller client
   engine.py baselines.py agent.py methods.py   methods A to E
   jev.py                 optional cloud planner for D and E (TypeSafe's Jev)
+  openrouter.py          optional cloud chat models for D and E (key check, model settings)
   harness.py hwrun.py    scenarios, blind grading, summaries
   calib.py               calibration records
 firmware/bench/          ESP32 bench firmware (PlatformIO); enforces every electrical limit

@@ -57,6 +57,15 @@ Every change to existing code, with the reason. Newest first within a phase.
 - `docs/ARCHITECTURE.md`, `docs/RUNBOOK.md` (new).
 - `.github/workflows/ci.yml` (new): pytest on every push and pull request, Python 3.12, simulation and mock devices only.
 
+## Cloud chat models through OpenRouter (27 Oct 2026)
+
+- `faultdiag/openrouter.py` (new): the key (`OPENROUTER_API_KEY`) and the check before a run: the key is accepted (`GET /key`), the model exists and calls tools, and which request fields it accepts (`GET /models`). Reason: the owner asked for an upper-bound test with a frontier cloud model (`docs/DECISIONS.md`).
+- `faultdiag/agent.py`, `OpenAICompatLLM`: optional `api_key` (sent only in the Authorization header); `temperature=None` leaves the field out, for models that ignore it; with a key, HTTP 429 and 5xx, and a 200 reply carrying the provider's error, are retried up to 3 times (honouring Retry-After), and 401, 402 and 403 name the likely cause. Without a key nothing is retried, so Ollama and llama.cpp behave as before (tested). New counters per client: requests, input, output and reasoning tokens, cost, providers, the model that answered. A reply with no `choices` now raises `LLMUnavailable` with the server's text, instead of a bare `KeyError`. New `retry_after`, moved from `faultdiag/jev.py` (same code).
+- `faultdiag/agent.py`, `Agent`: when a reply carries `reasoning_details` (Claude through OpenRouter), they are sent back with that call, as OpenRouter asks for tool use with reasoning models; older ones are dropped so the context size stays comparable. Local servers do not send them, so nothing changes there.
+- `faultdiag/methods.py`: `--server openrouter` (checked once before the run; records carry `server: openrouter`, the model's dated id as its version, and `temperature`). `scripts/bench_models.py`: `--server openrouter`, per-model check (an unknown model is skipped, exit 3; a bad key or no internet exits 2), tokens and cost in `summary.json` and printed. `scripts/run_experiment.py`: help text. `gui/static/app.js`: "OpenRouter (cloud)" in the Model server list.
+- `tests/test_openrouter.py` (new, 11 tests) against a fake OpenRouter: a full D and E session with the key only in the header (never in a record or log), temperature left out and reasoning sent back, settings per model, mandatory reasoning without `--think` stops before the run, unknown or tool-less models, a missing or refused key, rate limits and provider errors waited out, no credits, and a local server still not retried.
+- Docs: `docs/DECISIONS.md`, `docs/RUNBOOK.md`, `docs/OWNER_TODO.md` section G (steps 30 to 33), `README.md`, `docs/ARCHITECTURE.md`.
+
 ## Jev as a cloud planner (27 Oct 2026)
 
 - Jev run against the real service with the owner's key (no code change for the run): `results/model-bench/20261027-103049` with `results/jev-bench.log`, and `results/20261027-103259` with `results/jev-final-run.log`. Written up in `docs/PROGRESS.md`, `docs/model-benchmark.md` (Jev row), `docs/DECISIONS.md` ("Jev run done").

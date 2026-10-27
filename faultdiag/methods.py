@@ -5,7 +5,7 @@
 """
 from __future__ import annotations
 
-from . import jev
+from . import jev, openrouter
 from .agent import Agent, OpenAICompatLLM
 from .baselines import run_fixed, run_tree
 from .engine import BayesEngine
@@ -15,8 +15,10 @@ from .runmeta import ollama_model_version
 log = get_logger("methods")
 
 METHODS = ("fixed", "tree", "bayes", "llm", "hybrid")
-DEFAULT_URL = {"ollama": "http://localhost:11434/v1", "llamacpp": "http://localhost:8080/v1", "jev": jev.DEFAULT_URL}
-SERVERS = tuple(DEFAULT_URL)  # jev: TypeSafe's cloud decision model, see faultdiag/jev.py
+DEFAULT_URL = {"ollama": "http://localhost:11434/v1", "llamacpp": "http://localhost:8080/v1", "jev": jev.DEFAULT_URL,
+               "openrouter": openrouter.DEFAULT_URL}
+# jev: TypeSafe's cloud decision model (faultdiag/jev.py); openrouter: cloud chat models (faultdiag/openrouter.py)
+SERVERS = tuple(DEFAULT_URL)
 
 
 def llm_extra(server: str, think: bool) -> dict:
@@ -48,7 +50,7 @@ def build_methods(names, model: str | None = None, server: str = "ollama", base_
     base_url = base_url or DEFAULT_URL[server]
     engine = BayesEngine()
     methods, meta = {}, {}
-    jev_llm = None
+    jev_llm = cloud = None
     for m in names:
         if m == "fixed":
             methods[m] = run_fixed
@@ -67,6 +69,19 @@ def build_methods(names, model: str | None = None, server: str = "ollama", base_
                 agent = Agent(_Observed(jev_llm, on_reply) if on_reply else jev_llm, engine if m == "hybrid" else None)
                 methods[m] = agent.run
                 meta[m] = {"model": model, "think": False, "model_version": model_version or model, "server": "jev"}
+                continue
+            if server == "openrouter":  # key, model and settings checked once before the run
+                if cloud is None:
+                    key = openrouter.api_key()
+                    cloud = {**openrouter.check(base_url, model, key, think), "key": key}
+                log.info("method %s: model %s on %s, request extras %s, temperature %s",
+                         m, model, base_url, cloud["extra"], cloud["temperature"])
+                llm = OpenAICompatLLM(base_url, model, timeout_s=timeout_s, temperature=cloud["temperature"],
+                                      extra=cloud["extra"], api_key=cloud["key"])
+                agent = Agent(_Observed(llm, on_reply) if on_reply else llm, engine if m == "hybrid" else None)
+                methods[m] = agent.run
+                meta[m] = {"model": model, "think": think, "model_version": model_version or cloud["version"],
+                           "server": "openrouter", "temperature": cloud["temperature"]}
                 continue
             extra = llm_extra(server, think)
             log.info("method %s: model %s on %s, request extras %s", m, model, base_url, extra)
