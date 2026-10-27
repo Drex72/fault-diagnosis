@@ -57,6 +57,11 @@ Every change to existing code, with the reason. Newest first within a phase.
 - `docs/ARCHITECTURE.md`, `docs/RUNBOOK.md` (new).
 - `.github/workflows/ci.yml` (new): pytest on every push and pull request, Python 3.12, simulation and mock devices only.
 
+## Dashboard screenshots for the manual (27 Oct 2026)
+
+- `gui/static/style.css`: tool names in the step tables (live session and the experiments drill-down) no longer break mid-word. Reason: the screenshots for the manual showed `read_vo` / `ltage` on two lines whenever a load-test reading made the Reading column wide. The tracker's Delete / Add column stays pinned to the right edge of the table while the other columns scroll sideways. Reason: the tracker tables are wider than their box, and with overlay scrollbars (macOS) nothing showed that they scroll: on the Lab equipment tab Delete showed as "D" and Add as a blank sliver, and on the Parts tab the column was not visible at all.
+- `docs/screenshots/` (new): one PNG per dashboard page and state, taken with headless Chrome against a dashboard running on a scratch results folder; `docs/screenshots/README.md` says what each shows and how it was made. `docs/manual-prompt.md` lists them as attachments.
+
 ## Free cloud models, real runs (27 Oct 2026)
 
 - `faultdiag/agent.py`, `OpenAICompatLLM`: with an API key (cloud only), a request that gets no reply at all (connection refused or reset, DNS failure) is tried again after 5, 10 and 20 s before the run stops. Reason: the first real Gemini session stopped on a one-off DNS failure (`[Errno 8]`). Local servers still stop at once (tested).

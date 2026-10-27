@@ -9,7 +9,7 @@ Give the prompt below to an LLM that can write files (and, ideally, generate ima
 - `docs/ARCHITECTURE.md` (how the parts fit together, safety layers)
 - `docs/OPEN_QUESTIONS.md` (known risks)
 - `config/policy.json` (the limits the host enforces)
-- Optional: screenshots of the dashboard pages (Live session, Experiments, Models, Calibration, Project tracker)
+- `docs/screenshots/*.png` with `docs/screenshots/README.md` (one screenshot per dashboard page and state, and what each one shows)
 
 ---
 
@@ -92,6 +92,10 @@ b) One illustrative picture of how the bench looks at the end of the stage (a re
    "Illustration only. Wire from the diagram and the tables." It must match the facts: both
    ESP32 boards powered from the laptop's USB (never from the battery), one common ground at
    battery negative, blade fuses in inline holders, no mains (230 V) anywhere.
+c) For the dashboard (stage 4, and the test runs in stage 5), use the attached screenshots
+   instead of drawn or generated pictures. Copy them into the site's images folder, put each one
+   where the page talks about that screen, and caption it from docs/screenshots/README.md, adding
+   "Simulated session". Describe only what the screenshot or the files show.
 Every image needs alt text describing what it shows, so search finds it too.
 
 STYLE

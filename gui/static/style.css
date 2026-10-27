@@ -160,6 +160,7 @@ pre { font-family: var(--code); font-size: 0.82rem; background: var(--paper); pa
 .legend b { margin-left: auto; font-weight: 600; }
 
 .steps td:nth-child(1) { width: 2.5rem; }
+.steps td:nth-child(2) code { white-space: nowrap; word-break: normal; }
 .steps tr.rejected td { color: var(--live); }
 .steps tr.failed td { color: var(--warn); }
 .scroll { max-height: 28rem; overflow: auto; }
@@ -189,6 +190,7 @@ pre { font-family: var(--code); font-size: 0.82rem; background: var(--paper); pa
 .tracker input:focus, .tracker select:focus { border-color: var(--signal); background: var(--panel); }
 .tracker td.wide { min-width: 18rem; }
 .tracker td.mid { min-width: 8rem; }
+.tracker td:last-child { position: sticky; right: 0; background: var(--panel); box-shadow: inset 1px 0 0 var(--rule); white-space: nowrap; }
 .tally { display: flex; gap: 1rem; flex-wrap: wrap; font-size: 0.9rem; color: var(--ink-2); }
 .tally b { color: var(--ink); }
 
