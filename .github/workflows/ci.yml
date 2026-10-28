@@ -19,6 +19,10 @@ jobs:
 
   adequacy-validation:
     if: github.ref_name == 'experiment/math-engine-v2-adequacy'
+    strategy:
+      fail-fast: false
+      matrix:
+        threshold: ["none", "1.5", "2.0", "3.0"]
     runs-on: ubuntu-latest
     timeout-minutes: 20
     steps:
@@ -28,70 +32,53 @@ jobs:
           python-version: "3.12"
           cache: pip
       - run: pip install -r requirements.txt
-      - name: Fresh-seed aggregate-fit threshold validation
+      - name: Fresh-seed adequacy validation — threshold ${{ matrix.threshold }}
+        env:
+          THRESHOLD: ${{ matrix.threshold }}
         run: |
           python - <<'PY'
-          from collections import defaultdict
-
+          import os
           from faultdiag.engine_v2 import BayesEngineV2
           from faultdiag.harness import run_all
 
+          raw = os.environ["THRESHOLD"]
+          threshold = None if raw == "none" else float(raw)
           scenarios = [
               "healthy", "F1", "F1b", "F2", "F3", "F4",
               "F5@motor", "F5@lamp", "F5@load", "C1", "C2", "H1", "H2",
           ]
-          configs = {
-              "compound_no_adequacy": None,
-              "adequacy_1_5": 1.5,
-              "adequacy_2_0": 2.0,
-              "adequacy_3_0": 3.0,
-          }
-          engines = {
-              name: BayesEngineV2(
-                  min_confirm_score=1.0,
-                  challenge_complex_hypothesis=True,
-                  aggregate_misfit_z=threshold,
-              )
-              for name, threshold in configs.items()
-          }
+          engine = BayesEngineV2(
+              min_confirm_score=1.0,
+              challenge_complex_hypothesis=True,
+              aggregate_misfit_z=threshold,
+          )
           records = run_all(
-              {name: engine.run for name, engine in engines.items()},
+              {f"adequacy_{raw}": engine.run},
               scenarios,
               trials=10,
               seed0=20_000,
           )
+          known = [r for r in records if r["set"] in ("single", "compound")]
+          h1 = [r for r in records if r["scenario"] == "H1"]
+          h2 = [r for r in records if r["scenario"] == "H2"]
 
-          print("\nFRESH-SEED ADEQUACY VALIDATION (seed0=20000)")
-          print("| Method | Known correct | Known false OOD | H1 OOD | H2 OOD | Mean cost |")
-          print("|---|---:|---:|---:|---:|---:|")
-          for name in configs:
-              rs = [r for r in records if r["method"] == "bayes_v2"]
-              # run_all records the method dict key separately, so identify by
-              # per-call ordering below instead of diagnosis's internal label.
-              # Rebuild from the actual grouped record method field as emitted.
-          # Harness records method from the dictionary key, overriding the
-          # engine's internal method label.
-          for name in configs:
-              rs = [r for r in records if r["method"] == name]
-              known = [r for r in rs if r["set"] in ("single", "compound")]
-              h1 = [r for r in rs if r["scenario"] == "H1"]
-              h2 = [r for r in rs if r["scenario"] == "H2"]
-              print(
-                  f'| {name} | {sum(r["correct"] for r in known)}/{len(known)} | '
-                  f'{sum(r["status"] == "out_of_model" for r in known)}/{len(known)} | '
-                  f'{sum(r["status"] == "out_of_model" for r in h1)}/{len(h1)} | '
-                  f'{sum(r["status"] == "out_of_model" for r in h2)}/{len(h2)} | '
-                  f'{sum(r["cost"] for r in rs)/len(rs):.2f} |'
-              )
-
-          print("\nPER-SCENARIO OOD/ACCURACY")
-          for name in configs:
-              for scenario in scenarios:
-                  rs = [r for r in records if r["method"] == name and r["scenario"] == scenario]
-                  print(name, scenario, {
-                      "correct": sum(r["correct"] for r in rs),
-                      "ood": sum(r["status"] == "out_of_model" for r in rs),
-                      "mean_cost": round(sum(r["cost"] for r in rs)/len(rs), 2),
-                      "fit": [r["diagnosis"].get("aggregate_fit_rms_z") for r in rs],
-                  })
+          print("\nADEQUACY VALIDATION RESULT")
+          print({
+              "threshold": raw,
+              "known_correct": f'{sum(r["correct"] for r in known)}/{len(known)}',
+              "known_false_ood": f'{sum(r["status"] == "out_of_model" for r in known)}/{len(known)}',
+              "H1_ood": f'{sum(r["status"] == "out_of_model" for r in h1)}/{len(h1)}',
+              "H2_ood": f'{sum(r["status"] == "out_of_model" for r in h2)}/{len(h2)}',
+              "mean_cost": round(sum(r["cost"] for r in records)/len(records), 3),
+          })
+          print("\nPER-SCENARIO")
+          for scenario in scenarios:
+              rs=[r for r in records if r["scenario"] == scenario]
+              print(scenario, {
+                  "correct": sum(r["correct"] for r in rs),
+                  "ood": sum(r["status"] == "out_of_model" for r in rs),
+                  "mean_cost": round(sum(r["cost"] for r in rs)/len(rs), 2),
+                  "fit_min": round(min(r["diagnosis"].get("aggregate_fit_rms_z",0) for r in rs),3),
+                  "fit_max": round(max(r["diagnosis"].get("aggregate_fit_rms_z",0) for r in rs),3),
+              })
           PY
