@@ -37,6 +37,7 @@ class BayesEngineV2(BayesEngine):
         challenge_complex_hypothesis: bool = False,
         min_signature_z: float = 4.0,
         max_verifications: int = 2,
+        aggregate_misfit_z: float | None = None,
         **kwargs,
     ):
         super().__init__(*args, **kwargs)
@@ -48,6 +49,7 @@ class BayesEngineV2(BayesEngine):
         self.challenge_complex_hypothesis = challenge_complex_hypothesis
         self.min_signature_z = min_signature_z
         self.max_verifications = max_verifications
+        self.aggregate_misfit_z = aggregate_misfit_z
         self._signature_z = self._build_signature_map()
 
     def reset(self, seed: int = 0):
@@ -294,6 +296,19 @@ class BayesEngineV2(BayesEngine):
             total_n += y.size
 
         return float(np.sqrt(total_sq / max(total_n, 1)))
+
+    def misfit(self) -> bool:
+        """Known-model rejection using both worst residual and aggregate fit.
+
+        aggregate_misfit_z is optional and experimental. The threshold is
+        calibrated only on development scenarios and must be validated on
+        fresh seeds before it is considered for the keeper engine.
+        """
+        if super().misfit():
+            return True
+        if self.aggregate_misfit_z is None or not self.obs:
+            return False
+        return self.aggregate_fit_rms_z() > self.aggregate_misfit_z
 
     def diagnosis(self) -> dict:
         d = super().diagnosis()
