@@ -1,10 +1,10 @@
-# Runs the test suite on every push and pull request. Simulation and mock devices only:
-# no hardware, no model server, no internet needed by the tests themselves.
+# Production tests plus an opt-in V2 simulation benchmark.
 name: tests
 
 on:
   push:
   pull_request:
+  workflow_dispatch:
 
 jobs:
   pytest:
@@ -18,3 +18,23 @@ jobs:
           cache: pip
       - run: pip install -r requirements.txt
       - run: python -m pytest -q
+
+  v2-benchmark:
+    if: github.event_name == 'workflow_dispatch'
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+          cache: pip
+      - run: pip install -r requirements.txt
+      - name: Paired V1 / frozen V2 development benchmark
+        env:
+          FAULTDIAG_RESULTS_DIR: /tmp/faultdiag-v2-manual
+        run: |
+          python scripts/run_experiment.py \
+            --methods bayes,bayes_v2_candidate \
+            --scenarios healthy,F1,F1b,F2,F3,F4,F5@motor,F5@lamp,F5@load,C1,C2,H1,H2,TF1,TF2 \
+            --trials 10
