@@ -66,7 +66,7 @@ class BayesEngineV3Residual(BayesEngineV2):
                     return float(data[field])
         return None
 
-    def _ensure_scalar(self, guard, tool: str, args: dict, field: str):
+    def _ensure_scalar(self, guard, tool: str, args: dict, field: str, update_engine: bool = True):
         key = "point" if tool == "read_voltage" else "channel"
         value = args[key]
         existing = self._history_value(guard, tool, key, value, field)
@@ -77,7 +77,8 @@ class BayesEngineV3Residual(BayesEngineV2):
         if res["status"] != "ok":
             self.mark_failed(tool, args)
             return None
-        self.update(tool, args, res["data"])
+        if update_engine:
+            self.update(tool, args, res["data"])
         return float(res["data"][field])
 
     def _best_state(self):
@@ -85,12 +86,18 @@ class BayesEngineV3Residual(BayesEngineV2):
         hi, k = np.unravel_index(np.argmax(lw), lw.shape)
         return hi, k, self._states[hi][k]
 
-    def investigate_physics(self, guard) -> dict:
-        """Acquire enough evidence to evaluate current-balance residuals."""
-        i_src = self._ensure_scalar(guard, "read_current", {"channel": "src"}, "amps")
-        i_motor = self._ensure_scalar(guard, "read_current", {"channel": "motor"}, "amps")
-        v_lamp = self._ensure_scalar(guard, "read_voltage", {"point": "lamp"}, "volts")
-        v_load = self._ensure_scalar(guard, "read_voltage", {"point": "load"}, "volts")
+    def investigate_physics(self, guard, update_engine: bool = True) -> dict:
+        """Acquire enough evidence to evaluate current-balance residuals.
+
+        For an external audit of an otherwise accepted catalogue diagnosis,
+        update_engine=False keeps the audit statistically separate: a passed
+        parity check should not perturb the discrete posterior merely because
+        the audit uses measurements the catalogue planner did not request.
+        """
+        i_src = self._ensure_scalar(guard, "read_current", {"channel": "src"}, "amps", update_engine)
+        i_motor = self._ensure_scalar(guard, "read_current", {"channel": "motor"}, "amps", update_engine)
+        v_lamp = self._ensure_scalar(guard, "read_voltage", {"point": "lamp"}, "volts", update_engine)
+        v_load = self._ensure_scalar(guard, "read_voltage", {"point": "load"}, "volts", update_engine)
 
         if None in (i_src, i_motor, v_lamp, v_load) or abs(i_src) < 1e-6:
             return {
@@ -184,18 +191,25 @@ class BayesEngineV3Residual(BayesEngineV2):
             should_audit = True
 
         if should_audit:
-            self.physics_investigation = self.investigate_physics(guard)
+            original = dict(d)
+            catalogue_rejected = d["status"] == "out_of_model"
+            self.physics_investigation = self.investigate_physics(
+                guard, update_engine=catalogue_rejected
+            )
             if self.physics_investigation["status"] == "diagnosed":
-                # Keep Bayesian evidence in the report but let a conservation-
-                # law explanation override a catalogue explanation when it
-                # directly closes the residual.
-                d = self.diagnosis()
+                # A conservation-law explanation can override the catalogue
+                # because it directly explains the physical residual.
+                d = self.diagnosis() if catalogue_rejected else original
                 d["status"] = "diagnosed"
                 d["elements"] = list(self.physics_investigation["elements"])
-            else:
-                # The audit measurements are real evidence. Recompute the
-                # Bayesian diagnosis after adding them instead of throwing them
-                # away.
+                d["physics_investigation"] = self.physics_investigation
+            elif catalogue_rejected:
                 d = self.diagnosis()
+            else:
+                # This was only a falsification audit and it passed. Preserve
+                # the accepted Bayesian diagnosis; do not let audit-only reads
+                # distort the catalogue posterior.
+                d = original
+                d["physics_investigation"] = self.physics_investigation
 
         return {"method": "bayes_v3_residual", **d}
