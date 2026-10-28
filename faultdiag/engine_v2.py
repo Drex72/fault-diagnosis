@@ -354,3 +354,159 @@ class BayesEngineV2(BayesEngine):
 
         d = self.diagnosis()
         return {"method": "bayes_v2", **d}
+
+
+class BayesEngineV2Probe(BayesEngineV2):
+    """V2 plus Bayesian use of the technician's independent handheld meter.
+
+    Probe candidates are exposed only when a voltage tap has failed or the
+    posterior assigns material probability to that tap's sensor being faulty.
+    The probe is expensive (policy cost 10), so it still competes against cheap
+    automatic measurements on expected decision-risk reduction per unit cost.
+    """
+
+    def __init__(self, *args, sigma_probe: float = 0.015, probe_sensor_p: float = 0.20, **kwargs):
+        # Replay the exact particle RNG after the base initialisation so the
+        # clean physical node voltages line up with the same (h, k) particles
+        # used by V1/V2. snapshot() includes sensor offsets; a handheld meter
+        # must not, which is why separate clean predictions are needed.
+        particle_seed = kwargs.get("seed", args[1] if len(args) > 1 else 0)
+        super().__init__(*args, **kwargs)
+        self.sigma_probe = sigma_probe
+        self.probe_sensor_p = probe_sensor_p
+
+        from dataclasses import replace
+        from .circuit import solve
+        from .faults import apply_atoms, sample_healthy
+        from .measure import PROBE_POINTS
+
+        self.probe_points = PROBE_POINTS
+        self._probe_index = {p: i for i, p in enumerate(PROBE_POINTS)}
+        self.clean_v = np.zeros((self.H, self.K, 2, len(PROBE_POINTS)))
+        rng = np.random.default_rng(particle_seed)
+        for hi, h in enumerate(self.hyps):
+            for k in range(self.K):
+                st = apply_atoms(sample_healthy(rng), h, rng)
+                for s, lamp_open in enumerate((False, True)):
+                    p = replace(st.params, lamp_open=lamp_open)
+                    sol = solve(p)
+                    for pi, point in enumerate(PROBE_POINTS):
+                        self.clean_v[hi, k, s, pi] = sol.v[point]
+
+    def reset(self, seed: int = 0):
+        super().reset(seed)
+        self.probe_obs: list[dict] = []
+
+    def _probe_means(self, point_a: str, point_b: str) -> np.ndarray:
+        ia, ib = self._probe_index[point_a], self._probe_index[point_b]
+        return self.clean_v[..., ia] - self.clean_v[..., ib]  # (H, K, 2)
+
+    def _probe_sigma(self, mean: np.ndarray) -> np.ndarray:
+        return np.sqrt(self.sigma_probe ** 2 + (0.002 * np.abs(mean)) ** 2)
+
+    def _probe_loglik(self, point_a: str, point_b: str, y: np.ndarray):
+        import math
+
+        P = self._probe_means(point_a, point_b)
+        sig = self._probe_sigma(P)
+        yy = np.asarray(y, dtype=float)[..., None, None, None]
+        z = (yy - P) / sig
+        logn = -0.5 * z ** 2 - np.log(sig) - 0.5 * math.log(2 * math.pi)
+        po = self.p_open
+        with np.errstate(divide="ignore"):
+            mix = np.logaddexp(np.log1p(-po) + logn[..., 0], np.log(po) + logn[..., 1])
+        zbest = np.where(po > 0, np.abs(z).min(-1), np.abs(z[..., 0]))
+        return mix, zbest
+
+    def update(self, tool: str, args: dict, data: dict):
+        if tool != "human_probe":
+            return super().update(tool, args, data)
+
+        y = np.array(float(data["volts"]))
+        mix, zbest = self._probe_loglik(args["point_a"], args["point_b"], y)
+        self.LL += mix
+        self.MAXZ = np.maximum(self.MAXZ, zbest)
+        self.probe_obs.append(
+            {
+                "point_a": args["point_a"],
+                "point_b": args["point_b"],
+                "volts": round(float(y), 4),
+            }
+        )
+
+    def _future_probe_posteriors(self, point_a: str, point_b: str, W: np.ndarray) -> np.ndarray:
+        P = self._probe_means(point_a, point_b)
+        flat = W.ravel()
+        flat = flat / flat.sum()
+        idx = self.rng.choice(self.H * self.K, size=self.n_eig, p=flat)
+        hi, ki = np.divmod(idx, self.K)
+        states = (self.rng.random(self.n_eig) < self.p_open[hi, ki]).astype(int)
+        mean = P[hi, ki, states]
+        y = mean + self.rng.normal(size=mean.shape) * self._probe_sigma(mean)
+
+        mix, _ = self._probe_loglik(point_a, point_b, y)
+        lw = np.log(np.clip(W, 1e-300, None))[None] + mix
+        lw -= lw.max(axis=(1, 2), keepdims=True)
+        w = np.exp(lw)
+        return w.sum(2) / w.sum(axis=(1, 2))[:, None]
+
+    def _probe_metrics(self, point_a: str, point_b: str) -> tuple[float, float]:
+        W = self._joint()
+        post = W.sum(1)
+        post_new = self._future_probe_posteriors(point_a, point_b, W)
+        risk_now = 1.0 - float(post.max())
+        risk_after = 1.0 - post_new.max(axis=1)
+        risk_gain = max(0.0, risk_now - float(risk_after.mean()))
+        eig = float(_entropy(post) - _entropy(post_new).mean())
+        return risk_gain, eig
+
+    def _probe_candidates(self, guard) -> list[dict]:
+        points = set()
+
+        # Direct substitution for an automatic voltage tap that failed.
+        for ai in self.failed:
+            tool, args = ACTIONS[ai]
+            if tool == "read_voltage":
+                points.add(args["point"])
+
+        # An independent meter is also useful when the posterior itself says a
+        # voltage sensor may be lying, even if the automatic read did not fail.
+        post = self.posterior()
+        for point in ("motor", "lamp", "load"):
+            atom = f"F5@{point}"
+            p_sensor = sum(float(post[hi]) for hi, h in enumerate(self.hyps) if atom in h)
+            if p_sensor >= self.probe_sensor_p:
+                points.add(point)
+
+        candidates = []
+        for point in sorted(points):
+            pairs = [(point, "neg")]
+            if point != "bus":
+                pairs.append(("bus", point))
+            for a, b in pairs:
+                args = {"point_a": a, "point_b": b}
+                if guard.check("human_probe", args):
+                    continue
+                risk_gain, eig = self._probe_metrics(a, b)
+                cost = guard.cost_of("human_probe", args)
+                candidates.append(
+                    {
+                        "tool": "human_probe",
+                        "args": args,
+                        "eig_bits": round(eig, 3),
+                        "risk_reduction": round(risk_gain, 4),
+                        "cost": cost,
+                        "score": risk_gain / cost,
+                    }
+                )
+        return candidates
+
+    def suggest(self, guard, n: int = 3) -> list[dict]:
+        ranked = super().suggest(guard, n=len(ACTIONS))
+        ranked.extend(self._probe_candidates(guard))
+        return sorted(ranked, key=lambda r: (-r["score"], -r["eig_bits"]))[:n]
+
+    def diagnosis(self) -> dict:
+        d = super().diagnosis()
+        d["human_probes"] = list(self.probe_obs)
+        return d
