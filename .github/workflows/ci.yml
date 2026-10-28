@@ -19,9 +19,9 @@ jobs:
       - run: python -m pytest -q
 
   math-benchmark:
-    if: github.head_ref == 'experiment/math-engine-v2' || github.ref_name == 'experiment/math-engine-v2'
+    if: github.event_name == 'push' && github.ref_name == 'experiment/math-engine-v2'
     runs-on: ubuntu-latest
-    timeout-minutes: 12
+    timeout-minutes: 10
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-python@v5
@@ -29,61 +29,29 @@ jobs:
           python-version: "3.12"
           cache: pip
       - run: pip install -r requirements.txt
-      - name: Fast paired validation of unresolved V2 cases
+      - name: Trace C2 regression under coupled particles
         env:
-          FAULTDIAG_RESULTS_DIR: /tmp/faultdiag-fast
+          FAULTDIAG_RESULTS_DIR: /tmp/faultdiag-c2
         run: |
           python scripts/run_experiment.py \
             --methods bayes_v2_hard,bayes_v2_coupled_topo,bayes_v2_human_coupled_topo \
-            --scenarios C2,H2,TF1,F4 --trials 10
+            --scenarios C2,F5@motor --trials 20
           python - <<'PY'
           import json
           from pathlib import Path
-          path=sorted(Path("/tmp/faultdiag-fast").glob("*/sessions.jsonl"))[-1]
+          path=sorted(Path("/tmp/faultdiag-c2").glob("*/sessions.jsonl"))[-1]
           rows=[json.loads(x) for x in path.read_text().splitlines()]
-          methods=("bayes_v2_hard","bayes_v2_coupled_topo","bayes_v2_human_coupled_topo")
-          scenarios=("C2","H2","TF1","F4")
-          print("\nFAST V2 VALIDATION")
-          print("| Scenario | Method | Correct | Wrong | Inconc | OOD | Mean cost | Human |")
-          print("|---|---|---:|---:|---:|---:|---:|---:|")
-          for s in scenarios:
-              for m in methods:
-                  rs=[r for r in rows if r["scenario"]==s and r["method"]==m]
-                  hp=sum(len(r["diagnosis"].get("human_measurements") or []) for r in rs)
-                  print(f'| {s} | {m} | {sum(r["correct"] for r in rs)}/{len(rs)} | '
-                        f'{sum(r["status"]=="diagnosed" and not r["correct"] for r in rs)}/{len(rs)} | '
-                        f'{sum(r["status"]=="inconclusive" for r in rs)}/{len(rs)} | '
-                        f'{sum(r["status"]=="out_of_model" for r in rs)}/{len(rs)} | '
-                        f'{sum(r["cost"] for r in rs)/len(rs):.1f} | {hp} |')
-          PY
-
-      - name: Cross-branch false-OOD guard
-        run: |
-          python - <<'PY'
-          import numpy as np
-          from faultdiag.engine_v2_coupled import BayesEngineV2Coupled
-          from faultdiag.faults import ATOM_ELEMENT, apply_atoms, sample_healthy
-          from faultdiag.guard import PolicyGuard
-          from faultdiag.simbench import SimBench
-
-          pairs=(("F3","F4"),("F2","F4"),("F3","F5@lamp"))
-          methods={
-              "coupled": BayesEngineV2Coupled(balance_z=6.0),
-              "topo": BayesEngineV2Coupled(balance_z=6.0, cross_branch_only=True),
-          }
-          print("\nCROSS-BRANCH STRESS")
-          for pi,atoms in enumerate(pairs):
-              truth=sorted(ATOM_ELEMENT[a] for a in atoms)
-              for name,engine in methods.items():
-                  ok=ood=cost=0
-                  for j in range(8):
-                      seed=25000+1000*pi+j
-                      rng=np.random.default_rng(seed)
-                      st=apply_atoms(sample_healthy(rng), atoms, rng)
-                      guard=PolicyGuard(SimBench(st,np.random.default_rng(seed+10000)))
-                      d=engine.run(guard,seed=seed)
-                      ok += d["status"]=="diagnosed" and sorted(d.get("elements",[]))==truth
-                      ood += d["status"]=="out_of_model"
-                      cost += guard.spent
-                  print(atoms,name,{"correct":f"{ok}/8","ood":f"{ood}/8","mean_cost":round(cost/8,2)})
+          print("\nC2 / SENSOR TRACE")
+          for r in rows:
+              if r["method"]=="bayes_v2_hard":
+                  continue
+              d=r["diagnosis"]
+              print({
+                "scenario":r["scenario"],"method":r["method"],"seed":r["seed"],
+                "correct":r["correct"],"status":r["status"],"elements":r["elements"],
+                "cost":r["cost"],"top":d.get("top"),
+                "failed":[(h["tool"],h["args"],h["status"]) for h in r["history"] if h["status"]!="ok"],
+                "actions":[(h["tool"],h["args"],h.get("data")) for h in r["history"]],
+                "human":d.get("human_measurements"),
+              })
           PY
