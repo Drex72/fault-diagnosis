@@ -17,8 +17,8 @@ jobs:
       - run: pip install -r requirements.txt
       - run: python -m pytest -q
 
-  adequacy-validation:
-    if: github.ref_name == 'experiment/math-engine-v2-adequacy'
+  residual-benchmark:
+    if: github.ref_name == 'experiment/math-engine-v3-residual'
     runs-on: ubuntu-latest
     timeout-minutes: 20
     steps:
@@ -28,70 +28,45 @@ jobs:
           python-version: "3.12"
           cache: pip
       - run: pip install -r requirements.txt
-      - name: Fresh-seed aggregate-fit threshold validation
+      - name: Conservation-residual localisation benchmark
         run: |
           python - <<'PY'
-          from collections import defaultdict
-
           from faultdiag.engine_v2 import BayesEngineV2
+          from faultdiag.engine_v3 import BayesEngineV3Residual
           from faultdiag.harness import run_all
 
           scenarios = [
-              "healthy", "F1", "F1b", "F2", "F3", "F4",
-              "F5@motor", "F5@lamp", "F5@load", "C1", "C2", "H1", "H2",
+              "healthy","F1","F2","F3","F4","F5@motor","F5@lamp","F5@load",
+              "C1","C2","H1","H2",
           ]
-          configs = {
-              "compound_no_adequacy": None,
-              "adequacy_1_5": 1.5,
-              "adequacy_2_0": 2.0,
-              "adequacy_3_0": 3.0,
-          }
-          engines = {
-              name: BayesEngineV2(
-                  min_confirm_score=1.0,
-                  challenge_complex_hypothesis=True,
-                  aggregate_misfit_z=threshold,
-              )
-              for name, threshold in configs.items()
-          }
+          v2 = BayesEngineV2(min_confirm_score=1.0, challenge_complex_hypothesis=True)
+          v3 = BayesEngineV3Residual(min_confirm_score=1.0, challenge_complex_hypothesis=True)
           records = run_all(
-              {name: engine.run for name, engine in engines.items()},
+              {"v2_compound": v2.run, "v3_residual": v3.run},
               scenarios,
               trials=10,
-              seed0=20_000,
+              seed0=0,
           )
 
-          print("\nFRESH-SEED ADEQUACY VALIDATION (seed0=20000)")
-          print("| Method | Known correct | Known false OOD | H1 OOD | H2 OOD | Mean cost |")
-          print("|---|---:|---:|---:|---:|---:|")
-          for name in configs:
-              rs = [r for r in records if r["method"] == "bayes_v2"]
-              # run_all records the method dict key separately, so identify by
-              # per-call ordering below instead of diagnosis's internal label.
-              # Rebuild from the actual grouped record method field as emitted.
-          # Harness records method from the dictionary key, overriding the
-          # engine's internal method label.
-          for name in configs:
-              rs = [r for r in records if r["method"] == name]
-              known = [r for r in rs if r["set"] in ("single", "compound")]
-              h1 = [r for r in rs if r["scenario"] == "H1"]
-              h2 = [r for r in rs if r["scenario"] == "H2"]
-              print(
-                  f'| {name} | {sum(r["correct"] for r in known)}/{len(known)} | '
-                  f'{sum(r["status"] == "out_of_model" for r in known)}/{len(known)} | '
-                  f'{sum(r["status"] == "out_of_model" for r in h1)}/{len(h1)} | '
-                  f'{sum(r["status"] == "out_of_model" for r in h2)}/{len(h2)} | '
-                  f'{sum(r["cost"] for r in rs)/len(rs):.2f} |'
-              )
+          print("\nRESIDUAL LOCALISATION BENCHMARK")
+          print("| Scenario | Method | Correct | OOD | Mean cost |")
+          print("|---|---|---:|---:|---:|")
+          for scenario in scenarios:
+              for method in ("v2_compound","v3_residual"):
+                  rs=[r for r in records if r["scenario"]==scenario and r["method"]==method]
+                  print(
+                      f'| {scenario} | {method} | {sum(r["correct"] for r in rs)}/{len(rs)} | '
+                      f'{sum(r["status"]=="out_of_model" for r in rs)}/{len(rs)} | '
+                      f'{sum(r["cost"] for r in rs)/len(rs):.1f} |'
+                  )
 
-          print("\nPER-SCENARIO OOD/ACCURACY")
-          for name in configs:
-              for scenario in scenarios:
-                  rs = [r for r in records if r["method"] == name and r["scenario"] == scenario]
-                  print(name, scenario, {
-                      "correct": sum(r["correct"] for r in rs),
-                      "ood": sum(r["status"] == "out_of_model" for r in rs),
-                      "mean_cost": round(sum(r["cost"] for r in rs)/len(rs), 2),
-                      "fit": [r["diagnosis"].get("aggregate_fit_rms_z") for r in rs],
+          print("\nPHYSICS INVESTIGATIONS")
+          for r in records:
+              if r["method"]=="v3_residual" and r["scenario"] in ("H1","H2"):
+                  print(r["scenario"], r["seed"], {
+                      "status": r["status"],
+                      "elements": r["elements"],
+                      "cost": r["cost"],
+                      "physics": r["diagnosis"].get("physics_investigation"),
                   })
           PY
