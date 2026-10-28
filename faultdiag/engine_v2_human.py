@@ -43,12 +43,16 @@ class BayesEngineV2Human(BayesEngineV2Balance):
         seed: int = 0,
         min_human_score: float = 0.006,
         max_human_probes: int = 2,
+        allow_sensor_ambiguity: bool = False,
+        sensor_fault_mass_threshold: float = 0.50,
         **kwargs,
     ):
         self._model_seed = seed
         super().__init__(*args, seed=seed, **kwargs)
         self.min_human_score = min_human_score
         self.max_human_probes = max_human_probes
+        self.allow_sensor_ambiguity = allow_sensor_ambiguity
+        self.sensor_fault_mass_threshold = sensor_fault_mass_threshold
         self.human_pred = self._build_human_predictions(seed)
 
     def reset(self, seed: int = 0):
@@ -120,8 +124,19 @@ class BayesEngineV2Human(BayesEngineV2Balance):
         eig = float(_entropy(post) - _entropy(post_new).mean())
         return risk_gain, eig
 
+    def _sensor_fault_mass(self) -> float:
+        post = self.posterior()
+        return float(sum(
+            post[hi] for hi, h in enumerate(self.hyps)
+            if any(atom.startswith("F5@") for atom in h)
+        ))
+
     def human_suggest(self, guard) -> dict | None:
-        if not self.failed or len(self.human_probes_used) >= self.max_human_probes:
+        inferred_bad_sensor = (
+            self.allow_sensor_ambiguity
+            and self._sensor_fault_mass() >= self.sensor_fault_mass_threshold
+        )
+        if (not self.failed and not inferred_bad_sensor) or len(self.human_probes_used) >= self.max_human_probes:
             return None
         ranked = []
         for pair in HUMAN_PROBES:
