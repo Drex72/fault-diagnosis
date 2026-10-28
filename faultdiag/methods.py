@@ -28,7 +28,7 @@ EXPERIMENTAL_METHODS = (
     "bayes_v2_human3", "bayes_v2_human6", "bayes_v2_human10",
     "bayes_v2_coupled", "bayes_v2_human_coupled",
     "bayes_v2_coupled_topo", "bayes_v2_human_coupled_topo",
-    "bayes_v2_human_coupled_sensor",
+    "bayes_v2_human_coupled_sensor", "bayes_v2_candidate",
 )
 DEFAULT_URL = {"ollama": "http://localhost:11434/v1", "llamacpp": "http://localhost:8080/v1", "jev": jev.DEFAULT_URL,
                "openrouter": openrouter.DEFAULT_URL, "gemini": gemini.DEFAULT_URL}
@@ -126,6 +126,16 @@ def build_methods(names, model: str | None = None, server: str = "ollama", base_
                     balance_z=6.0, min_human_score=0.006, cross_branch_only=True,
                     allow_sensor_ambiguity=True, sensor_fault_mass_threshold=0.50
                 )
+            elif name == "bayes_v2_candidate":
+                coupled_cache[name] = BayesEngineV2HumanCoupled(
+                    n_samples=32, n_eig_samples=64,
+                    balance_z=6.0, cross_branch_only=True,
+                    allow_sensor_ambiguity=True,
+                    min_human_score=0.006, min_sensor_human_score=0.006,
+                    sensor_fault_mass_threshold=0.50,
+                    sensor_nested_pair_threshold=0.15,
+                    rms_misfit_z=2.0, rms_misfit_min_dof=3,
+                )
             else:
                 coupled_cache[name] = BayesEngineV2HumanCoupled(
                     balance_z=6.0, min_human_score=0.006
@@ -161,7 +171,7 @@ def build_methods(names, model: str | None = None, server: str = "ollama", base_
             methods[m] = balance(m).run
         elif m in ("bayes_v2_human3", "bayes_v2_human6", "bayes_v2_human10"):
             methods[m] = human(m).run
-        elif m in ("bayes_v2_coupled", "bayes_v2_human_coupled", "bayes_v2_coupled_topo", "bayes_v2_human_coupled_topo", "bayes_v2_human_coupled_sensor"):
+        elif m in ("bayes_v2_coupled", "bayes_v2_human_coupled", "bayes_v2_coupled_topo", "bayes_v2_human_coupled_topo", "bayes_v2_human_coupled_sensor", "bayes_v2_candidate"):
             methods[m] = coupled(m).run
         elif m in ("llm", "hybrid"):
             if not model:
