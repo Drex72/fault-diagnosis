@@ -1,5 +1,4 @@
-# Runs the production test suite unchanged, plus a branch-only paired
-# mathematical-engine benchmark. No hardware, model server or frozen H3/H4.
+# Production tests plus branch-only mathematical-engine experiments.
 name: tests
 
 on:
@@ -30,59 +29,42 @@ jobs:
           python-version: "3.12"
           cache: pip
       - run: pip install -r requirements.txt
-      - name: Full development benchmark — V1 vs V2 candidates
+      - name: KCL model-adequacy threshold sweep
         env:
           FAULTDIAG_RESULTS_DIR: /tmp/faultdiag-bench
         run: |
-          python scripts/run_experiment.py --methods bayes,bayes_v2_hard,bayes_v2_compound --trials 10
+          python scripts/run_experiment.py \
+            --methods bayes_v2_hard,bayes_v2_compound,bayes_v2_kcl4,bayes_v2_kcl5,bayes_v2_kcl6 \
+            --scenarios C1,C2,H1,H2 --trials 20
           python - <<'PY'
           import json
-          from collections import defaultdict
           from pathlib import Path
 
           path = sorted(Path("/tmp/faultdiag-bench").glob("*/sessions.jsonl"))[-1]
           rows = [json.loads(x) for x in path.read_text().splitlines()]
-          methods = ("bayes", "bayes_v2_hard", "bayes_v2_compound")
-          scenarios = list(dict.fromkeys(r["scenario"] for r in rows))
-          by = {(r["scenario"], r["seed"], r["method"]): r for r in rows}
+          methods = ("bayes_v2_hard", "bayes_v2_compound", "bayes_v2_kcl4", "bayes_v2_kcl5", "bayes_v2_kcl6")
+          scenarios = ("C1", "C2", "H1", "H2")
 
-          print("\nPER-SCENARIO PAIRED RESULTS")
-          print("| Scenario | Method | Correct | OOD | Mean cost |")
-          print("|---|---|---:|---:|---:|")
+          print("\nKCL THRESHOLD SWEEP")
+          print("| Scenario | Method | Correct | Wrong | OOD | Mean cost | Probe z median |")
+          print("|---|---|---:|---:|---:|---:|---:|")
           for scenario in scenarios:
               for method in methods:
                   rs = [r for r in rows if r["scenario"] == scenario and r["method"] == method]
+                  zs = [r["diagnosis"].get("consistency_probe", {}).get("z")
+                        for r in rs if r["diagnosis"].get("consistency_probe")]
+                  zs = sorted(z for z in zs if z is not None)
+                  median = zs[len(zs)//2] if zs else None
                   print(f'| {scenario} | {method} | {sum(r["correct"] for r in rs)}/{len(rs)} | '
+                        f'{sum(r["status"] == "diagnosed" and not r["correct"] for r in rs)}/{len(rs)} | '
                         f'{sum(r["status"] == "out_of_model" for r in rs)}/{len(rs)} | '
-                        f'{sum(r["cost"] for r in rs)/len(rs):.1f} |')
+                        f'{sum(r["cost"] for r in rs)/len(rs):.1f} | {median} |')
 
-          print("\nPAIRED DELTAS AGAINST V1")
-          for method in methods[1:]:
-              wins = losses = ties = 0
-              cost_delta = 0.0
-              n = 0
+          print("\nKCL PROBE DETAILS")
+          for method in methods[2:]:
               for scenario in scenarios:
-                  seeds = sorted({r["seed"] for r in rows if r["scenario"] == scenario})
-                  for seed in seeds:
-                      a = by[(scenario, seed, "bayes")]
-                      b = by[(scenario, seed, method)]
-                      wins += bool(b["correct"]) and not bool(a["correct"])
-                      losses += bool(a["correct"]) and not bool(b["correct"])
-                      ties += bool(a["correct"]) == bool(b["correct"])
-                      cost_delta += b["cost"] - a["cost"]
-                      n += 1
-              print(method, {
-                  "wins_where_v1_wrong": wins,
-                  "losses_where_v1_right": losses,
-                  "accuracy_ties": ties,
-                  "mean_cost_delta": round(cost_delta/n, 3),
-              })
-
-          print("\nMECHANISM COUNTS")
-          for method in methods[1:]:
-              rs = [r for r in rows if r["method"] == method]
-              print(method, {
-                  "challenges": sum(bool(r["diagnosis"].get("challenge_performed")) for r in rs),
-                  "suspect_current_readings": sum(len(r["diagnosis"].get("suspect_current_sensors") or []) for r in rs),
-              })
+                  rs = [r for r in rows if r["scenario"] == scenario and r["method"] == method]
+                  probes = [r["diagnosis"].get("consistency_probe") for r in rs
+                            if r["diagnosis"].get("consistency_probe")]
+                  print(method, scenario, probes)
           PY
