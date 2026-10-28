@@ -270,19 +270,8 @@ class BayesEngineV2(BayesEngine):
         best = max(ranked, key=lambda r: (r["score"], r["eig_bits"]))
         return best if best["score"] >= self.min_challenge_score else None
 
-    def model_fit_dof(self) -> int:
-        return int(sum(y.size for _, y in self.obs))
-
-    def model_fit_rms_z(self) -> float:
-        """History-wide best-fit residual in RMS sigma units.
-
-        Unlike MAXZ/misfit(), this aggregates all observations while keeping a
-        single hypothesis/particle across the history.  It is reported for
-        calibration and analysis only; hardware data should set any future
-        rejection threshold.
-        """
-        if not self.obs:
-            return 0.0
+    def _model_fit_q(self) -> tuple[np.ndarray, int]:
+        """Per-particle history chi-square and total scalar observation count."""
         q = np.zeros((self.H, self.K))
         dof = 0
         for ai, y in self.obs:
@@ -293,7 +282,22 @@ class BayesEngineV2(BayesEngine):
             best_state = np.where(self.p_open > 0, ss.min(-1), ss[..., 0])
             q += best_state
             dof += y.size
-        return float(np.sqrt(q.min() / max(dof, 1)))
+        return q, dof
+
+    def model_fit_dof(self) -> int:
+        return int(self._model_fit_q()[1])
+
+    def model_fit_rms_z(self) -> float:
+        """History-wide best-fit residual in RMS sigma units.
+
+        This aggregates all evidence while keeping one hypothesis/particle
+        fixed across the entire history. Subclasses can extend _model_fit_q()
+        with additional evidence sources such as independent human probes.
+        """
+        q, dof = self._model_fit_q()
+        if dof == 0:
+            return 0.0
+        return float(np.sqrt(q.min() / dof))
 
     def misfit(self) -> bool:
         if super().misfit():
