@@ -365,7 +365,7 @@ class BayesEngineV2Probe(BayesEngineV2):
     automatic measurements on expected decision-risk reduction per unit cost.
     """
 
-    def __init__(self, *args, sigma_probe: float = 0.015, probe_sensor_p: float = 0.20, max_human_probes: int = 2, marginal_fault_p: float | None = None, **kwargs):
+    def __init__(self, *args, sigma_probe: float = 0.015, probe_sensor_p: float = 0.20, max_human_probes: int = 2, marginal_fault_p: float | None = None, observability_aware: bool = False, force_probe_on_failed_voltage: bool = False, **kwargs):
         # Replay the exact particle RNG after the base initialisation so the
         # clean physical node voltages line up with the same (h, k) particles
         # used by V1/V2. snapshot() includes sensor offsets; a handheld meter
@@ -376,6 +376,8 @@ class BayesEngineV2Probe(BayesEngineV2):
         self.probe_sensor_p = probe_sensor_p
         self.max_human_probes = max_human_probes
         self.marginal_fault_p = marginal_fault_p
+        self.observability_aware = observability_aware
+        self.force_probe_on_failed_voltage = force_probe_on_failed_voltage
 
         from dataclasses import replace
         from .circuit import solve
@@ -525,18 +527,62 @@ class BayesEngineV2Probe(BayesEngineV2):
             for atom in ATOMS
         }
 
+    def _failed_voltage_points(self) -> set[str]:
+        points = set()
+        for ai in self.failed:
+            tool, args = ACTIONS[ai]
+            if tool == "read_voltage":
+                points.add(args["point"])
+        return points
+
     def diagnosis(self) -> dict:
         d = super().diagnosis()
         d["human_probes"] = list(self.probe_obs)
-        d["fault_marginals"] = {k: round(v, 3) for k, v in self.atom_marginals().items()}
+        marginals = self.atom_marginals()
+        d["fault_marginals"] = {k: round(v, 3) for k, v in marginals.items()}
 
-        if self.marginal_fault_p is not None and d["status"] == "diagnosed":
+        if self.marginal_fault_p is not None and d["status"] != "out_of_model":
             from .faults import ATOM_ELEMENT
 
-            selected = [
-                ATOM_ELEMENT[atom]
-                for atom, p in self.atom_marginals().items()
-                if p >= self.marginal_fault_p
-            ]
-            d["elements"] = sorted(set(selected))
+            failed_points = self._failed_voltage_points() if self.observability_aware else set()
+            selected_atoms = []
+            masked_atoms = []
+            for atom, p in marginals.items():
+                point = atom.split("@", 1)[1] if atom.startswith("F5@") else None
+                if point in failed_points:
+                    masked_atoms.append(atom)
+                    continue
+                if p >= self.marginal_fault_p:
+                    selected_atoms.append(atom)
+
+            selected = sorted({ATOM_ELEMENT[a] for a in selected_atoms})
+            d["elements"] = selected
+            d["unobservable_atoms"] = masked_atoms
+
+            # Per-atom posterior decisions are the correct decision object when
+            # a whole factor is unobservable. If at least one observable fault
+            # has strong marginal support, do not leave the result inconclusive
+            # merely because probability is split across several joint sets.
+            if selected:
+                d["status"] = "diagnosed"
+            elif masked_atoms:
+                d["status"] = "inconclusive"
         return d
+
+    def run(self, guard, seed: int = 0, max_steps: int = 30) -> dict:
+        d = super().run(guard, seed=seed, max_steps=max_steps)
+
+        if (
+            self.force_probe_on_failed_voltage
+            and self._failed_voltage_points()
+            and len(self.probe_obs) < self.max_human_probes
+        ):
+            candidates = self._probe_candidates(guard)
+            if candidates:
+                best = max(candidates, key=lambda r: (r["score"], r["eig_bits"]))
+                res = guard.call(best["tool"], best["args"])
+                if res["status"] == "ok":
+                    self.update(best["tool"], best["args"], res["data"])
+                d = self.diagnosis()
+
+        return {"method": "bayes_v2_probe", **d}
