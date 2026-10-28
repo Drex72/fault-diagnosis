@@ -12,6 +12,7 @@ from .engine import BayesEngine
 from .engine_v2 import BayesEngineV2
 from .engine_v2_consistency import BayesEngineV2Consistency
 from .engine_v2_balance import BayesEngineV2Balance
+from .engine_v2_human import BayesEngineV2Human
 from .logsetup import get_logger
 from .runmeta import ollama_model_version
 
@@ -23,6 +24,7 @@ EXPERIMENTAL_METHODS = (
     "bayes_v2_hard", "bayes_v2_verify", "bayes_v2_compound",
     "bayes_v2_kcl4", "bayes_v2_kcl5", "bayes_v2_kcl6",
     "bayes_v2_bal4", "bayes_v2_bal5", "bayes_v2_bal6",
+    "bayes_v2_human3", "bayes_v2_human6", "bayes_v2_human10",
 )
 DEFAULT_URL = {"ollama": "http://localhost:11434/v1", "llamacpp": "http://localhost:8080/v1", "jev": jev.DEFAULT_URL,
                "openrouter": openrouter.DEFAULT_URL, "gemini": gemini.DEFAULT_URL}
@@ -70,6 +72,7 @@ def build_methods(names, model: str | None = None, server: str = "ollama", base_
     v2_cache = {}
     kcl_cache = {}
     balance_cache = {}
+    human_cache = {}
 
     def v2(name):
         if name not in v2_cache:
@@ -96,6 +99,12 @@ def build_methods(names, model: str | None = None, server: str = "ollama", base_
             threshold = {"bayes_v2_bal4": 4.0, "bayes_v2_bal5": 5.0, "bayes_v2_bal6": 6.0}[name]
             balance_cache[name] = BayesEngineV2Balance(balance_z=threshold)
         return balance_cache[name]
+
+    def human(name):
+        if name not in human_cache:
+            score = {"bayes_v2_human3": 0.003, "bayes_v2_human6": 0.006, "bayes_v2_human10": 0.010}[name]
+            human_cache[name] = BayesEngineV2Human(balance_z=6.0, min_human_score=score)
+        return human_cache[name]
 
     methods, meta = {}, {}
     jev_llm = cloud = None
@@ -124,6 +133,8 @@ def build_methods(names, model: str | None = None, server: str = "ollama", base_
             methods[m] = kcl(m).run
         elif m in ("bayes_v2_bal4", "bayes_v2_bal5", "bayes_v2_bal6"):
             methods[m] = balance(m).run
+        elif m in ("bayes_v2_human3", "bayes_v2_human6", "bayes_v2_human10"):
+            methods[m] = human(m).run
         elif m in ("llm", "hybrid"):
             if not model:
                 raise ValueError(f"a model name is needed for method {m}")
