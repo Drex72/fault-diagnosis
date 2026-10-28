@@ -23,7 +23,7 @@ jobs:
         env:
           FAULTDIAG_RESULTS_DIR: /tmp/faultdiag-bench
         run: |
-          python scripts/run_experiment.py --methods bayes,bayes_v2_loose,bayes_v2,bayes_v2_strict --scenarios healthy,F1,F2,F3,F5@motor,C2,H1,H2,TF1,TF2 --trials 5
+          python scripts/run_experiment.py --methods bayes,bayes_v2_strict,bayes_v2_xstrict,bayes_v2_hard --scenarios healthy,F1,F2,F3,F5@motor,C2,H1,H2,TF1,TF2 --trials 5
           python - <<'PY'
           import json
           from collections import defaultdict
