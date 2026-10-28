@@ -365,7 +365,7 @@ class BayesEngineV2Probe(BayesEngineV2):
     automatic measurements on expected decision-risk reduction per unit cost.
     """
 
-    def __init__(self, *args, sigma_probe: float = 0.015, probe_sensor_p: float = 0.20, **kwargs):
+    def __init__(self, *args, sigma_probe: float = 0.015, probe_sensor_p: float = 0.20, max_human_probes: int = 2, marginal_fault_p: float | None = None, **kwargs):
         # Replay the exact particle RNG after the base initialisation so the
         # clean physical node voltages line up with the same (h, k) particles
         # used by V1/V2. snapshot() includes sensor offsets; a handheld meter
@@ -374,6 +374,8 @@ class BayesEngineV2Probe(BayesEngineV2):
         super().__init__(*args, **kwargs)
         self.sigma_probe = sigma_probe
         self.probe_sensor_p = probe_sensor_p
+        self.max_human_probes = max_human_probes
+        self.marginal_fault_p = marginal_fault_p
 
         from dataclasses import replace
         from .circuit import solve
@@ -461,6 +463,8 @@ class BayesEngineV2Probe(BayesEngineV2):
         return risk_gain, eig
 
     def _probe_candidates(self, guard) -> list[dict]:
+        if len(self.probe_obs) >= self.max_human_probes:
+            return []
         points = set()
 
         # Direct substitution for an automatic voltage tap that failed.
@@ -506,7 +510,33 @@ class BayesEngineV2Probe(BayesEngineV2):
         ranked.extend(self._probe_candidates(guard))
         return sorted(ranked, key=lambda r: (-r["score"], -r["eig_bits"]))[:n]
 
+    def atom_marginals(self) -> dict[str, float]:
+        """Posterior probability that each fault atom is present.
+
+        This is different from selecting the single MAP joint hypothesis.
+        Marginals are useful when one component is unobservable: a compound
+        hypothesis should not force an unsupported extra fault into the answer.
+        """
+        from .faults import ATOMS
+
+        post = self.posterior()
+        return {
+            atom: float(sum(post[hi] for hi, h in enumerate(self.hyps) if atom in h))
+            for atom in ATOMS
+        }
+
     def diagnosis(self) -> dict:
         d = super().diagnosis()
         d["human_probes"] = list(self.probe_obs)
+        d["fault_marginals"] = {k: round(v, 3) for k, v in self.atom_marginals().items()}
+
+        if self.marginal_fault_p is not None and d["status"] == "diagnosed":
+            from .faults import ATOM_ELEMENT
+
+            selected = [
+                ATOM_ELEMENT[atom]
+                for atom, p in self.atom_marginals().items()
+                if p >= self.marginal_fault_p
+            ]
+            d["elements"] = sorted(set(selected))
         return d
