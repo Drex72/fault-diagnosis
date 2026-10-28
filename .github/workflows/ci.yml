@@ -17,12 +17,12 @@ jobs:
       - run: pip install -r requirements.txt
       - run: python -m pytest -q
 
-  compound-audit-validation:
-    if: github.ref_name == 'experiment/math-engine-v3-audit'
+  final-math-validation:
+    if: github.ref_name == 'experiment/math-engine-robust-final'
     strategy:
       fail-fast: false
       matrix:
-        audit: ["off", "on"]
+        method: ["bayes_v1", "bayes_robust"]
     runs-on: ubuntu-latest
     timeout-minutes: 20
     steps:
@@ -32,51 +32,70 @@ jobs:
           python-version: "3.12"
           cache: pip
       - run: pip install -r requirements.txt
-      - name: Compound KCL audit — ${{ matrix.audit }}
+      - name: Final development validation — ${{ matrix.method }}
         env:
-          AUDIT: ${{ matrix.audit }}
+          METHOD: ${{ matrix.method }}
         run: |
           python - <<'PY'
           import os
-          from faultdiag.engine_v3 import BayesEngineV3Residual
-          from faultdiag.harness import run_all
+          from faultdiag.engine import BayesEngine
+          from faultdiag.engine_robust import BayesEngineRobust
+          from faultdiag.harness import dev_scenarios, run_all
 
-          audit = os.environ["AUDIT"] == "on"
-          name = "v3_audit" if audit else "v3_no_audit"
-          engine = BayesEngineV3Residual(
-              min_confirm_score=1.0,
-              challenge_complex_hypothesis=True,
-              aggregate_misfit_z=2.0,
-              audit_compound=audit,
-              return_ratio_threshold=10.0,
-              hidden_sigma_threshold=15.0,
+          name = os.environ["METHOD"]
+          engine = BayesEngine() if name == "bayes_v1" else BayesEngineRobust()
+
+          records = run_all(
+              {name: engine.run},
+              dev_scenarios(),
+              trials=10,
+              seed0=90_000,
           )
-          scenarios = [
-              "healthy","F1","F1b","F2","F3","F4","F5@motor","F5@lamp","F5@load",
-              "C1","C2","H1","H2",
-          ]
-          records=run_all({name:engine.run}, scenarios, trials=10, seed0=80_000)
-          known=[r for r in records if r["set"] in ("single","compound")]
-          h1=[r for r in records if r["scenario"]=="H1"]
-          h2=[r for r in records if r["scenario"]=="H2"]
 
-          print("\nCOMPOUND AUDIT FRESH-SEED VALIDATION (seed0=80000)")
+          print("\nFINAL DEVELOPMENT VALIDATION (seed0=90000; H3/H4 excluded)")
           print({
-              "audit": audit,
-              "known_correct": f'{sum(r["correct"] for r in known)}/{len(known)}',
-              "known_false_ood": sum(r["status"]=="out_of_model" for r in known),
-              "H1_correct": f'{sum(r["correct"] for r in h1)}/{len(h1)}',
-              "H2_correct": f'{sum(r["correct"] for r in h2)}/{len(h2)}',
-              "mean_cost": round(sum(r["cost"] for r in records)/len(records),3),
-              "physics_runs": sum(bool(r["diagnosis"].get("physics_investigation")) for r in records),
+              "method": name,
+              "correct": f'{sum(r["correct"] for r in records)}/{len(records)}',
+              "wrong": sum(r["status"] == "diagnosed" and not r["correct"] for r in records),
+              "inconclusive": sum(r["status"] == "inconclusive" for r in records),
+              "out_of_model": sum(r["status"] == "out_of_model" for r in records),
+              "mean_cost": round(sum(r["cost"] for r in records) / len(records), 3),
+              "mean_actions": round(sum(r["actions"] for r in records) / len(records), 3),
+              "human_probes": sum(len(r["diagnosis"].get("human_probes") or []) for r in records),
+              "physics_localisations": sum(
+                  bool((r["diagnosis"].get("physics_investigation") or {}).get("elements"))
+                  for r in records
+              ),
+              "suspect_current_readings": sum(
+                  len(r["diagnosis"].get("suspect_current_sensors") or [])
+                  for r in records
+              ),
           })
+
+          print("\nBY SET")
+          for group in ("single", "compound", "heldout", "toolfail"):
+              rs = [r for r in records if r["set"] == group]
+              print(group, {
+                  "correct": f'{sum(r["correct"] for r in rs)}/{len(rs)}',
+                  "wrong": sum(r["status"] == "diagnosed" and not r["correct"] for r in rs),
+                  "inconclusive": sum(r["status"] == "inconclusive" for r in rs),
+                  "ood": sum(r["status"] == "out_of_model" for r in rs),
+                  "mean_cost": round(sum(r["cost"] for r in rs) / len(rs), 3),
+              })
+
           print("\nBY SCENARIO")
-          for scenario in scenarios:
-              rs=[r for r in records if r["scenario"]==scenario]
-              print(scenario,{
-                  "correct":sum(r["correct"] for r in rs),
-                  "ood":sum(r["status"]=="out_of_model" for r in rs),
-                  "mean_cost":round(sum(r["cost"] for r in rs)/len(rs),2),
-                  "physics_runs":sum(bool(r["diagnosis"].get("physics_investigation")) for r in rs),
+          for scenario in dev_scenarios():
+              rs = [r for r in records if r["scenario"] == scenario]
+              print(scenario, {
+                  "correct": f'{sum(r["correct"] for r in rs)}/{len(rs)}',
+                  "wrong": sum(r["status"] == "diagnosed" and not r["correct"] for r in rs),
+                  "inconclusive": sum(r["status"] == "inconclusive" for r in rs),
+                  "ood": sum(r["status"] == "out_of_model" for r in rs),
+                  "mean_cost": round(sum(r["cost"] for r in rs) / len(rs), 2),
+                  "probes": sum(len(r["diagnosis"].get("human_probes") or []) for r in rs),
+                  "physics": sum(
+                      bool((r["diagnosis"].get("physics_investigation") or {}).get("elements"))
+                      for r in rs
+                  ),
               })
           PY
