@@ -33,6 +33,7 @@ class BayesEngineV2(BayesEngine):
         min_challenge_score: float = 0.012,
         min_confirm_score: float = 0.005,
         sensor_gate_z: float = 10.0,
+        rms_misfit_z: float | None = None,
         verify_signatures: bool = False,
         challenge_complex_hypothesis: bool = False,
         min_signature_z: float = 4.0,
@@ -44,6 +45,7 @@ class BayesEngineV2(BayesEngine):
         self.min_challenge_score = min_challenge_score
         self.min_confirm_score = min_confirm_score
         self.sensor_gate_z = sensor_gate_z
+        self.rms_misfit_z = rms_misfit_z
         self.verify_signatures = verify_signatures
         self.challenge_complex_hypothesis = challenge_complex_hypothesis
         self.min_signature_z = min_signature_z
@@ -288,9 +290,19 @@ class BayesEngineV2(BayesEngine):
             dof += y.size
         return float(np.sqrt(q.min() / max(dof, 1)))
 
+    def misfit(self) -> bool:
+        if super().misfit():
+            return True
+        return bool(
+            self.rms_misfit_z is not None
+            and self.obs
+            and self.model_fit_rms_z() > self.rms_misfit_z
+        )
+
     def diagnosis(self) -> dict:
         d = super().diagnosis()
         d["model_fit_rms_z"] = round(self.model_fit_rms_z(), 3)
+        d["model_fit_rms_threshold"] = self.rms_misfit_z
         d["suspect_current_sensors"] = list(self.suspect_current)
         d["challenge_performed"] = self.challenge_done
         d["challenge_info"] = self.challenge_info
