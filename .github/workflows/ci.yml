@@ -29,31 +29,60 @@ jobs:
           python-version: "3.12"
           cache: pip
       - run: pip install -r requirements.txt
-      - name: Profile compound posterior structure
+      - name: Full development benchmark — coupled candidate
         env:
-          FAULTDIAG_RESULTS_DIR: /tmp/faultdiag-profile
+          FAULTDIAG_RESULTS_DIR: /tmp/faultdiag-bench
         run: |
-          python scripts/run_experiment.py --methods bayes_v2_hard --scenarios C1,C2,H2 --trials 30
+          python scripts/run_experiment.py \
+            --methods bayes,bayes_v2_bal6,bayes_v2_coupled,bayes_v2_human_coupled \
+            --trials 10
           python - <<'PY'
-          import json, statistics
+          import json
           from pathlib import Path
 
-          path = sorted(Path("/tmp/faultdiag-profile").glob("*/sessions.jsonl"))[-1]
+          path = sorted(Path("/tmp/faultdiag-bench").glob("*/sessions.jsonl"))[-1]
           rows = [json.loads(x) for x in path.read_text().splitlines()]
+          methods = ("bayes", "bayes_v2_bal6", "bayes_v2_coupled", "bayes_v2_human_coupled")
+          scenarios = list(dict.fromkeys(r["scenario"] for r in rows))
+          by = {(r["scenario"], r["seed"], r["method"]): r for r in rows}
 
-          print("\nCOMPOUND-TRIGGER PROFILE")
-          for scenario in ("C1","C2","H2"):
-              rs=[r for r in rows if r["scenario"]==scenario]
-              print("\n", scenario)
-              for r in rs:
-                  top=r["diagnosis"]["top"]
-                  top_p=top[0]["p"]
-                  second_p=top[1]["p"] if len(top)>1 else 0
-                  top_n=len(top[0]["faults"]) if top[0]["faults"] != ["none"] else 0
-                  single_best=max((x["p"] for x in top if len(x["faults"])==1 and x["faults"]!=["none"]), default=0)
-                  print({
-                    "seed":r["seed"],"correct":r["correct"],"status":r["status"],"cost":r["cost"],
-                    "top_faults":top[0]["faults"],"top_p":top_p,"margin":round(top_p-second_p,3),
-                    "single_best_top3":single_best,"top3":top,
-                  })
+          print("\nFULL COUPLED DEVELOPMENT COMPARISON")
+          print("| Scenario | Method | Correct | Wrong | Inconc | OOD | Mean cost |")
+          print("|---|---|---:|---:|---:|---:|---:|")
+          for scenario in scenarios:
+              for method in methods:
+                  rs = [r for r in rows if r["scenario"] == scenario and r["method"] == method]
+                  print(f'| {scenario} | {method} | {sum(r["correct"] for r in rs)}/{len(rs)} | '
+                        f'{sum(r["status"] == "diagnosed" and not r["correct"] for r in rs)}/{len(rs)} | '
+                        f'{sum(r["status"] == "inconclusive" for r in rs)}/{len(rs)} | '
+                        f'{sum(r["status"] == "out_of_model" for r in rs)}/{len(rs)} | '
+                        f'{sum(r["cost"] for r in rs)/len(rs):.1f} |')
+
+          print("\nPAIRED DELTAS AGAINST ORIGINAL V1")
+          for method in methods[1:]:
+              wins = losses = ties = 0
+              cost_delta = 0.0
+              n = 0
+              regressions = []
+              fixes = []
+              for scenario in scenarios:
+                  seeds = sorted({r["seed"] for r in rows if r["scenario"] == scenario})
+                  for seed in seeds:
+                      a = by[(scenario, seed, "bayes")]
+                      b = by[(scenario, seed, method)]
+                      if b["correct"] and not a["correct"]:
+                          wins += 1
+                          fixes.append((scenario, seed, a["status"], a["elements"], b["status"], b["elements"]))
+                      elif a["correct"] and not b["correct"]:
+                          losses += 1
+                          regressions.append((scenario, seed, a["status"], a["elements"], b["status"], b["elements"]))
+                      else:
+                          ties += 1
+                      cost_delta += b["cost"] - a["cost"]
+                      n += 1
+              print(method, {
+                  "wins": wins, "losses": losses, "ties": ties,
+                  "mean_cost_delta": round(cost_delta/n, 3),
+                  "fixes": fixes, "regressions": regressions,
+              })
           PY
