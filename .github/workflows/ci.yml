@@ -19,9 +19,9 @@ jobs:
       - run: python -m pytest -q
 
   math-benchmark:
-    if: github.event_name == 'push' && github.ref_name == 'experiment/math-engine-v2'
+    if: github.head_ref == 'experiment/math-engine-v2' || github.ref_name == 'experiment/math-engine-v2'
     runs-on: ubuntu-latest
-    timeout-minutes: 10
+    timeout-minutes: 20
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-python@v5
@@ -29,29 +29,51 @@ jobs:
           python-version: "3.12"
           cache: pip
       - run: pip install -r requirements.txt
-      - name: Trace C2 regression under coupled particles
-        env:
-          FAULTDIAG_RESULTS_DIR: /tmp/faultdiag-c2
+      - name: Measure history-wide model-fit residuals
         run: |
-          python scripts/run_experiment.py \
-            --methods bayes_v2_hard,bayes_v2_coupled_topo,bayes_v2_human_coupled_topo \
-            --scenarios C2,F5@motor --trials 20
           python - <<'PY'
-          import json
-          from pathlib import Path
-          path=sorted(Path("/tmp/faultdiag-c2").glob("*/sessions.jsonl"))[-1]
-          rows=[json.loads(x) for x in path.read_text().splitlines()]
-          print("\nC2 / SENSOR TRACE")
-          for r in rows:
-              if r["method"]=="bayes_v2_hard":
-                  continue
-              d=r["diagnosis"]
-              print({
-                "scenario":r["scenario"],"method":r["method"],"seed":r["seed"],
-                "correct":r["correct"],"status":r["status"],"elements":r["elements"],
-                "cost":r["cost"],"top":d.get("top"),
-                "failed":[(h["tool"],h["args"],h["status"]) for h in r["history"] if h["status"]!="ok"],
-                "actions":[(h["tool"],h["args"],h.get("data")) for h in r["history"]],
-                "human":d.get("human_measurements"),
+          import numpy as np
+          from faultdiag.engine_v2_coupled import BayesEngineV2HumanCoupled
+          from faultdiag.guard import PolicyGuard
+          from faultdiag.harness import make_bench
+
+          scenarios = ("healthy","F1","F1b","F2","F3","F4","F5@motor","F5@lamp","F5@load","C1","C2","H1","H2")
+          e = BayesEngineV2HumanCoupled(balance_z=6.0, min_human_score=0.006)
+
+          def history_rms(engine):
+              if not engine.obs:
+                  return 0.0
+              q = np.zeros((engine.H, engine.K))
+              dof = 0
+              for ai, y in engine.obs:
+                  P = engine.pred[ai]
+                  sig = engine._sigma(ai, P)
+                  z2 = ((y[None,None,None,:] - P) / sig) ** 2
+                  ss = z2.sum(-1)
+                  po = engine.p_open
+                  best_state = np.where(po > 0, ss.min(-1), ss[...,0])
+                  q += best_state
+                  dof += y.size
+              return float(np.sqrt(q.min() / max(dof, 1)))
+
+          print("HISTORY RMS-Z DISTRIBUTIONS")
+          for scenario in scenarios:
+              vals = []
+              statuses = []
+              for trial in range(20):
+                  seed = list(scenarios).index(scenario) * 1000 + trial
+                  g = PolicyGuard(make_bench(scenario, seed))
+                  d = e.run(g, seed=seed)
+                  vals.append(history_rms(e))
+                  statuses.append(d["status"])
+              a = np.array(vals)
+              print(scenario, {
+                  "min": round(float(a.min()),3),
+                  "p25": round(float(np.quantile(a,.25)),3),
+                  "median": round(float(np.median(a)),3),
+                  "p75": round(float(np.quantile(a,.75)),3),
+                  "max": round(float(a.max()),3),
+                  "ood": statuses.count("out_of_model"),
+                  "values": [round(x,3) for x in vals],
               })
           PY
