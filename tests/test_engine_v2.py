@@ -9,6 +9,7 @@ sys.path.insert(0, str(ROOT))
 
 from faultdiag.engine_v2 import BayesEngineV2  # noqa: E402
 from faultdiag.engine_v2_coupled import BayesEngineV2Coupled  # noqa: E402
+from faultdiag.engine_v2_balance import BayesEngineV2Balance  # noqa: E402
 from faultdiag.engine import ACTIONS  # noqa: E402
 from faultdiag.guard import PolicyGuard  # noqa: E402
 from faultdiag.harness import make_bench  # noqa: E402
@@ -63,3 +64,13 @@ def test_coupled_particles_do_not_create_evidence_for_invisible_sensor_fault():
         if tool == "read_voltage" and args.get("point") == "motor":
             continue
         assert np.array_equal(e.pred[ai][f2], e.pred[ai][f2_sensor]), (tool, args)
+
+
+def test_topology_balance_trigger_is_structural():
+    e = BayesEngineV2Balance(cross_branch_only=True, n_samples=8, n_eig_samples=8)
+    source_motor = e.hyps.index(frozenset(["F1", "F3"]))
+    same_motor_branch = e.hyps.index(frozenset(["F2", "F5@motor"]))
+    cross_branch = e.hyps.index(frozenset(["F3", "F4"]))
+    assert not e._should_balance_probe(source_motor)
+    assert not e._should_balance_probe(same_motor_branch)
+    assert e._should_balance_probe(cross_branch)
