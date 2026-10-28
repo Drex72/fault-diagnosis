@@ -125,5 +125,5 @@ def build_methods(names, model: str | None = None, server: str = "ollama", base_
                        "model_version": model_version or (ollama_model_version(base_url, model)
                                                           if server == "ollama" else None)}
         else:
-            raise ValueError(f"unknown method {m}; choose from {', '.join(METHODS)}")
+            raise ValueError(f"unknown method {m}; choose from {', '.join(METHODS + EXPERIMENTAL_METHODS)}")
     return methods, meta
