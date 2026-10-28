@@ -17,13 +17,8 @@ jobs:
       - run: pip install -r requirements.txt
       - run: python -m pytest -q
 
-  probe-variants:
+  observability-probe:
     if: github.ref_name == 'experiment/math-engine-v2-probe'
-    strategy:
-      fail-fast: false
-      matrix:
-        method:
-          ["bayes_v2_compound","bayes_v2_probe","bayes_v2_probe1","bayes_v2_probe1_m50","bayes_v2_probe1_m60"]
     runs-on: ubuntu-latest
     timeout-minutes: 20
     steps:
@@ -33,51 +28,43 @@ jobs:
           python-version: "3.12"
           cache: pip
       - run: pip install -r requirements.txt
-      - name: Probe policy — ${{ matrix.method }}
-        env:
-          METHOD: ${{ matrix.method }}
-          FAULTDIAG_RESULTS_DIR: /tmp/faultdiag-probe
+      - name: Fresh-seed observability-aware probe validation
         run: |
-          python scripts/run_experiment.py \
-            --methods "$METHOD" \
-            --scenarios healthy,F2,F5@motor,C1,C2,TF1,TF2 --trials 10
           python - <<'PY'
-          import json, os, statistics
-          from pathlib import Path
+          from faultdiag.methods import build_methods
+          from faultdiag.harness import run_all
 
-          method=os.environ["METHOD"]
-          path=sorted(Path("/tmp/faultdiag-probe").glob("*/sessions.jsonl"))[-1]
-          rows=[json.loads(x) for x in path.read_text().splitlines()]
-          scenarios=["healthy","F2","F5@motor","C1","C2","TF1","TF2"]
+          methods, _ = build_methods(["bayes_v2_probe1", "bayes_v2_probe_obs"])
+          scenarios = ["healthy","F5@motor","C2","TF1"]
+          records = run_all(methods, scenarios, trials=10, seed0=60_000)
 
-          print("\nPROBE POLICY RESULT", method)
-          total_probes=0
-          for scenario in scenarios:
-              rs=[r for r in rows if r["scenario"]==scenario]
-              probes=sum(len(r["diagnosis"].get("human_probes") or []) for r in rs)
-              total_probes += probes
-              print(scenario, {
+          print("\nOBSERVABILITY-AWARE PROBE VALIDATION (seed0=60000)")
+          for method in methods:
+              rs=[r for r in records if r["method"]==method]
+              print(method, {
                   "correct": f'{sum(r["correct"] for r in rs)}/{len(rs)}',
-                  "mean_cost": round(statistics.mean(r["cost"] for r in rs),2),
-                  "probes": probes,
-                  "wrong": sum(r["status"]=="diagnosed" and not r["correct"] for r in rs),
-                  "inconclusive": sum(r["status"]=="inconclusive" for r in rs),
+                  "mean_cost": round(sum(r["cost"] for r in rs)/len(rs),3),
+                  "probes": sum(len(r["diagnosis"].get("human_probes") or []) for r in rs),
               })
+              for scenario in scenarios:
+                  xs=[r for r in rs if r["scenario"]==scenario]
+                  print(" ",scenario,{
+                      "correct":f'{sum(r["correct"] for r in xs)}/{len(xs)}',
+                      "mean_cost":round(sum(r["cost"] for r in xs)/len(xs),2),
+                      "wrong":sum(r["status"]=="diagnosed" and not r["correct"] for r in xs),
+                      "inconclusive":sum(r["status"]=="inconclusive" for r in xs),
+                      "probes":sum(len(r["diagnosis"].get("human_probes") or []) for r in xs),
+                  })
 
-          print("TOTAL", {
-              "correct": f'{sum(r["correct"] for r in rows)}/{len(rows)}',
-              "mean_cost": round(statistics.mean(r["cost"] for r in rows),3),
-              "probes": total_probes,
-          })
-
-          if "m50" in method or "m60" in method:
-              print("\nTF1 MARGINAL DETAILS")
-              for r in [x for x in rows if x["scenario"]=="TF1"]:
-                  print(r["seed"], {
-                      "elements": r["elements"],
-                      "status": r["status"],
-                      "cost": r["cost"],
-                      "probes": r["diagnosis"].get("human_probes"),
-                      "marginals": r["diagnosis"].get("fault_marginals"),
+          print("\nTF1 OBSERVABILITY DETAILS")
+          for r in records:
+              if r["method"]=="bayes_v2_probe_obs" and r["scenario"]=="TF1":
+                  print(r["seed"],{
+                      "status":r["status"],
+                      "elements":r["elements"],
+                      "cost":r["cost"],
+                      "probes":r["diagnosis"].get("human_probes"),
+                      "masked":r["diagnosis"].get("unobservable_atoms"),
+                      "marginals":r["diagnosis"].get("fault_marginals"),
                   })
           PY
