@@ -44,6 +44,7 @@ class BayesEngineV2(BayesEngine):
         super().reset(seed)
         self.suspect_current: list[dict] = []
         self.challenge_done = False
+        self.challenge_info: dict | None = None
 
     # ----- robust observation handling ---------------------------------
     def update(self, tool: str, args: dict, data: dict):
@@ -180,6 +181,7 @@ class BayesEngineV2(BayesEngine):
         d = super().diagnosis()
         d["suspect_current_sensors"] = list(self.suspect_current)
         d["challenge_performed"] = self.challenge_done
+        d["challenge_info"] = self.challenge_info
         return d
 
     def run(self, guard, seed: int = 0, max_steps: int = 30) -> dict:
@@ -194,6 +196,7 @@ class BayesEngineV2(BayesEngine):
                     option = self.challenge(guard)
                     if option is not None:
                         self.challenge_done = True
+                        self.challenge_info = {k: (round(v, 4) if isinstance(v, float) else v) for k, v in option.items()}
                         tool, args = option["tool"], option["args"]
                         res = guard.call(tool, args)
                         if res["status"] == "ok":
