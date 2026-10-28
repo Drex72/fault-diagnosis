@@ -53,12 +53,12 @@ jobs:
               "healthy","F1","F1b","F2","F3","F4","F5@motor","F5@lamp","F5@load",
               "C1","C2","H1","H2",
           ]
-          records=run_all({name:engine.run}, scenarios, trials=10, seed0=50_000)
+          records=run_all({name:engine.run}, scenarios, trials=10, seed0=70_000)
           known=[r for r in records if r["set"] in ("single","compound")]
           h1=[r for r in records if r["scenario"]=="H1"]
           h2=[r for r in records if r["scenario"]=="H2"]
 
-          print("\nCOMPOUND AUDIT FRESH-SEED VALIDATION (seed0=50000)")
+          print("\nCOMPOUND AUDIT FRESH-SEED VALIDATION (seed0=70000)")
           print({
               "audit": audit,
               "known_correct": f'{sum(r["correct"] for r in known)}/{len(known)}',
