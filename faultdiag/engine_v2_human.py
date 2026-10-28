@@ -46,6 +46,7 @@ class BayesEngineV2Human(BayesEngineV2Balance):
         max_human_probes: int = 2,
         allow_sensor_ambiguity: bool = False,
         sensor_fault_mass_threshold: float = 0.50,
+        sensor_nested_pair_threshold: float = 0.0,
         **kwargs,
     ):
         self._model_seed = seed
@@ -57,6 +58,7 @@ class BayesEngineV2Human(BayesEngineV2Balance):
         self.max_human_probes = max_human_probes
         self.allow_sensor_ambiguity = allow_sensor_ambiguity
         self.sensor_fault_mass_threshold = sensor_fault_mass_threshold
+        self.sensor_nested_pair_threshold = sensor_nested_pair_threshold
         self.human_pred = self._build_human_predictions(seed)
 
     def reset(self, seed: int = 0):
@@ -135,11 +137,26 @@ class BayesEngineV2Human(BayesEngineV2Balance):
             if any(atom.startswith("F5@") for atom in h)
         ))
 
+    def _sensor_nested_pair_mass(self) -> float:
+        """Largest posterior for sensor+physical-fault hypotheses."""
+        post = self.posterior()
+        return float(max(
+            (
+                post[hi]
+                for hi, h in enumerate(self.hyps)
+                if len(h) >= 2
+                and any(atom.startswith("F5@") for atom in h)
+                and any(not atom.startswith("F5@") for atom in h)
+            ),
+            default=0.0,
+        ))
+
     def human_suggest(self, guard) -> dict | None:
         instrument_failure = bool(self.failed)
         inferred_bad_sensor = (
             self.allow_sensor_ambiguity
             and self._sensor_fault_mass() >= self.sensor_fault_mass_threshold
+            and self._sensor_nested_pair_mass() >= self.sensor_nested_pair_threshold
         )
         if (not instrument_failure and not inferred_bad_sensor) or len(self.human_probes_used) >= self.max_human_probes:
             return None
