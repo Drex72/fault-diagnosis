@@ -1,9 +1,10 @@
-# Production tests plus branch-only mathematical-engine experiments.
+# Production tests plus an opt-in V2 simulation benchmark.
 name: tests
 
 on:
   push:
   pull_request:
+  workflow_dispatch:
 
 jobs:
   pytest:
@@ -18,10 +19,10 @@ jobs:
       - run: pip install -r requirements.txt
       - run: python -m pytest -q
 
-  math-benchmark:
-    if: github.event_name == 'push' && github.ref_name == 'experiment/math-engine-v2'
+  v2-benchmark:
+    if: github.event_name == 'workflow_dispatch'
     runs-on: ubuntu-latest
-    timeout-minutes: 12
+    timeout-minutes: 15
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-python@v5
@@ -29,43 +30,11 @@ jobs:
           python-version: "3.12"
           cache: pip
       - run: pip install -r requirements.txt
-      - name: Trace remaining frozen-candidate misses
+      - name: Paired V1 / frozen V2 development benchmark
         env:
-          FAULTDIAG_RESULTS_DIR: /tmp/faultdiag-v2-misses
+          FAULTDIAG_RESULTS_DIR: /tmp/faultdiag-v2-manual
         run: |
           python scripts/run_experiment.py \
             --methods bayes,bayes_v2_candidate \
-            --scenarios F4,F5@load,C2,TF1 \
+            --scenarios healthy,F1,F1b,F2,F3,F4,F5@motor,F5@lamp,F5@load,C1,C2,H1,H2,TF1,TF2 \
             --trials 10
-          python - <<'PY'
-          import json
-          from pathlib import Path
-          path=sorted(Path("/tmp/faultdiag-v2-misses").glob("*/sessions.jsonl"))[-1]
-          rows=[json.loads(x) for x in path.read_text().splitlines()]
-          print("\nREMAINING MISS TRACES")
-          for r in rows:
-              if r["method"]!="bayes_v2_candidate" or r["correct"]:
-                  continue
-              d=r["diagnosis"]
-              print({
-                  "scenario":r["scenario"],"seed":r["seed"],"status":r["status"],
-                  "truth":r["truth"],"elements":r["elements"],"cost":r["cost"],
-                  "top":d.get("top"),"rms":d.get("model_fit_rms_z"),"dof":d.get("model_fit_dof"),
-                  "balance":d.get("current_balance_probe"),
-                  "human":d.get("human_measurements"),
-                  "suspect_current":d.get("suspect_current_sensors"),
-                  "history":[
-                      (h["tool"],h["args"],h["status"],h.get("data"))
-                      for h in r["history"]
-                  ],
-              })
-          print("\nPAIRED LOSSES WHERE V1 RIGHT")
-          by={(r["scenario"],r["seed"],r["method"]):r for r in rows}
-          for s in ("F4","F5@load","C2","TF1"):
-              for seed in sorted({r["seed"] for r in rows if r["scenario"]==s}):
-                  a=by[(s,seed,"bayes")]
-                  b=by[(s,seed,"bayes_v2_candidate")]
-                  if a["correct"] and not b["correct"]:
-                      print(s,seed,{"v1":(a["status"],a["elements"],a["cost"]),
-                                    "v2":(b["status"],b["elements"],b["cost"],b["diagnosis"].get("top"))})
-          PY
