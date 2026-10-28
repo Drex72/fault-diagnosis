@@ -266,8 +266,31 @@ class BayesEngineV2(BayesEngine):
         best = max(ranked, key=lambda r: (r["score"], r["eig_bits"]))
         return best if best["score"] >= self.min_challenge_score else None
 
+    def model_fit_rms_z(self) -> float:
+        """History-wide best-fit residual in RMS sigma units.
+
+        Unlike MAXZ/misfit(), this aggregates all observations while keeping a
+        single hypothesis/particle across the history.  It is reported for
+        calibration and analysis only; hardware data should set any future
+        rejection threshold.
+        """
+        if not self.obs:
+            return 0.0
+        q = np.zeros((self.H, self.K))
+        dof = 0
+        for ai, y in self.obs:
+            P = self.pred[ai]
+            sig = self._sigma(ai, P)
+            z2 = ((y[None, None, None, :] - P) / sig) ** 2
+            ss = z2.sum(-1)
+            best_state = np.where(self.p_open > 0, ss.min(-1), ss[..., 0])
+            q += best_state
+            dof += y.size
+        return float(np.sqrt(q.min() / max(dof, 1)))
+
     def diagnosis(self) -> dict:
         d = super().diagnosis()
+        d["model_fit_rms_z"] = round(self.model_fit_rms_z(), 3)
         d["suspect_current_sensors"] = list(self.suspect_current)
         d["challenge_performed"] = self.challenge_done
         d["challenge_info"] = self.challenge_info
