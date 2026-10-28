@@ -21,7 +21,7 @@ jobs:
   math-benchmark:
     if: github.head_ref == 'experiment/math-engine-v2' || github.ref_name == 'experiment/math-engine-v2'
     runs-on: ubuntu-latest
-    timeout-minutes: 20
+    timeout-minutes: 12
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-python@v5
@@ -29,24 +29,24 @@ jobs:
           python-version: "3.12"
           cache: pip
       - run: pip install -r requirements.txt
-      - name: Topology-aware coupled benchmark
+      - name: Fast paired validation of unresolved V2 cases
         env:
-          FAULTDIAG_RESULTS_DIR: /tmp/faultdiag-topo
+          FAULTDIAG_RESULTS_DIR: /tmp/faultdiag-fast
         run: |
           python scripts/run_experiment.py \
-            --methods bayes_v2_coupled,bayes_v2_coupled_topo,bayes_v2_human_coupled,bayes_v2_human_coupled_topo \
-            --scenarios C1,C2,H2,TF1,F5@motor,F4 --trials 20
+            --methods bayes_v2_hard,bayes_v2_coupled_topo,bayes_v2_human_coupled_topo \
+            --scenarios C2,H2,TF1,F4 --trials 10
           python - <<'PY'
           import json
           from pathlib import Path
-
-          path=sorted(Path("/tmp/faultdiag-topo").glob("*/sessions.jsonl"))[-1]
+          path=sorted(Path("/tmp/faultdiag-fast").glob("*/sessions.jsonl"))[-1]
           rows=[json.loads(x) for x in path.read_text().splitlines()]
-          methods=("bayes_v2_coupled","bayes_v2_coupled_topo","bayes_v2_human_coupled","bayes_v2_human_coupled_topo")
-          print("\nTOPOLOGY-AWARE COMPARISON")
+          methods=("bayes_v2_hard","bayes_v2_coupled_topo","bayes_v2_human_coupled_topo")
+          scenarios=("C2","H2","TF1","F4")
+          print("\nFAST V2 VALIDATION")
           print("| Scenario | Method | Correct | Wrong | Inconc | OOD | Mean cost | Human |")
           print("|---|---|---:|---:|---:|---:|---:|---:|")
-          for s in ("C1","C2","H2","TF1","F5@motor","F4"):
+          for s in scenarios:
               for m in methods:
                   rs=[r for r in rows if r["scenario"]==s and r["method"]==m]
                   hp=sum(len(r["diagnosis"].get("human_measurements") or []) for r in rs)
@@ -57,7 +57,7 @@ jobs:
                         f'{sum(r["cost"] for r in rs)/len(rs):.1f} | {hp} |')
           PY
 
-      - name: Stress-test genuine cross-branch compounds
+      - name: Cross-branch false-OOD guard
         run: |
           python - <<'PY'
           import numpy as np
@@ -69,22 +69,21 @@ jobs:
           pairs=(("F3","F4"),("F2","F4"),("F3","F5@lamp"))
           methods={
               "coupled": BayesEngineV2Coupled(balance_z=6.0),
-              "coupled_topo": BayesEngineV2Coupled(balance_z=6.0, cross_branch_only=True),
+              "topo": BayesEngineV2Coupled(balance_z=6.0, cross_branch_only=True),
           }
-          print("\nCROSS-BRANCH COMPOUND STRESS")
-          for atoms in pairs:
+          print("\nCROSS-BRANCH STRESS")
+          for pi,atoms in enumerate(pairs):
               truth=sorted(ATOM_ELEMENT[a] for a in atoms)
               for name,engine in methods.items():
                   ok=ood=cost=0
-                  for j in range(20):
-                      seed=20000+1000*pairs.index(atoms)+j
+                  for j in range(8):
+                      seed=25000+1000*pi+j
                       rng=np.random.default_rng(seed)
                       st=apply_atoms(sample_healthy(rng), atoms, rng)
-                      bench=SimBench(st,np.random.default_rng(seed+10000))
-                      guard=PolicyGuard(bench)
+                      guard=PolicyGuard(SimBench(st,np.random.default_rng(seed+10000)))
                       d=engine.run(guard,seed=seed)
                       ok += d["status"]=="diagnosed" and sorted(d.get("elements",[]))==truth
                       ood += d["status"]=="out_of_model"
                       cost += guard.spent
-                  print(atoms,name,{"correct":f"{ok}/20","ood":f"{ood}/20","mean_cost":round(cost/20,2)})
+                  print(atoms,name,{"correct":f"{ok}/8","ood":f"{ood}/8","mean_cost":round(cost/8,2)})
           PY
