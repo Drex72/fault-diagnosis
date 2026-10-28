@@ -24,10 +24,11 @@ _ACTIONS = (
 
 
 class BayesEngineV2Balance(BayesEngineV2):
-    def __init__(self, *args, balance_z: float = 6.0, **kwargs):
+    def __init__(self, *args, balance_z: float = 6.0, cross_branch_only: bool = False, **kwargs):
         kwargs.setdefault("min_confirm_score", 1.0)
         super().__init__(*args, **kwargs)
         self.balance_z_threshold = balance_z
+        self.cross_branch_only = cross_branch_only
         self.balance_done = False
         self.balance_report: dict | None = None
         self.balance_misfit = False
@@ -83,6 +84,31 @@ class BayesEngineV2Balance(BayesEngineV2):
         hi, ki, si = np.unravel_index(flat_i, z.shape)
         return float(z[hi, ki, si]), float(q_obs), float(q_pred[hi, ki, si])
 
+    @staticmethod
+    def _atom_zone(atom: str) -> str:
+        if atom == "F1":
+            return "source"
+        if atom in ("F2", "F3", "F5@motor"):
+            return "motor"
+        if atom in ("F4", "F5@lamp"):
+            return "lamp"
+        if atom == "F5@load":
+            return "load"
+        return "unknown"
+
+    def _should_balance_probe(self, hi: int) -> bool:
+        atoms = self.hyps[hi]
+        if len(atoms) < 2:
+            return False
+        if not self.cross_branch_only:
+            return True
+        # A compound explanation spanning independent downstream branches is
+        # structurally suspicious: a single unmodelled upstream/global cause
+        # can masquerade as several local faults.  Source+branch compounds and
+        # co-located faults stay on the cheap path.
+        downstream = {self._atom_zone(a) for a in atoms} - {"source", "unknown"}
+        return len(downstream) >= 2
+
     def misfit(self) -> bool:
         return self.balance_misfit or super().misfit()
 
@@ -105,7 +131,7 @@ class BayesEngineV2Balance(BayesEngineV2):
 
             if post.max() >= self.stop_p:
                 top_i = int(np.argmax(post))
-                if len(self.hyps[top_i]) >= 2 and not self.balance_done:
+                if self._should_balance_probe(top_i) and not self.balance_done:
                     self.balance_done = True
                     if self._collect(guard):
                         z, observed, nearest = self._balance_z()
