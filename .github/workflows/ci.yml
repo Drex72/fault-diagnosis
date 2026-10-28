@@ -21,7 +21,7 @@ jobs:
   math-benchmark:
     if: github.event_name == 'push' && github.ref_name == 'experiment/math-engine-v2'
     runs-on: ubuntu-latest
-    timeout-minutes: 12
+    timeout-minutes: 15
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-python@v5
@@ -29,51 +29,97 @@ jobs:
           python-version: "3.12"
           cache: pip
       - run: pip install -r requirements.txt
-      - name: Calibrate nested sensor-physical ambiguity gate
+      - name: Calibrate coupled particle bank and planner MC size
         run: |
           python - <<'PY'
+          import time
           from collections import defaultdict
           from faultdiag.engine_v2_coupled import BayesEngineV2HumanCoupled
           from faultdiag.guard import PolicyGuard
           from faultdiag.harness import make_bench, SCENARIOS, truth_elements
 
-          nested_thresholds=(0.0,0.01,0.02,0.03,0.05)
-          scenarios=("C2","F5@motor")
+          configs={
+              "K24_N64": (24,64),
+              "K32_N64": (32,64),
+              "K32_N96": (32,96),
+              "K48_N64": (48,64),
+              "K48_N128": (48,128),
+          }
+          scenarios=("healthy","F1b","F4","F5@motor","C1","C2","H1","H2","TF1","TF2")
           engines={
-              t: BayesEngineV2HumanCoupled(
+              name: BayesEngineV2HumanCoupled(
+                  n_samples=k, n_eig_samples=n,
                   balance_z=6.0, cross_branch_only=True,
                   allow_sensor_ambiguity=True,
                   min_human_score=0.006,
                   min_sensor_human_score=0.006,
                   sensor_fault_mass_threshold=0.50,
-                  sensor_nested_pair_threshold=t,
               )
-              for t in nested_thresholds
+              for name,(k,n) in configs.items()
           }
-          stats=defaultdict(lambda:{"n":0,"ok":0,"wrong":0,"cost":0,"human":0,"sensor_human":0})
+          stats=defaultdict(lambda:{"n":0,"ok":0,"ood":0,"wrong":0,"inc":0,"cost":0,"wall":0.0,"human":0})
+          records={}
           for scenario in scenarios:
               truth=truth_elements(SCENARIOS[scenario])
-              for trial in range(20):
+              for trial in range(5):
                   seed=list(SCENARIOS).index(scenario)*1000+trial
-                  for t,e in engines.items():
+                  for name,e in engines.items():
                       g=PolicyGuard(make_bench(scenario,seed))
+                      t0=time.perf_counter()
                       d=e.run(g,seed=seed)
-                      s=stats[(t,scenario)]
-                      s["n"]+=1
+                      wall=time.perf_counter()-t0
                       correct=d["status"]=="diagnosed" and sorted(d.get("elements",[]))==truth
-                      s["ok"]+=correct
+                      s=stats[(name,scenario)]
+                      s["n"]+=1; s["ok"]+=correct
+                      s["ood"]+=d["status"]=="out_of_model"
                       s["wrong"]+=d["status"]=="diagnosed" and not correct
-                      s["cost"]+=g.spent
-                      hs=d.get("human_measurements") or []
-                      s["human"]+=len(hs)
-                      s["sensor_human"]+=sum(x.get("trigger")=="sensor_ambiguity" for x in hs)
+                      s["inc"]+=d["status"]=="inconclusive"
+                      s["cost"]+=g.spent; s["wall"]+=wall
+                      s["human"]+=len(d.get("human_measurements") or [])
+                      records[(name,scenario,seed)]=(correct,d["status"],g.spent)
 
-          print("\nNESTED SENSOR AMBIGUITY SWEEP")
-          print("| Nested p | Scenario | Correct | Wrong | Mean cost | Human probes |")
-          print("|---:|---|---:|---:|---:|---:|")
-          for t in nested_thresholds:
+          print("\nK/N CALIBRATION — PER SCENARIO")
+          print("| Config | Scenario | Correct | OOD | Mean cost | Mean wall | Human |")
+          print("|---|---|---:|---:|---:|---:|---:|")
+          for name in configs:
               for scenario in scenarios:
-                  s=stats[(t,scenario)]
-                  print(f'| {t:.2f} | {scenario} | {s["ok"]}/{s["n"]} | {s["wrong"]}/{s["n"]} | '
-                        f'{s["cost"]/s["n"]:.2f} | {s["human"]} |')
+                  s=stats[(name,scenario)]
+                  print(f'| {name} | {scenario} | {s["ok"]}/{s["n"]} | {s["ood"]}/{s["n"]} | '
+                        f'{s["cost"]/s["n"]:.2f} | {s["wall"]/s["n"]:.3f}s | {s["human"]} |')
+
+          print("\nK/N CALIBRATION — AGGREGATE")
+          known=("healthy","F1b","F4","F5@motor","C1","C2")
+          tool=("TF1","TF2")
+          held=("H1","H2")
+          for name in configs:
+              def agg(group,key):
+                  ss=[stats[(name,x)] for x in group]
+                  return sum(s[key] for s in ss),sum(s["n"] for s in ss)
+              ok,nk=agg(known,"ok"); ot,nt=agg(tool,"ok"); oo,no=agg(held,"ood")
+              all_s=[stats[(name,x)] for x in scenarios]
+              total=sum(s["n"] for s in all_s)
+              print(name,{
+                  "known_accuracy":f"{ok}/{nk}",
+                  "toolfail_accuracy":f"{ot}/{nt}",
+                  "heldout_ood":f"{oo}/{no}",
+                  "mean_cost":round(sum(s["cost"] for s in all_s)/total,3),
+                  "mean_wall_s":round(sum(s["wall"] for s in all_s)/total,3),
+                  "human_probes":sum(s["human"] for s in all_s),
+              })
+
+          base="K48_N128"
+          print("\nPAIRED KNOWN/TOOL DELTAS VS K48_N128")
+          graded=known+tool
+          for name in configs:
+              if name==base: continue
+              wins=losses=ties=0
+              for scenario in graded:
+                  for trial in range(5):
+                      seed=list(SCENARIOS).index(scenario)*1000+trial
+                      a=records[(base,scenario,seed)][0]
+                      b=records[(name,scenario,seed)][0]
+                      wins += b and not a
+                      losses += a and not b
+                      ties += a==b
+              print(name,{"wins":wins,"losses":losses,"ties":ties})
           PY
