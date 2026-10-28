@@ -33,6 +33,9 @@ class BayesEngineV2(BayesEngine):
         min_challenge_score: float = 0.012,
         min_confirm_score: float = 0.005,
         sensor_gate_z: float = 10.0,
+        verify_signatures: bool = False,
+        min_signature_z: float = 4.0,
+        max_verifications: int = 2,
         **kwargs,
     ):
         super().__init__(*args, **kwargs)
@@ -40,6 +43,10 @@ class BayesEngineV2(BayesEngine):
         self.min_challenge_score = min_challenge_score
         self.min_confirm_score = min_confirm_score
         self.sensor_gate_z = sensor_gate_z
+        self.verify_signatures = verify_signatures
+        self.min_signature_z = min_signature_z
+        self.max_verifications = max_verifications
+        self._signature_z = self._build_signature_map()
 
     def reset(self, seed: int = 0):
         super().reset(seed)
@@ -47,6 +54,84 @@ class BayesEngineV2(BayesEngine):
         self.challenge_done = False
         self.challenge_info: dict | None = None
         self.confirmations: list[dict] = []
+        self.verifications: list[dict] = []
+
+    # ----- automatically derived fault signatures -----------------------
+    def _expected_prediction(self, ai: int, hi: int) -> np.ndarray:
+        """Expected reading for one hypothesis, marginalising lamp intermittency."""
+        P = self.pred[ai][hi]  # (K, 2, D)
+        po = self.p_open[hi][:, None]
+        return ((1.0 - po) * P[:, 0] + po * P[:, 1]).mean(axis=0)
+
+    def _build_signature_map(self) -> dict:
+        """Standardised action sensitivity for every single fault atom.
+
+        No hand-written mapping says which instrument confirms which fault.
+        The map is derived from the forward model by comparing each single
+        fault with the healthy prediction in units of expected sensor noise.
+        """
+        from .faults import ATOMS
+
+        healthy = 0
+        out = {}
+        for atom in ATOMS:
+            hi = self.hyps.index(frozenset([atom]))
+            scores = {}
+            for ai in range(len(ACTIONS)):
+                mu0 = self._expected_prediction(ai, healthy)
+                mu1 = self._expected_prediction(ai, hi)
+                sig = self._sigma(ai, mu0)
+                z = float(np.sqrt(np.sum(((mu1 - mu0) / sig) ** 2)))
+                scores[ai] = z
+            out[atom] = scores
+        return out
+
+    def signature_map(self, n: int = 3) -> dict:
+        out = {}
+        for atom, scores in self._signature_z.items():
+            order = sorted(scores, key=scores.get, reverse=True)[:n]
+            out[atom] = [
+                {
+                    "tool": ACTIONS[ai][0],
+                    "args": ACTIONS[ai][1],
+                    "signature_z": round(scores[ai], 2),
+                }
+                for ai in order
+            ]
+        return out
+
+    def _verification_option(self, guard) -> dict | None:
+        """Cheapest strong, not-yet-observed witness for an unsupported MAP atom."""
+        post = self.posterior()
+        hi = int(np.argmax(post))
+        atoms = list(self.hyps[hi])
+        if not atoms:
+            return None
+
+        observed = {ai for ai, _ in self.obs}
+        candidates = []
+        for atom in atoms:
+            scores = self._signature_z[atom]
+            if any(scores[ai] >= self.min_signature_z for ai in observed):
+                continue
+            for ai, z in scores.items():
+                tool, args = ACTIONS[ai]
+                if z < self.min_signature_z or ai in observed or ai in self.failed or guard.check(tool, args):
+                    continue
+                cost = guard.cost_of(tool, args)
+                candidates.append(
+                    {
+                        "atom": atom,
+                        "tool": tool,
+                        "args": args,
+                        "signature_z": z,
+                        "cost": cost,
+                        "score": z / cost,
+                    }
+                )
+        if not candidates:
+            return None
+        return max(candidates, key=lambda x: (x["score"], x["signature_z"]))
 
     # ----- robust observation handling ---------------------------------
     def update(self, tool: str, args: dict, data: dict):
@@ -185,6 +270,7 @@ class BayesEngineV2(BayesEngine):
         d["challenge_performed"] = self.challenge_done
         d["challenge_info"] = self.challenge_info
         d["confirmations"] = list(self.confirmations)
+        d["verifications"] = list(self.verifications)
         return d
 
     def run(self, guard, seed: int = 0, max_steps: int = 30) -> dict:
@@ -200,10 +286,30 @@ class BayesEngineV2(BayesEngine):
             best = options[0]
 
             if post.max() >= self.stop_p:
-                # High confidence alone is not a reason to stop. Continue only
-                # when another test has enough expected decision value per unit
-                # cost. This is less aggressive than the 50/50 challenge prior,
-                # which re-tested almost every easy case.
+                # Optional model-derived witness: only verify a fault when none
+                # of the measurements already taken is strongly sensitive to
+                # that fault according to the forward model.
+                if self.verify_signatures and len(self.verifications) < self.max_verifications:
+                    verify = self._verification_option(guard)
+                    if verify is not None:
+                        self.verifications.append(
+                            {
+                                "atom": verify["atom"],
+                                "tool": verify["tool"],
+                                "args": verify["args"],
+                                "signature_z": round(float(verify["signature_z"]), 2),
+                            }
+                        )
+                        res = guard.call(verify["tool"], verify["args"])
+                        if res["status"] == "ok":
+                            self.update(verify["tool"], verify["args"], res["data"])
+                        else:
+                            self.mark_failed(verify["tool"], verify["args"])
+                        continue
+
+                # Otherwise continue only when another test still has enough
+                # decision value per unit cost. Setting min_confirm_score >= 1
+                # reproduces a hard stop at stop_p.
                 if best["score"] < self.min_confirm_score:
                     break
                 self.confirmations.append(
