@@ -19,6 +19,7 @@ METHODS = ("fixed", "tree", "bayes", "llm", "hybrid")
 EXPERIMENTAL_METHODS = (
     "bayes_v2", "bayes_v2_loose", "bayes_v2_strict", "bayes_v2_xstrict",
     "bayes_v2_hard", "bayes_v2_verify", "bayes_v2_compound", "bayes_v2_probe",
+    "bayes_v2_probe1", "bayes_v2_probe1_m50", "bayes_v2_probe1_m60",
 )
 DEFAULT_URL = {"ollama": "http://localhost:11434/v1", "llamacpp": "http://localhost:8080/v1", "jev": jev.DEFAULT_URL,
                "openrouter": openrouter.DEFAULT_URL, "gemini": gemini.DEFAULT_URL}
@@ -76,9 +77,17 @@ def build_methods(names, model: str | None = None, server: str = "ollama", base_
                 "bayes_v2_verify": {"min_confirm_score": 1.0, "verify_signatures": True},
                 "bayes_v2_compound": {"min_confirm_score": 1.0, "challenge_complex_hypothesis": True},
             }
-            if name == "bayes_v2_probe":
+            probe_configs = {
+                "bayes_v2_probe": {"max_human_probes": 2},
+                "bayes_v2_probe1": {"max_human_probes": 1},
+                "bayes_v2_probe1_m50": {"max_human_probes": 1, "marginal_fault_p": 0.50},
+                "bayes_v2_probe1_m60": {"max_human_probes": 1, "marginal_fault_p": 0.60},
+            }
+            if name in probe_configs:
                 v2_cache[name] = BayesEngineV2Probe(
-                    min_confirm_score=1.0, challenge_complex_hypothesis=True
+                    min_confirm_score=1.0,
+                    challenge_complex_hypothesis=True,
+                    **probe_configs[name],
                 )
             else:
                 v2_cache[name] = BayesEngineV2(**configs[name])
@@ -109,6 +118,12 @@ def build_methods(names, model: str | None = None, server: str = "ollama", base_
             methods[m] = v2("bayes_v2_compound").run
         elif m == "bayes_v2_probe":
             methods[m] = v2("bayes_v2_probe").run
+        elif m == "bayes_v2_probe1":
+            methods[m] = v2("bayes_v2_probe1").run
+        elif m == "bayes_v2_probe1_m50":
+            methods[m] = v2("bayes_v2_probe1_m50").run
+        elif m == "bayes_v2_probe1_m60":
+            methods[m] = v2("bayes_v2_probe1_m60").run
         elif m in ("llm", "hybrid"):
             if not model:
                 raise ValueError(f"a model name is needed for method {m}")
