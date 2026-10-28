@@ -34,6 +34,7 @@ class BayesEngineV2(BayesEngine):
         min_confirm_score: float = 0.005,
         sensor_gate_z: float = 10.0,
         verify_signatures: bool = False,
+        challenge_complex_hypothesis: bool = False,
         min_signature_z: float = 4.0,
         max_verifications: int = 2,
         **kwargs,
@@ -44,6 +45,7 @@ class BayesEngineV2(BayesEngine):
         self.min_confirm_score = min_confirm_score
         self.sensor_gate_z = sensor_gate_z
         self.verify_signatures = verify_signatures
+        self.challenge_complex_hypothesis = challenge_complex_hypothesis
         self.min_signature_z = min_signature_z
         self.max_verifications = max_verifications
         self._signature_z = self._build_signature_map()
@@ -286,6 +288,26 @@ class BayesEngineV2(BayesEngine):
             best = options[0]
 
             if post.max() >= self.stop_p:
+                # A high-confidence two-fault explanation is expensive in the
+                # model's prior and can also be how an unseen single physical
+                # fault gets "explained away". Give such complex explanations
+                # one counterfactual falsification probe before accepting them.
+                top_i = int(np.argmax(post))
+                if self.challenge_complex_hypothesis and len(self.hyps[top_i]) >= 2 and not self.challenge_done:
+                    option = self.challenge(guard)
+                    if option is not None:
+                        self.challenge_done = True
+                        self.challenge_info = {
+                            k: (round(v, 4) if isinstance(v, float) else v)
+                            for k, v in option.items()
+                        }
+                        res = guard.call(option["tool"], option["args"])
+                        if res["status"] == "ok":
+                            self.update(option["tool"], option["args"], res["data"])
+                        else:
+                            self.mark_failed(option["tool"], option["args"])
+                        continue
+
                 # Optional model-derived witness: only verify a fault when none
                 # of the measurements already taken is strongly sensitive to
                 # that fault according to the forward model.
