@@ -29,36 +29,57 @@ jobs:
           python-version: "3.12"
           cache: pip
       - run: pip install -r requirements.txt
-      - name: Sensor-ambiguity human-probe A/B
-        env:
-          FAULTDIAG_RESULTS_DIR: /tmp/faultdiag-sensor-human
+      - name: Calibrate sensor-ambiguity human threshold
         run: |
-          python scripts/run_experiment.py \
-            --methods bayes_v2_coupled_topo,bayes_v2_human_coupled_topo,bayes_v2_human_coupled_sensor \
-            --scenarios C2,F5@motor,F5@lamp,F5@load,TF1,H2 --trials 15
           python - <<'PY'
-          import json
-          from pathlib import Path
-          path=sorted(Path("/tmp/faultdiag-sensor-human").glob("*/sessions.jsonl"))[-1]
-          rows=[json.loads(x) for x in path.read_text().splitlines()]
-          methods=("bayes_v2_coupled_topo","bayes_v2_human_coupled_topo","bayes_v2_human_coupled_sensor")
-          scenarios=("C2","F5@motor","F5@lamp","F5@load","TF1","H2")
-          print("\nSENSOR-AMBIGUITY HUMAN A/B")
-          print("| Scenario | Method | Correct | Wrong | Inconc | OOD | Mean cost | Human sessions/probes |")
-          print("|---|---|---:|---:|---:|---:|---:|---:|")
-          for s in scenarios:
-              for m in methods:
-                  rs=[r for r in rows if r["scenario"]==s and r["method"]==m]
-                  sessions=sum(bool(r["diagnosis"].get("human_measurements")) for r in rs)
-                  probes=sum(len(r["diagnosis"].get("human_measurements") or []) for r in rs)
-                  print(f'| {s} | {m} | {sum(r["correct"] for r in rs)}/{len(rs)} | '
-                        f'{sum(r["status"]=="diagnosed" and not r["correct"] for r in rs)}/{len(rs)} | '
-                        f'{sum(r["status"]=="inconclusive" for r in rs)}/{len(rs)} | '
-                        f'{sum(r["status"]=="out_of_model" for r in rs)}/{len(rs)} | '
-                        f'{sum(r["cost"] for r in rs)/len(rs):.1f} | {sessions}/{probes} |')
-          print("\nSENSOR HUMAN DETAILS")
-          for r in rows:
-              if r["method"]=="bayes_v2_human_coupled_sensor" and r["diagnosis"].get("human_measurements"):
-                  print(r["scenario"],r["seed"],r["status"],r["elements"],r["cost"],
-                        r["diagnosis"]["human_measurements"],r["diagnosis"].get("top"))
+          import time
+          from collections import defaultdict
+          from faultdiag.engine_v2_coupled import BayesEngineV2HumanCoupled
+          from faultdiag.guard import PolicyGuard
+          from faultdiag.harness import make_bench, SCENARIOS, truth_elements
+
+          thresholds=(0.006,0.008,0.010,0.012)
+          scenarios=("C2","F5@motor","TF1")
+          engines={
+              t: BayesEngineV2HumanCoupled(
+                  balance_z=6.0, cross_branch_only=True,
+                  allow_sensor_ambiguity=True,
+                  min_human_score=0.006,
+                  min_sensor_human_score=t,
+                  sensor_fault_mass_threshold=0.50,
+              )
+              for t in thresholds
+          }
+          stats=defaultdict(lambda:{"n":0,"ok":0,"wrong":0,"inc":0,"ood":0,"cost":0,"human":0,"sensor_human":0,"failed_human":0,"wall":0.0})
+          for si,scenario in enumerate(scenarios):
+              truth=truth_elements(SCENARIOS[scenario])
+              for trial in range(20):
+                  seed=list(SCENARIOS).index(scenario)*1000+trial
+                  for t,e in engines.items():
+                      g=PolicyGuard(make_bench(scenario,seed))
+                      start=time.perf_counter()
+                      d=e.run(g,seed=seed)
+                      wall=time.perf_counter()-start
+                      s=stats[(t,scenario)]
+                      s["n"]+=1
+                      correct=d["status"]=="diagnosed" and sorted(d.get("elements",[]))==truth
+                      s["ok"]+=correct
+                      s["wrong"]+=d["status"]=="diagnosed" and not correct
+                      s["inc"]+=d["status"]=="inconclusive"
+                      s["ood"]+=d["status"]=="out_of_model"
+                      s["cost"]+=g.spent
+                      s["wall"]+=wall
+                      hs=d.get("human_measurements") or []
+                      s["human"]+=len(hs)
+                      s["sensor_human"]+=sum(x.get("trigger")=="sensor_ambiguity" for x in hs)
+                      s["failed_human"]+=sum(x.get("trigger")=="failed_tool" for x in hs)
+          print("\nSENSOR HUMAN THRESHOLD SWEEP")
+          print("| Threshold | Scenario | Correct | Wrong | Inconc | OOD | Mean cost | Human (sensor/fail) | Mean wall |")
+          print("|---:|---|---:|---:|---:|---:|---:|---:|---:|")
+          for t in thresholds:
+              for scenario in scenarios:
+                  s=stats[(t,scenario)]
+                  print(f'| {t:.3f} | {scenario} | {s["ok"]}/{s["n"]} | {s["wrong"]}/{s["n"]} | '
+                        f'{s["inc"]}/{s["n"]} | {s["ood"]}/{s["n"]} | {s["cost"]/s["n"]:.2f} | '
+                        f'{s["human"]} ({s["sensor_human"]}/{s["failed_human"]}) | {s["wall"]/s["n"]:.3f}s |')
           PY
