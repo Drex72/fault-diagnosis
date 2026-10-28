@@ -29,12 +29,13 @@ _R_LOAD = 24.0
 
 
 class BayesEngineV2Consistency(BayesEngineV2):
-    def __init__(self, *args, consistency_z: float = 5.0, **kwargs):
+    def __init__(self, *args, consistency_z: float = 5.0, cross_branch_only: bool = False, **kwargs):
         # Keep the core V2 hard stop.  This class owns the single extra
         # model-adequacy probe.
         kwargs.setdefault("min_confirm_score", 1.0)
         super().__init__(*args, **kwargs)
         self.consistency_z_threshold = consistency_z
+        self.cross_branch_only = cross_branch_only
         self.consistency_done = False
         self.consistency_report: dict | None = None
         self.consistency_misfit = False
@@ -107,6 +108,33 @@ class BayesEngineV2Consistency(BayesEngineV2):
         hi, ki, si = np.unravel_index(flat_i, z.shape)
         return float(z[hi, ki, si]), float(q_obs), float(q_pred[hi, ki, si])
 
+    @staticmethod
+    def _atom_zone(atom: str) -> str:
+        # Structural location only; this does not encode any held-out fault.
+        if atom == "F1":
+            return "source"
+        if atom in ("F2", "F3", "F5@motor"):
+            return "motor"
+        if atom in ("F4", "F5@lamp"):
+            return "lamp"
+        if atom == "F5@load":
+            return "load"
+        return "unknown"
+
+    def _should_probe(self, hi: int) -> bool:
+        atoms = self.hyps[hi]
+        if len(atoms) < 2:
+            return False
+        if not self.cross_branch_only:
+            return True
+        # Pay for the conservation probe only when the current explanation
+        # needs abnormalities on at least two different downstream branches.
+        # An upstream source fault plus one local fault (e.g. C1) and two
+        # faults co-located on one branch (e.g. C2) are not challenged.
+        zones = {self._atom_zone(a) for a in atoms}
+        downstream = zones - {"source", "unknown"}
+        return len(downstream) >= 2
+
     def misfit(self) -> bool:
         return self.consistency_misfit or super().misfit()
 
@@ -132,7 +160,7 @@ class BayesEngineV2Consistency(BayesEngineV2):
                 # Complex diagnoses are exactly where an unmodelled physical
                 # cause can be "explained away" by two known faults.  Before
                 # accepting one, run a topology-level conservation check once.
-                if len(self.hyps[top_i]) >= 2 and not self.consistency_done:
+                if self._should_probe(top_i) and not self.consistency_done:
                     self.consistency_done = True
                     if self._collect_balance_probe(guard):
                         z, observed, nearest = self._balance_z()
