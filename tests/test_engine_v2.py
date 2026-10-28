@@ -104,3 +104,15 @@ def test_history_rms_model_fit_penalizes_inconsistent_repeated_readings():
 
     assert good < 1e-9
     assert bad > good + 5.0
+
+
+def test_human_probe_contributes_to_model_fit_dof():
+    e = BayesEngineV2HumanCoupled(n_samples=16, n_eig_samples=16)
+    e.reset(0)
+    before = e.model_fit_dof()
+    pair = ("bus", "motor")
+    healthy = e.hyps.index(frozenset())
+    volts = float(e.human_pred[pair][healthy, 0, 0])
+    e._human_update(pair, volts)
+    assert e.model_fit_dof() == before + 1
+    assert e.model_fit_rms_z() < 1e-9
