@@ -64,6 +64,7 @@ def build_methods(names, model: str | None = None, server: str = "ollama", base_
     engine_v2_strict = BayesEngineV2(min_confirm_score=0.010)
     engine_v2_xstrict = BayesEngineV2(min_confirm_score=0.020)
     engine_v2_hard = BayesEngineV2(min_confirm_score=1.0)
+    engine_v2_verify = BayesEngineV2(min_confirm_score=1.0, verify_signatures=True)
     methods, meta = {}, {}
     jev_llm = cloud = None
     for m in names:
@@ -83,6 +84,8 @@ def build_methods(names, model: str | None = None, server: str = "ollama", base_
             methods[m] = engine_v2_xstrict.run
         elif m == "bayes_v2_hard":
             methods[m] = engine_v2_hard.run
+        elif m == "bayes_v2_verify":
+            methods[m] = engine_v2_verify.run
         elif m in ("llm", "hybrid"):
             if not model:
                 raise ValueError(f"a model name is needed for method {m}")
