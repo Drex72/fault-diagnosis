@@ -63,14 +63,27 @@ def build_methods(names, model: str | None = None, server: str = "ollama", base_
     requests per minute, for a cloud chat server's rate limit (Gemini's free tier by default)."""
     base_url = base_url or DEFAULT_URL[server]
     engine = BayesEngine()
-    engine_v2 = BayesEngineV2(min_confirm_score=0.005)
-    engine_v2_loose = BayesEngineV2(min_confirm_score=0.002)
-    engine_v2_strict = BayesEngineV2(min_confirm_score=0.010)
-    engine_v2_xstrict = BayesEngineV2(min_confirm_score=0.020)
-    engine_v2_hard = BayesEngineV2(min_confirm_score=1.0)
-    engine_v2_verify = BayesEngineV2(min_confirm_score=1.0, verify_signatures=True)
-    engine_v2_compound = BayesEngineV2(min_confirm_score=1.0, challenge_complex_hypothesis=True)
-    engine_v2_probe = BayesEngineV2Probe(min_confirm_score=1.0, challenge_complex_hypothesis=True)
+    v2_cache = {}
+
+    def v2(name):
+        if name not in v2_cache:
+            configs = {
+                "bayes_v2": {"min_confirm_score": 0.005},
+                "bayes_v2_loose": {"min_confirm_score": 0.002},
+                "bayes_v2_strict": {"min_confirm_score": 0.010},
+                "bayes_v2_xstrict": {"min_confirm_score": 0.020},
+                "bayes_v2_hard": {"min_confirm_score": 1.0},
+                "bayes_v2_verify": {"min_confirm_score": 1.0, "verify_signatures": True},
+                "bayes_v2_compound": {"min_confirm_score": 1.0, "challenge_complex_hypothesis": True},
+            }
+            if name == "bayes_v2_probe":
+                v2_cache[name] = BayesEngineV2Probe(
+                    min_confirm_score=1.0, challenge_complex_hypothesis=True
+                )
+            else:
+                v2_cache[name] = BayesEngineV2(**configs[name])
+        return v2_cache[name]
+
     methods, meta = {}, {}
     jev_llm = cloud = None
     for m in names:
@@ -81,21 +94,21 @@ def build_methods(names, model: str | None = None, server: str = "ollama", base_
         elif m == "bayes":
             methods[m] = engine.run
         elif m == "bayes_v2":
-            methods[m] = engine_v2.run
+            methods[m] = v2("bayes_v2").run
         elif m == "bayes_v2_loose":
-            methods[m] = engine_v2_loose.run
+            methods[m] = v2("bayes_v2_loose").run
         elif m == "bayes_v2_strict":
-            methods[m] = engine_v2_strict.run
+            methods[m] = v2("bayes_v2_strict").run
         elif m == "bayes_v2_xstrict":
-            methods[m] = engine_v2_xstrict.run
+            methods[m] = v2("bayes_v2_xstrict").run
         elif m == "bayes_v2_hard":
-            methods[m] = engine_v2_hard.run
+            methods[m] = v2("bayes_v2_hard").run
         elif m == "bayes_v2_verify":
-            methods[m] = engine_v2_verify.run
+            methods[m] = v2("bayes_v2_verify").run
         elif m == "bayes_v2_compound":
-            methods[m] = engine_v2_compound.run
+            methods[m] = v2("bayes_v2_compound").run
         elif m == "bayes_v2_probe":
-            methods[m] = engine_v2_probe.run
+            methods[m] = v2("bayes_v2_probe").run
         elif m in ("llm", "hybrid"):
             if not model:
                 raise ValueError(f"a model name is needed for method {m}")
