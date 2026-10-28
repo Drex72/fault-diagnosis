@@ -1,5 +1,5 @@
-# Runs the test suite on every push and pull request. Simulation and mock devices only:
-# no hardware, no model server, no internet needed by the tests themselves.
+# Runs the production test suite unchanged, plus a branch-only paired
+# mathematical-engine benchmark. No hardware, model server or frozen H3/H4.
 name: tests
 
 on:
@@ -19,38 +19,70 @@ jobs:
       - run: pip install -r requirements.txt
       - run: python -m pytest -q
 
-      - name: Paired Bayesian V1 vs V2 development benchmark
+  math-benchmark:
+    if: github.head_ref == 'experiment/math-engine-v2' || github.ref_name == 'experiment/math-engine-v2'
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+          cache: pip
+      - run: pip install -r requirements.txt
+      - name: Full development benchmark — V1 vs V2 candidates
         env:
           FAULTDIAG_RESULTS_DIR: /tmp/faultdiag-bench
         run: |
-          python scripts/run_experiment.py --methods bayes,bayes_v2_hard,bayes_v2_compound --scenarios healthy,F1,F2,F3,F5@motor,C1,C2,H1,H2,TF1,TF2 --trials 10
+          python scripts/run_experiment.py --methods bayes,bayes_v2_hard,bayes_v2_compound --trials 10
           python - <<'PY'
           import json
           from collections import defaultdict
           from pathlib import Path
 
-          runs = sorted(Path("/tmp/faultdiag-bench").glob("*/sessions.jsonl"))
-          path = runs[-1]
+          path = sorted(Path("/tmp/faultdiag-bench").glob("*/sessions.jsonl"))[-1]
           rows = [json.loads(x) for x in path.read_text().splitlines()]
-          stats = defaultdict(lambda: {"n": 0, "ok": 0, "cost": 0, "wall": 0.0, "challenges": [], "verifications": [], "suspects": 0})
-          for r in rows:
-              if not r["method"].startswith("bayes_v2"):
-                  continue
-              s = stats[(r["method"], r["scenario"])]
-              s["n"] += 1
-              s["ok"] += int(r["correct"])
-              s["cost"] += r["cost"]
-              s["wall"] += r["wall_s"]
-              d = r["diagnosis"]
-              if d.get("challenge_performed"):
-                  s["challenges"].append(d.get("challenge_info"))
-              s["suspects"] += len(d.get("suspect_current_sensors") or [])
-              s["verifications"].extend(d.get("verifications") or [])
-          print("\nV2 MECHANISM DIAGNOSTICS")
-          for (method, name), s in stats.items():
-              challenge = [(x["tool"], x["args"], x["score"]) for x in s["challenges"] if x]
-              print(method, name, {"correct": f'{s["ok"]}/{s["n"]}', "mean_cost": round(s["cost"]/s["n"],2),
-                           "mean_wall_s": round(s["wall"]/s["n"],3), "challenge": challenge,
-                           "verifications": [(x["atom"], x["tool"], x["args"], x["signature_z"]) for x in s["verifications"]],
-                           "sensor_suspects": s["suspects"]})
+          methods = ("bayes", "bayes_v2_hard", "bayes_v2_compound")
+          scenarios = list(dict.fromkeys(r["scenario"] for r in rows))
+          by = {(r["scenario"], r["seed"], r["method"]): r for r in rows}
+
+          print("\nPER-SCENARIO PAIRED RESULTS")
+          print("| Scenario | Method | Correct | OOD | Mean cost |")
+          print("|---|---|---:|---:|---:|")
+          for scenario in scenarios:
+              for method in methods:
+                  rs = [r for r in rows if r["scenario"] == scenario and r["method"] == method]
+                  print(f'| {scenario} | {method} | {sum(r["correct"] for r in rs)}/{len(rs)} | '
+                        f'{sum(r["status"] == "out_of_model" for r in rs)}/{len(rs)} | '
+                        f'{sum(r["cost"] for r in rs)/len(rs):.1f} |')
+
+          print("\nPAIRED DELTAS AGAINST V1")
+          for method in methods[1:]:
+              wins = losses = ties = 0
+              cost_delta = 0.0
+              n = 0
+              for scenario in scenarios:
+                  seeds = sorted({r["seed"] for r in rows if r["scenario"] == scenario})
+                  for seed in seeds:
+                      a = by[(scenario, seed, "bayes")]
+                      b = by[(scenario, seed, method)]
+                      wins += bool(b["correct"]) and not bool(a["correct"])
+                      losses += bool(a["correct"]) and not bool(b["correct"])
+                      ties += bool(a["correct"]) == bool(b["correct"])
+                      cost_delta += b["cost"] - a["cost"]
+                      n += 1
+              print(method, {
+                  "wins_where_v1_wrong": wins,
+                  "losses_where_v1_right": losses,
+                  "accuracy_ties": ties,
+                  "mean_cost_delta": round(cost_delta/n, 3),
+              })
+
+          print("\nMECHANISM COUNTS")
+          for method in methods[1:]:
+              rs = [r for r in rows if r["method"] == method]
+              print(method, {
+                  "challenges": sum(bool(r["diagnosis"].get("challenge_performed")) for r in rs),
+                  "suspect_current_readings": sum(len(r["diagnosis"].get("suspect_current_sensors") or []) for r in rs),
+              })
           PY
