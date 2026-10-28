@@ -2,11 +2,14 @@ import sys
 from pathlib import Path
 
 import pytest
+import numpy as np
 
 ROOT = Path(__file__).resolve().parent.parent
 sys.path.insert(0, str(ROOT))
 
 from faultdiag.engine_v2 import BayesEngineV2  # noqa: E402
+from faultdiag.engine_v2_coupled import BayesEngineV2Coupled  # noqa: E402
+from faultdiag.engine import ACTIONS  # noqa: E402
 from faultdiag.guard import PolicyGuard  # noqa: E402
 from faultdiag.harness import make_bench  # noqa: E402
 
@@ -50,3 +53,13 @@ def test_v2_quarantines_impossible_scalar_current(engine_v2):
     assert engine_v2.suspect_current
     assert engine_v2.obs == []
     assert engine_v2.failed
+
+
+def test_coupled_particles_do_not_create_evidence_for_invisible_sensor_fault():
+    e = BayesEngineV2Coupled(n_samples=16, n_eig_samples=16)
+    f2 = e.hyps.index(frozenset(["F2"]))
+    f2_sensor = e.hyps.index(frozenset(["F2", "F5@motor"]))
+    for ai, (tool, args) in enumerate(ACTIONS):
+        if tool == "read_voltage" and args.get("point") == "motor":
+            continue
+        assert np.array_equal(e.pred[ai][f2], e.pred[ai][f2_sensor]), (tool, args)
