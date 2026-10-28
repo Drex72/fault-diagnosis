@@ -21,7 +21,7 @@ jobs:
   math-benchmark:
     if: github.event_name == 'push' && github.ref_name == 'experiment/math-engine-v2'
     runs-on: ubuntu-latest
-    timeout-minutes: 15
+    timeout-minutes: 12
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-python@v5
@@ -29,7 +29,7 @@ jobs:
           python-version: "3.12"
           cache: pip
       - run: pip install -r requirements.txt
-      - name: Calibrate online RMS model-fit rejection at K32 N64
+      - name: Calibrate nested sensor-physical DMM gate at K32 N64
         run: |
           python - <<'PY'
           from collections import defaultdict
@@ -37,33 +37,25 @@ jobs:
           from faultdiag.guard import PolicyGuard
           from faultdiag.harness import make_bench, SCENARIOS, truth_elements
 
-          thresholds=(None,1.25,1.50,1.75,2.00)
-          known=("healthy","F1","F1b","F2","F3","F4","F5@motor","F5@lamp","F5@load","C1","C2")
-          held=("H1","H2")
-          tool=("TF1","TF2")
-          scenarios=known+held+tool
-          engines={
-              t: BayesEngineV2HumanCoupled(
-                  n_samples=32, n_eig_samples=64,
-                  balance_z=6.0, cross_branch_only=True,
+          thresholds=(0.05,0.075,0.10,0.125,0.15,0.20)
+          scenarios=("C2","F5@motor","TF1")
+          stats=defaultdict(lambda:{"n":0,"ok":0,"wrong":0,"inc":0,"ood":0,"cost":0,"human":0})
+          for th in thresholds:
+              e=BayesEngineV2HumanCoupled(
+                  n_samples=32,n_eig_samples=64,
+                  balance_z=6.0,cross_branch_only=True,
                   allow_sensor_ambiguity=True,
-                  min_human_score=0.006,
-                  min_sensor_human_score=0.006,
+                  min_human_score=0.006,min_sensor_human_score=0.006,
                   sensor_fault_mass_threshold=0.50,
-                  rms_misfit_z=t,
-                  rms_misfit_min_dof=3,
+                  sensor_nested_pair_threshold=th,
               )
-              for t in thresholds
-          }
-          stats=defaultdict(lambda:{"n":0,"ok":0,"wrong":0,"inc":0,"ood":0,"cost":0,"rms":[],"dof":[]})
-          for scenario in scenarios:
-              truth=truth_elements(SCENARIOS[scenario])
-              for trial in range(10):
-                  seed=list(SCENARIOS).index(scenario)*1000+trial
-                  for threshold,e in engines.items():
+              for scenario in scenarios:
+                  truth=truth_elements(SCENARIOS[scenario])
+                  for trial in range(20):
+                      seed=list(SCENARIOS).index(scenario)*1000+trial
                       g=PolicyGuard(make_bench(scenario,seed))
                       d=e.run(g,seed=seed)
-                      s=stats[(threshold,scenario)]
+                      s=stats[(th,scenario)]
                       s["n"]+=1
                       correct=d["status"]=="diagnosed" and sorted(d.get("elements",[]))==truth
                       s["ok"]+=correct
@@ -71,40 +63,14 @@ jobs:
                       s["inc"]+=d["status"]=="inconclusive"
                       s["ood"]+=d["status"]=="out_of_model"
                       s["cost"]+=g.spent
-                      s["rms"].append(d.get("model_fit_rms_z",0.0))
-                      s["dof"].append(d.get("model_fit_dof",0))
+                      s["human"]+=len(d.get("human_measurements") or [])
 
-          print("\nRMS MODEL-FIT THRESHOLD SWEEP")
-          print("| Threshold | Group | Correct | Wrong | Inconc | OOD | Mean cost | False OOD |")
+          print("\nNESTED DMM GATE SWEEP — K32 N64")
+          print("| Pair mass | Scenario | Correct | Wrong | Inconc | OOD | Mean cost | Human probes |")
           print("|---:|---|---:|---:|---:|---:|---:|---:|")
-          groups=(("known",known),("heldout",held),("toolfail",tool))
-          for t in thresholds:
-              for label,group in groups:
-                  ss=[stats[(t,s)] for s in group]
-                  n=sum(x["n"] for x in ss); ok=sum(x["ok"] for x in ss)
-                  wrong=sum(x["wrong"] for x in ss); inc=sum(x["inc"] for x in ss); ood=sum(x["ood"] for x in ss)
-                  cost=sum(x["cost"] for x in ss)/n
-                  false_ood=ood if label!="heldout" else 0
-                  print(f'| {t} | {label} | {ok}/{n} | {wrong}/{n} | {inc}/{n} | {ood}/{n} | {cost:.2f} | {false_ood}/{n} |')
-
-          print("\nHELDOUT DETAILS")
-          for t in thresholds:
-              for scenario in held:
-                  s=stats[(t,scenario)]
-                  print(t,scenario,{
-                      "ood":f'{s["ood"]}/{s["n"]}',
-                      "wrong":f'{s["wrong"]}/{s["n"]}',
-                      "mean_cost":round(s["cost"]/s["n"],2),
-                      "rms":[round(x,3) for x in s["rms"]],
-                      "dof":s["dof"],
-                  })
-
-          print("\nKNOWN FALSE-OOD DETAILS")
-          for t in thresholds[1:]:
-              bad=[]
-              for scenario in known:
-                  s=stats[(t,scenario)]
-                  if s["ood"]:
-                      bad.append((scenario,s["ood"],[round(x,3) for x in s["rms"]]))
-              print(t,bad)
+          for th in thresholds:
+              for scenario in scenarios:
+                  s=stats[(th,scenario)]
+                  print(f'| {th:.3f} | {scenario} | {s["ok"]}/{s["n"]} | {s["wrong"]}/{s["n"]} | '
+                        f'{s["inc"]}/{s["n"]} | {s["ood"]}/{s["n"]} | {s["cost"]/s["n"]:.2f} | {s["human"]} |')
           PY
