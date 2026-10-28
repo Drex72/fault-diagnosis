@@ -17,7 +17,7 @@ jobs:
       - run: pip install -r requirements.txt
       - run: python -m pytest -q
 
-  fit-calibration:
+  adequacy-validation:
     if: github.ref_name == 'experiment/math-engine-v2-adequacy'
     runs-on: ubuntu-latest
     timeout-minutes: 20
@@ -28,41 +28,70 @@ jobs:
           python-version: "3.12"
           cache: pip
       - run: pip install -r requirements.txt
-      - name: Measure aggregate fit on development scenarios
-        env:
-          FAULTDIAG_RESULTS_DIR: /tmp/faultdiag-fit
+      - name: Fresh-seed aggregate-fit threshold validation
         run: |
-          python scripts/run_experiment.py --methods bayes_v2_compound --trials 10
           python - <<'PY'
-          import json
-          import statistics
-          from pathlib import Path
+          from collections import defaultdict
 
-          path = sorted(Path("/tmp/faultdiag-fit").glob("*/sessions.jsonl"))[-1]
-          rows = [json.loads(x) for x in path.read_text().splitlines()]
-          scenarios = list(dict.fromkeys(r["scenario"] for r in rows))
+          from faultdiag.engine_v2 import BayesEngineV2
+          from faultdiag.harness import run_all
 
-          print("\nAGGREGATE FIT CALIBRATION")
-          print("| Scenario | Set | Mean RMS z | Max RMS z | OOD flags | Correct | Mean cost |")
-          print("|---|---|---:|---:|---:|---:|---:|")
-          for scenario in scenarios:
-              rs = [r for r in rows if r["scenario"] == scenario]
-              vals = [r["diagnosis"].get("aggregate_fit_rms_z", 0.0) for r in rs]
+          scenarios = [
+              "healthy", "F1", "F1b", "F2", "F3", "F4",
+              "F5@motor", "F5@lamp", "F5@load", "C1", "C2", "H1", "H2",
+          ]
+          configs = {
+              "compound_no_adequacy": None,
+              "adequacy_1_5": 1.5,
+              "adequacy_2_0": 2.0,
+              "adequacy_3_0": 3.0,
+          }
+          engines = {
+              name: BayesEngineV2(
+                  min_confirm_score=1.0,
+                  challenge_complex_hypothesis=True,
+                  aggregate_misfit_z=threshold,
+              )
+              for name, threshold in configs.items()
+          }
+          records = run_all(
+              {name: engine.run for name, engine in engines.items()},
+              scenarios,
+              trials=10,
+              seed0=20_000,
+          )
+
+          print("\nFRESH-SEED ADEQUACY VALIDATION (seed0=20000)")
+          print("| Method | Known correct | Known false OOD | H1 OOD | H2 OOD | Mean cost |")
+          print("|---|---:|---:|---:|---:|---:|")
+          for name in configs:
+              rs = [r for r in records if r["method"] == "bayes_v2"]
+              # run_all records the method dict key separately, so identify by
+              # per-call ordering below instead of diagnosis's internal label.
+              # Rebuild from the actual grouped record method field as emitted.
+          # Harness records method from the dictionary key, overriding the
+          # engine's internal method label.
+          for name in configs:
+              rs = [r for r in records if r["method"] == name]
+              known = [r for r in rs if r["set"] in ("single", "compound")]
+              h1 = [r for r in rs if r["scenario"] == "H1"]
+              h2 = [r for r in rs if r["scenario"] == "H2"]
               print(
-                  f'| {scenario} | {rs[0]["set"]} | {statistics.mean(vals):.2f} | {max(vals):.2f} | '
-                  f'{sum(r["status"] == "out_of_model" for r in rs)}/{len(rs)} | '
-                  f'{sum(r["correct"] for r in rs)}/{len(rs)} | '
-                  f'{statistics.mean(r["cost"] for r in rs):.1f} |'
+                  f'| {name} | {sum(r["correct"] for r in known)}/{len(known)} | '
+                  f'{sum(r["status"] == "out_of_model" for r in known)}/{len(known)} | '
+                  f'{sum(r["status"] == "out_of_model" for r in h1)}/{len(h1)} | '
+                  f'{sum(r["status"] == "out_of_model" for r in h2)}/{len(h2)} | '
+                  f'{sum(r["cost"] for r in rs)/len(rs):.2f} |'
               )
 
-          known = [r["diagnosis"].get("aggregate_fit_rms_z", 0.0) for r in rows if r["set"] in ("single", "compound")]
-          held = [r["diagnosis"].get("aggregate_fit_rms_z", 0.0) for r in rows if r["set"] == "heldout"]
-          print("\nKNOWN VS HELDOUT")
-          print({
-              "known_mean": round(statistics.mean(known), 3),
-              "known_max": round(max(known), 3),
-              "heldout_mean": round(statistics.mean(held), 3),
-              "heldout_min": round(min(held), 3),
-              "heldout_max": round(max(held), 3),
-          })
+          print("\nPER-SCENARIO OOD/ACCURACY")
+          for name in configs:
+              for scenario in scenarios:
+                  rs = [r for r in records if r["method"] == name and r["scenario"] == scenario]
+                  print(name, scenario, {
+                      "correct": sum(r["correct"] for r in rs),
+                      "ood": sum(r["status"] == "out_of_model" for r in rs),
+                      "mean_cost": round(sum(r["cost"] for r in rs)/len(rs), 2),
+                      "fit": [r["diagnosis"].get("aggregate_fit_rms_z") for r in rs],
+                  })
           PY
