@@ -19,7 +19,7 @@ METHODS = ("fixed", "tree", "bayes", "llm", "hybrid")
 EXPERIMENTAL_METHODS = (
     "bayes_v2", "bayes_v2_loose", "bayes_v2_strict", "bayes_v2_xstrict",
     "bayes_v2_hard", "bayes_v2_verify", "bayes_v2_compound", "bayes_v2_probe",
-    "bayes_v2_probe1", "bayes_v2_probe1_m50", "bayes_v2_probe1_m60",
+    "bayes_v2_probe1", "bayes_v2_probe1_m50", "bayes_v2_probe1_m60", "bayes_v2_probe_obs",
 )
 DEFAULT_URL = {"ollama": "http://localhost:11434/v1", "llamacpp": "http://localhost:8080/v1", "jev": jev.DEFAULT_URL,
                "openrouter": openrouter.DEFAULT_URL, "gemini": gemini.DEFAULT_URL}
@@ -82,6 +82,12 @@ def build_methods(names, model: str | None = None, server: str = "ollama", base_
                 "bayes_v2_probe1": {"max_human_probes": 1},
                 "bayes_v2_probe1_m50": {"max_human_probes": 1, "marginal_fault_p": 0.50},
                 "bayes_v2_probe1_m60": {"max_human_probes": 1, "marginal_fault_p": 0.60},
+                "bayes_v2_probe_obs": {
+                    "max_human_probes": 1,
+                    "marginal_fault_p": 0.50,
+                    "observability_aware": True,
+                    "force_probe_on_failed_voltage": True,
+                },
             }
             if name in probe_configs:
                 v2_cache[name] = BayesEngineV2Probe(
@@ -124,6 +130,8 @@ def build_methods(names, model: str | None = None, server: str = "ollama", base_
             methods[m] = v2("bayes_v2_probe1_m50").run
         elif m == "bayes_v2_probe1_m60":
             methods[m] = v2("bayes_v2_probe1_m60").run
+        elif m == "bayes_v2_probe_obs":
+            methods[m] = v2("bayes_v2_probe_obs").run
         elif m in ("llm", "hybrid"):
             if not model:
                 raise ValueError(f"a model name is needed for method {m}")
