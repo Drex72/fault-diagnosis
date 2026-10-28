@@ -4,11 +4,11 @@
     "model_version": "poolside/laguna-s-2.1-20260720",
     "server": "openrouter",
     "think": false,
-    "date": "2026-10-27T14:42:59+01:00",
-    "commit": "ad6b376e28af3e6ff2627576dac23482b86c4a14",
+    "date": "2026-10-28T10:00:24+01:00",
+    "commit": "ad6b376e28af3e6ff2627576dac23482b86c4a14,dd934bd2ce3ff1744d8471e9e49af3e1dd645847+dirty",
     "policy_hash": "88b28c1f4c8a",
-    "sessions": 1,
-    "llm_calls": 6,
+    "sessions": 3,
+    "llm_calls": 18,
     "accuracy": 1.0,
     "invalid_rate": 0.0,
     "content_parsed": 0,
@@ -16,18 +16,18 @@
     "timeouts": 0,
     "server_parse_errors": 0,
     "fallbacks": 0,
-    "submitted": 1,
-    "median_latency_s": 6.184,
-    "p95_latency_s": 7.411,
+    "submitted": 3,
+    "median_latency_s": 5.384499999999999,
+    "p95_latency_s": 12.004,
     "peak_memory_gb": null,
     "load_s": 0.0,
-    "cloud_requests": 11,
-    "cloud_prompt_tokens": 29551,
-    "cloud_completion_tokens": 1748,
+    "cloud_requests": 30,
+    "cloud_prompt_tokens": 82199,
+    "cloud_completion_tokens": 4908,
     "cloud_reasoning_tokens": 0,
     "cloud_cost_usd": 0.0,
     "providers": {
-      "Poolside": 11
+      "Poolside": 30
     },
     "answered_by": "poolside/laguna-s-2.1:free",
     "temperature": 0.0,
@@ -36,6 +36,7 @@
     "per_scenario": {
       "F2": 1.0
     },
-    "stopped": "https://openrouter.ai/api/v1/chat/completions: the daily request quota is used up (HTTP 429); continue with --resume once it resets (Google's free tier: midnight Pacific time): {\"error\":{\"message\":\"Rate limit exceeded: free-models-per-day. Add 10 credits to unlock 1000 free model requests per day\",\"code\":429,\"metadata\":{\"headers\":{\"X-RateLimit-Limit\":\"50\",\"X-RateLimit-Remaining\":\"0\",\"X-RateLimit-Reset\":\"1793145600000\"},\"limit_source\":\"openrouter_free_tier_daily\",\"remedy_hi"
+    "resumed_sessions": 2,
+    "stopped": "https://openrouter.ai/api/v1/chat/completions returned HTTP 429: {\"error\":{\"message\":\"Provider returned error\",\"code\":429,\"metadata\":{\"raw\":\"poolside/laguna-s-2.1:free is temporarily rate-limited upstream. Please retry shortly, or add your own key to accumulate your rate limits: https://openrouter.ai/settings/integrations\",\"provider_name\":\"Poolside\",\"is_byok\":fal"
   }
 ]
