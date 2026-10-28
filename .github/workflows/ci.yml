@@ -86,3 +86,39 @@ jobs:
                   "suspect_current_readings": sum(len(r["diagnosis"].get("suspect_current_sensors") or []) for r in rs),
               })
           PY
+
+  probe-benchmark:
+    if: github.ref_name == 'experiment/math-engine-v2-probe'
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+          cache: pip
+      - run: pip install -r requirements.txt
+      - name: Probe-value benchmark
+        env:
+          FAULTDIAG_RESULTS_DIR: /tmp/faultdiag-probe
+        run: |
+          python scripts/run_experiment.py --methods bayes,bayes_v2_compound,bayes_v2_probe --scenarios healthy,F2,F5@motor,C1,C2,TF1,TF2 --trials 10
+          python - <<'PY'
+          import json
+          import statistics
+          from pathlib import Path
+
+          path = sorted(Path("/tmp/faultdiag-probe").glob("*/sessions.jsonl"))[-1]
+          rows = [json.loads(x) for x in path.read_text().splitlines()]
+          methods = ("bayes", "bayes_v2_compound", "bayes_v2_probe")
+          scenarios = list(dict.fromkeys(r["scenario"] for r in rows))
+          print("\nPROBE BENCHMARK")
+          print("| Scenario | Method | Correct | Mean cost | Human probes |")
+          print("|---|---|---:|---:|---:|")
+          for scenario in scenarios:
+              for method in methods:
+                  rs = [r for r in rows if r["scenario"] == scenario and r["method"] == method]
+                  probes = sum(len(r["diagnosis"].get("human_probes") or []) for r in rs)
+                  print(f'| {scenario} | {method} | {sum(r["correct"] for r in rs)}/{len(rs)} | '
+                        f'{statistics.mean(r["cost"] for r in rs):.1f} | {probes} |')
+          PY
