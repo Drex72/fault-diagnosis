@@ -21,7 +21,7 @@ jobs:
   math-benchmark:
     if: github.event_name == 'push' && github.ref_name == 'experiment/math-engine-v2'
     runs-on: ubuntu-latest
-    timeout-minutes: 12
+    timeout-minutes: 10
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-python@v5
@@ -29,7 +29,7 @@ jobs:
           python-version: "3.12"
           cache: pip
       - run: pip install -r requirements.txt
-      - name: Calibrate nested sensor-physical DMM gate at K32 N64
+      - name: Ablate current-balance layer after RMS rejection
         run: |
           python - <<'PY'
           from collections import defaultdict
@@ -37,40 +37,49 @@ jobs:
           from faultdiag.guard import PolicyGuard
           from faultdiag.harness import make_bench, SCENARIOS, truth_elements
 
-          thresholds=(0.05,0.075,0.10,0.125,0.15,0.20)
-          scenarios=("C2","F5@motor","TF1")
-          stats=defaultdict(lambda:{"n":0,"ok":0,"wrong":0,"inc":0,"ood":0,"cost":0,"human":0})
-          for th in thresholds:
-              e=BayesEngineV2HumanCoupled(
-                  n_samples=32,n_eig_samples=64,
-                  balance_z=6.0,cross_branch_only=True,
-                  allow_sensor_ambiguity=True,
-                  min_human_score=0.006,min_sensor_human_score=0.006,
-                  sensor_fault_mass_threshold=0.50,
-                  sensor_nested_pair_threshold=th,
-              )
-              for scenario in scenarios:
-                  truth=truth_elements(SCENARIOS[scenario])
-                  for trial in range(20):
-                      seed=list(SCENARIOS).index(scenario)*1000+trial
+          class NoBalance(BayesEngineV2HumanCoupled):
+              def _should_balance_probe(self, hi):
+                  return False
+
+          common=dict(
+              n_samples=32, n_eig_samples=64,
+              balance_z=6.0, cross_branch_only=True,
+              allow_sensor_ambiguity=True,
+              min_human_score=0.006,
+              min_sensor_human_score=0.006,
+              sensor_fault_mass_threshold=0.50,
+              rms_misfit_z=2.0,
+              rms_misfit_min_dof=3,
+          )
+          engines={
+              "rms_plus_balance": BayesEngineV2HumanCoupled(**common),
+              "rms_only": NoBalance(**common),
+          }
+          scenarios=("H1","H2","C1","C2","TF1","F4")
+          stats=defaultdict(lambda:{"n":0,"ok":0,"wrong":0,"ood":0,"inc":0,"cost":0,"balance":0})
+          for scenario in scenarios:
+              truth=truth_elements(SCENARIOS[scenario])
+              for trial in range(20):
+                  seed=list(SCENARIOS).index(scenario)*1000+trial
+                  for name,e in engines.items():
                       g=PolicyGuard(make_bench(scenario,seed))
                       d=e.run(g,seed=seed)
-                      s=stats[(th,scenario)]
+                      s=stats[(name,scenario)]
                       s["n"]+=1
                       correct=d["status"]=="diagnosed" and sorted(d.get("elements",[]))==truth
                       s["ok"]+=correct
                       s["wrong"]+=d["status"]=="diagnosed" and not correct
-                      s["inc"]+=d["status"]=="inconclusive"
                       s["ood"]+=d["status"]=="out_of_model"
+                      s["inc"]+=d["status"]=="inconclusive"
                       s["cost"]+=g.spent
-                      s["human"]+=len(d.get("human_measurements") or [])
+                      s["balance"]+=bool(d.get("current_balance_probe"))
 
-          print("\nNESTED DMM GATE SWEEP — K32 N64")
-          print("| Pair mass | Scenario | Correct | Wrong | Inconc | OOD | Mean cost | Human probes |")
-          print("|---:|---|---:|---:|---:|---:|---:|---:|")
-          for th in thresholds:
-              for scenario in scenarios:
-                  s=stats[(th,scenario)]
-                  print(f'| {th:.3f} | {scenario} | {s["ok"]}/{s["n"]} | {s["wrong"]}/{s["n"]} | '
-                        f'{s["inc"]}/{s["n"]} | {s["ood"]}/{s["n"]} | {s["cost"]/s["n"]:.2f} | {s["human"]} |')
+          print("\nRMS / BALANCE ABLATION")
+          print("| Scenario | Variant | Correct | Wrong | Inconc | OOD | Mean cost | Balance used |")
+          print("|---|---|---:|---:|---:|---:|---:|---:|")
+          for scenario in scenarios:
+              for name in engines:
+                  s=stats[(name,scenario)]
+                  print(f'| {scenario} | {name} | {s["ok"]}/{s["n"]} | {s["wrong"]}/{s["n"]} | '
+                        f'{s["inc"]}/{s["n"]} | {s["ood"]}/{s["n"]} | {s["cost"]/s["n"]:.2f} | {s["balance"]} |')
           PY
