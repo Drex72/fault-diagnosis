@@ -9,12 +9,13 @@ from . import gemini, jev, openrouter
 from .agent import Agent, OpenAICompatLLM
 from .baselines import run_fixed, run_tree
 from .engine import BayesEngine
+from .engine_v2 import BayesEngineV2
 from .logsetup import get_logger
 from .runmeta import ollama_model_version
 
 log = get_logger("methods")
 
-METHODS = ("fixed", "tree", "bayes", "llm", "hybrid")
+METHODS = ("fixed", "tree", "bayes", "bayes_v2", "llm", "hybrid")
 DEFAULT_URL = {"ollama": "http://localhost:11434/v1", "llamacpp": "http://localhost:8080/v1", "jev": jev.DEFAULT_URL,
                "openrouter": openrouter.DEFAULT_URL, "gemini": gemini.DEFAULT_URL}
 # jev: TypeSafe's cloud decision model (faultdiag/jev.py); openrouter and gemini: cloud chat models
@@ -58,6 +59,7 @@ def build_methods(names, model: str | None = None, server: str = "ollama", base_
     requests per minute, for a cloud chat server's rate limit (Gemini's free tier by default)."""
     base_url = base_url or DEFAULT_URL[server]
     engine = BayesEngine()
+    engine_v2 = BayesEngineV2()
     methods, meta = {}, {}
     jev_llm = cloud = None
     for m in names:
@@ -67,6 +69,8 @@ def build_methods(names, model: str | None = None, server: str = "ollama", base_
             methods[m] = run_tree
         elif m == "bayes":
             methods[m] = engine.run
+        elif m == "bayes_v2":
+            methods[m] = engine_v2.run
         elif m in ("llm", "hybrid"):
             if not model:
                 raise ValueError(f"a model name is needed for method {m}")
