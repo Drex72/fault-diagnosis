@@ -84,3 +84,23 @@ def test_human_coupled_topology_trigger_is_honored():
     assert d["status"] == "diagnosed"
     assert d["elements"] == ["battery", "motor"]
     assert d["current_balance_probe"] is None
+
+
+def test_history_rms_model_fit_penalizes_inconsistent_repeated_readings():
+    e = BayesEngineV2(n_samples=16, n_eig_samples=16)
+    e.reset(0)
+    ai = next(i for i, (tool, args) in enumerate(ACTIONS)
+              if tool == "read_voltage" and args.get("point") == "src")
+    healthy = e.hyps.index(frozenset())
+    expected = float(e.pred[ai][healthy, 0, 0, 0])
+
+    e.update("read_voltage", {"point": "src"}, {"volts": expected})
+    good = e.model_fit_rms_z()
+
+    # Two mutually incompatible readings from the same tap cannot both be
+    # explained by one physical hypothesis/particle.
+    e.update("read_voltage", {"point": "src"}, {"volts": expected + 5.0})
+    bad = e.model_fit_rms_z()
+
+    assert good < 1e-9
+    assert bad > good + 5.0
