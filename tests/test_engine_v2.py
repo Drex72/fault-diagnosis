@@ -8,7 +8,7 @@ ROOT = Path(__file__).resolve().parent.parent
 sys.path.insert(0, str(ROOT))
 
 from faultdiag.engine_v2 import BayesEngineV2  # noqa: E402
-from faultdiag.engine_v2_coupled import BayesEngineV2Coupled  # noqa: E402
+from faultdiag.engine_v2_coupled import BayesEngineV2Coupled, BayesEngineV2HumanCoupled  # noqa: E402
 from faultdiag.engine_v2_balance import BayesEngineV2Balance  # noqa: E402
 from faultdiag.engine import ACTIONS  # noqa: E402
 from faultdiag.guard import PolicyGuard  # noqa: E402
@@ -74,3 +74,13 @@ def test_topology_balance_trigger_is_structural():
     assert not e._should_balance_probe(source_motor)
     assert not e._should_balance_probe(same_motor_branch)
     assert e._should_balance_probe(cross_branch)
+
+
+def test_human_coupled_topology_trigger_is_honored():
+    e = BayesEngineV2HumanCoupled(
+        cross_branch_only=True, n_samples=24, n_eig_samples=48
+    )
+    d = e.run(guard_for("C1", seed=3), seed=3)
+    assert d["status"] == "diagnosed"
+    assert d["elements"] == ["battery", "motor"]
+    assert d["current_balance_probe"] is None
