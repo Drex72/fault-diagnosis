@@ -17,12 +17,12 @@ jobs:
       - run: pip install -r requirements.txt
       - run: python -m pytest -q
 
-  combined-validation:
-    if: github.ref_name == 'experiment/math-engine-v3-combined'
+  compound-audit-validation:
+    if: github.ref_name == 'experiment/math-engine-v3-audit'
     strategy:
       fail-fast: false
       matrix:
-        method: ["v2_adequacy", "v3_combined"]
+        audit: ["off", "on"]
     runs-on: ubuntu-latest
     timeout-minutes: 20
     steps:
@@ -32,60 +32,49 @@ jobs:
           python-version: "3.12"
           cache: pip
       - run: pip install -r requirements.txt
-      - name: Fresh-seed combined validation — ${{ matrix.method }}
+      - name: Compound KCL audit — ${{ matrix.audit }}
         env:
-          METHOD: ${{ matrix.method }}
+          AUDIT: ${{ matrix.audit }}
         run: |
           python - <<'PY'
           import os
-          from faultdiag.engine_v2 import BayesEngineV2
           from faultdiag.engine_v3 import BayesEngineV3Residual
           from faultdiag.harness import run_all
 
-          name = os.environ["METHOD"]
-          if name == "v2_adequacy":
-              engine = BayesEngineV2(
-                  min_confirm_score=1.0,
-                  challenge_complex_hypothesis=True,
-                  aggregate_misfit_z=2.0,
-              )
-          else:
-              engine = BayesEngineV3Residual(
-                  min_confirm_score=1.0,
-                  challenge_complex_hypothesis=True,
-                  aggregate_misfit_z=2.0,
-              )
-
+          audit = os.environ["AUDIT"] == "on"
+          name = "v3_audit" if audit else "v3_no_audit"
+          engine = BayesEngineV3Residual(
+              min_confirm_score=1.0,
+              challenge_complex_hypothesis=True,
+              aggregate_misfit_z=2.0,
+              audit_compound=audit,
+          )
           scenarios = [
               "healthy","F1","F1b","F2","F3","F4","F5@motor","F5@lamp","F5@load",
               "C1","C2","H1","H2",
           ]
-          records = run_all({name: engine.run}, scenarios, trials=10, seed0=40_000)
+          records=run_all({name:engine.run}, scenarios, trials=10, seed0=50_000)
+          known=[r for r in records if r["set"] in ("single","compound")]
+          h1=[r for r in records if r["scenario"]=="H1"]
+          h2=[r for r in records if r["scenario"]=="H2"]
 
-          known = [r for r in records if r["set"] in ("single","compound")]
-          h1 = [r for r in records if r["scenario"]=="H1"]
-          h2 = [r for r in records if r["scenario"]=="H2"]
-          print("\nCOMBINED FRESH-SEED VALIDATION (seed0=40000)")
+          print("\nCOMPOUND AUDIT FRESH-SEED VALIDATION (seed0=50000)")
           print({
-              "method": name,
+              "audit": audit,
               "known_correct": f'{sum(r["correct"] for r in known)}/{len(known)}',
-              "known_wrong": sum(r["status"]=="diagnosed" and not r["correct"] for r in known),
               "known_false_ood": sum(r["status"]=="out_of_model" for r in known),
               "H1_correct": f'{sum(r["correct"] for r in h1)}/{len(h1)}',
-              "H1_ood": sum(r["status"]=="out_of_model" for r in h1),
               "H2_correct": f'{sum(r["correct"] for r in h2)}/{len(h2)}',
-              "H2_ood": sum(r["status"]=="out_of_model" for r in h2),
               "mean_cost": round(sum(r["cost"] for r in records)/len(records),3),
+              "physics_runs": sum(bool(r["diagnosis"].get("physics_investigation")) for r in records),
           })
-
-          print("\nPER-SCENARIO")
+          print("\nBY SCENARIO")
           for scenario in scenarios:
               rs=[r for r in records if r["scenario"]==scenario]
-              print(scenario, {
-                  "correct": sum(r["correct"] for r in rs),
-                  "ood": sum(r["status"]=="out_of_model" for r in rs),
-                  "mean_cost": round(sum(r["cost"] for r in rs)/len(rs),2),
-                  "physics": [r["diagnosis"].get("physics_investigation") for r in rs
-                              if r["diagnosis"].get("physics_investigation")],
+              print(scenario,{
+                  "correct":sum(r["correct"] for r in rs),
+                  "ood":sum(r["status"]=="out_of_model" for r in rs),
+                  "mean_cost":round(sum(r["cost"] for r in rs)/len(rs),2),
+                  "physics_runs":sum(bool(r["diagnosis"].get("physics_investigation")) for r in rs),
               })
           PY
