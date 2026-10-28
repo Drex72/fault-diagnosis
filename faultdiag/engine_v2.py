@@ -7,10 +7,9 @@ that can be evaluated independently of new fault physics:
    entropy reduction. This asks whether a test is likely to change the final
    diagnosis, rather than rewarding uncertainty reduction that cannot affect
    the decision.
-2. Before stopping at very high confidence, one counterfactual challenge test
-   may be taken. The challenge temporarily caps the leading hypothesis at 50 %
-   and asks which legal test would best separate it from plausible
-   alternatives. This is a guard against premature certainty.
+2. The fixed 95 % stopping rule becomes value-of-information aware: after
+   reaching high confidence, testing continues only when the best legal test
+   still has enough expected decision-error reduction per unit cost.
 3. A scalar current reading that is incompatible with every physical particle
    by a very large margin is treated as a suspect current sensor/tool result,
    not as decisive evidence about the circuit. Voltage readings are not gated
@@ -32,12 +31,14 @@ class BayesEngineV2(BayesEngine):
         *args,
         min_risk_reduction: float = 0.004,
         min_challenge_score: float = 0.012,
+        min_confirm_score: float = 0.005,
         sensor_gate_z: float = 10.0,
         **kwargs,
     ):
         super().__init__(*args, **kwargs)
         self.min_risk_reduction = min_risk_reduction
         self.min_challenge_score = min_challenge_score
+        self.min_confirm_score = min_confirm_score
         self.sensor_gate_z = sensor_gate_z
 
     def reset(self, seed: int = 0):
@@ -45,6 +46,7 @@ class BayesEngineV2(BayesEngine):
         self.suspect_current: list[dict] = []
         self.challenge_done = False
         self.challenge_info: dict | None = None
+        self.confirmations: list[dict] = []
 
     # ----- robust observation handling ---------------------------------
     def update(self, tool: str, args: dict, data: dict):
@@ -182,6 +184,7 @@ class BayesEngineV2(BayesEngine):
         d["suspect_current_sensors"] = list(self.suspect_current)
         d["challenge_performed"] = self.challenge_done
         d["challenge_info"] = self.challenge_info
+        d["confirmations"] = list(self.confirmations)
         return d
 
     def run(self, guard, seed: int = 0, max_steps: int = 30) -> dict:
@@ -191,26 +194,30 @@ class BayesEngineV2(BayesEngine):
                 break
 
             post = self.posterior()
-            if post.max() >= self.stop_p:
-                if not self.challenge_done:
-                    option = self.challenge(guard)
-                    if option is not None:
-                        self.challenge_done = True
-                        self.challenge_info = {k: (round(v, 4) if isinstance(v, float) else v) for k, v in option.items()}
-                        tool, args = option["tool"], option["args"]
-                        res = guard.call(tool, args)
-                        if res["status"] == "ok":
-                            self.update(tool, args, res["data"])
-                        else:
-                            self.mark_failed(tool, args)
-                        continue
-                break
-
             options = self.suggest(guard, n=1)
-            if not options or options[0]["risk_reduction"] < self.min_risk_reduction:
+            if not options:
+                break
+            best = options[0]
+
+            if post.max() >= self.stop_p:
+                # High confidence alone is not a reason to stop. Continue only
+                # when another test has enough expected decision value per unit
+                # cost. This is less aggressive than the 50/50 challenge prior,
+                # which re-tested almost every easy case.
+                if best["score"] < self.min_confirm_score:
+                    break
+                self.confirmations.append(
+                    {
+                        "tool": best["tool"],
+                        "args": best["args"],
+                        "score": round(float(best["score"]), 4),
+                        "risk_reduction": best["risk_reduction"],
+                    }
+                )
+            elif best["risk_reduction"] < self.min_risk_reduction:
                 break
 
-            tool, args = options[0]["tool"], options[0]["args"]
+            tool, args = best["tool"], best["args"]
             res = guard.call(tool, args)
             if res["status"] == "ok":
                 self.update(tool, args, res["data"])
