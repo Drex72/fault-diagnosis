@@ -9,7 +9,6 @@ from . import gemini, jev, openrouter
 from .agent import Agent, OpenAICompatLLM
 from .baselines import run_fixed, run_tree
 from .engine import BayesEngine
-from .engine_v2 import BayesEngineV2
 from .engine_robust import BayesEngineRobust
 from .logsetup import get_logger
 from .runmeta import ollama_model_version
@@ -17,10 +16,7 @@ from .runmeta import ollama_model_version
 log = get_logger("methods")
 
 METHODS = ("fixed", "tree", "bayes", "llm", "hybrid")
-EXPERIMENTAL_METHODS = (
-    "bayes_v2", "bayes_v2_loose", "bayes_v2_strict", "bayes_v2_xstrict",
-    "bayes_v2_hard", "bayes_v2_verify", "bayes_v2_compound", "bayes_robust",
-)
+EXPERIMENTAL_METHODS = ("bayes_robust",)
 DEFAULT_URL = {"ollama": "http://localhost:11434/v1", "llamacpp": "http://localhost:8080/v1", "jev": jev.DEFAULT_URL,
                "openrouter": openrouter.DEFAULT_URL, "gemini": gemini.DEFAULT_URL}
 # jev: TypeSafe's cloud decision model (faultdiag/jev.py); openrouter and gemini: cloud chat models
@@ -64,23 +60,7 @@ def build_methods(names, model: str | None = None, server: str = "ollama", base_
     requests per minute, for a cloud chat server's rate limit (Gemini's free tier by default)."""
     base_url = base_url or DEFAULT_URL[server]
     engine = BayesEngine()
-    v2_cache = {}
     robust_engine = None
-
-    def v2(name):
-        if name not in v2_cache:
-            configs = {
-                "bayes_v2": {"min_confirm_score": 0.005},
-                "bayes_v2_loose": {"min_confirm_score": 0.002},
-                "bayes_v2_strict": {"min_confirm_score": 0.010},
-                "bayes_v2_xstrict": {"min_confirm_score": 0.020},
-                "bayes_v2_hard": {"min_confirm_score": 1.0},
-                "bayes_v2_verify": {"min_confirm_score": 1.0, "verify_signatures": True},
-                "bayes_v2_compound": {"min_confirm_score": 1.0, "challenge_complex_hypothesis": True},
-            }
-            v2_cache[name] = BayesEngineV2(**configs[name])
-        return v2_cache[name]
-
     methods, meta = {}, {}
     jev_llm = cloud = None
     for m in names:
@@ -90,20 +70,6 @@ def build_methods(names, model: str | None = None, server: str = "ollama", base_
             methods[m] = run_tree
         elif m == "bayes":
             methods[m] = engine.run
-        elif m == "bayes_v2":
-            methods[m] = v2("bayes_v2").run
-        elif m == "bayes_v2_loose":
-            methods[m] = v2("bayes_v2_loose").run
-        elif m == "bayes_v2_strict":
-            methods[m] = v2("bayes_v2_strict").run
-        elif m == "bayes_v2_xstrict":
-            methods[m] = v2("bayes_v2_xstrict").run
-        elif m == "bayes_v2_hard":
-            methods[m] = v2("bayes_v2_hard").run
-        elif m == "bayes_v2_verify":
-            methods[m] = v2("bayes_v2_verify").run
-        elif m == "bayes_v2_compound":
-            methods[m] = v2("bayes_v2_compound").run
         elif m == "bayes_robust":
             if robust_engine is None:
                 robust_engine = BayesEngineRobust()
