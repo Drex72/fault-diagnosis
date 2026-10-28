@@ -266,6 +266,35 @@ class BayesEngineV2(BayesEngine):
         best = max(ranked, key=lambda r: (r["score"], r["eig_bits"]))
         return best if best["score"] >= self.min_challenge_score else None
 
+    def aggregate_fit_rms_z(self) -> float:
+        """RMS normalized residual under the best posterior particle.
+
+        Unlike MAXZ, this accumulates moderate disagreement across the whole
+        measurement history. It is diagnostic instrumentation for now: no
+        decision threshold is applied until development data shows a stable
+        separation between in-model and held-out cases.
+        """
+        if not self.obs:
+            return 0.0
+
+        lw = self.logprior[:, None] + self.LL
+        hi, k = np.unravel_index(np.argmax(lw), lw.shape)
+        total_sq = 0.0
+        total_n = 0
+
+        for ai, y in self.obs:
+            P = self.pred[ai][hi, k]  # (lamp state, D)
+            sig = self._sigma(ai, P)
+            z = (y[None, :] - P) / sig
+            z2 = np.sum(z ** 2, axis=1)
+            if self.p_open[hi, k] > 0:
+                total_sq += float(np.min(z2))
+            else:
+                total_sq += float(z2[0])
+            total_n += y.size
+
+        return float(np.sqrt(total_sq / max(total_n, 1)))
+
     def diagnosis(self) -> dict:
         d = super().diagnosis()
         d["suspect_current_sensors"] = list(self.suspect_current)
@@ -273,6 +302,7 @@ class BayesEngineV2(BayesEngine):
         d["challenge_info"] = self.challenge_info
         d["confirmations"] = list(self.confirmations)
         d["verifications"] = list(self.verifications)
+        d["aggregate_fit_rms_z"] = round(self.aggregate_fit_rms_z(), 3)
         return d
 
     def run(self, guard, seed: int = 0, max_steps: int = 30) -> dict:
