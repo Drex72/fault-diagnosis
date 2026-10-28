@@ -15,7 +15,7 @@ from .runmeta import ollama_model_version
 
 log = get_logger("methods")
 
-METHODS = ("fixed", "tree", "bayes", "bayes_v2", "llm", "hybrid")
+METHODS = ("fixed", "tree", "bayes", "llm", "hybrid")
 DEFAULT_URL = {"ollama": "http://localhost:11434/v1", "llamacpp": "http://localhost:8080/v1", "jev": jev.DEFAULT_URL,
                "openrouter": openrouter.DEFAULT_URL, "gemini": gemini.DEFAULT_URL}
 # jev: TypeSafe's cloud decision model (faultdiag/jev.py); openrouter and gemini: cloud chat models
