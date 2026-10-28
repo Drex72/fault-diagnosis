@@ -11,6 +11,7 @@ from .baselines import run_fixed, run_tree
 from .engine import BayesEngine
 from .engine_v2 import BayesEngineV2
 from .engine_v2_consistency import BayesEngineV2Consistency
+from .engine_v2_balance import BayesEngineV2Balance
 from .logsetup import get_logger
 from .runmeta import ollama_model_version
 
@@ -21,6 +22,7 @@ EXPERIMENTAL_METHODS = (
     "bayes_v2", "bayes_v2_loose", "bayes_v2_strict", "bayes_v2_xstrict",
     "bayes_v2_hard", "bayes_v2_verify", "bayes_v2_compound",
     "bayes_v2_kcl4", "bayes_v2_kcl5", "bayes_v2_kcl6",
+    "bayes_v2_bal4", "bayes_v2_bal5", "bayes_v2_bal6",
 )
 DEFAULT_URL = {"ollama": "http://localhost:11434/v1", "llamacpp": "http://localhost:8080/v1", "jev": jev.DEFAULT_URL,
                "openrouter": openrouter.DEFAULT_URL, "gemini": gemini.DEFAULT_URL}
@@ -67,6 +69,7 @@ def build_methods(names, model: str | None = None, server: str = "ollama", base_
     engine = BayesEngine()
     v2_cache = {}
     kcl_cache = {}
+    balance_cache = {}
 
     def v2(name):
         if name not in v2_cache:
@@ -87,6 +90,12 @@ def build_methods(names, model: str | None = None, server: str = "ollama", base_
             threshold = {"bayes_v2_kcl4": 4.0, "bayes_v2_kcl5": 5.0, "bayes_v2_kcl6": 6.0}[name]
             kcl_cache[name] = BayesEngineV2Consistency(consistency_z=threshold)
         return kcl_cache[name]
+
+    def balance(name):
+        if name not in balance_cache:
+            threshold = {"bayes_v2_bal4": 4.0, "bayes_v2_bal5": 5.0, "bayes_v2_bal6": 6.0}[name]
+            balance_cache[name] = BayesEngineV2Balance(balance_z=threshold)
+        return balance_cache[name]
 
     methods, meta = {}, {}
     jev_llm = cloud = None
@@ -113,6 +122,8 @@ def build_methods(names, model: str | None = None, server: str = "ollama", base_
             methods[m] = v2("bayes_v2_compound").run
         elif m in ("bayes_v2_kcl4", "bayes_v2_kcl5", "bayes_v2_kcl6"):
             methods[m] = kcl(m).run
+        elif m in ("bayes_v2_bal4", "bayes_v2_bal5", "bayes_v2_bal6"):
+            methods[m] = balance(m).run
         elif m in ("llm", "hybrid"):
             if not model:
                 raise ValueError(f"a model name is needed for method {m}")
