@@ -17,8 +17,12 @@ jobs:
       - run: pip install -r requirements.txt
       - run: python -m pytest -q
 
-  residual-benchmark:
-    if: github.ref_name == 'experiment/math-engine-v3-residual'
+  combined-validation:
+    if: github.ref_name == 'experiment/math-engine-v3-combined'
+    strategy:
+      fail-fast: false
+      matrix:
+        method: ["v2_adequacy", "v3_combined"]
     runs-on: ubuntu-latest
     timeout-minutes: 20
     steps:
@@ -28,45 +32,60 @@ jobs:
           python-version: "3.12"
           cache: pip
       - run: pip install -r requirements.txt
-      - name: Conservation-residual localisation benchmark
+      - name: Fresh-seed combined validation — ${{ matrix.method }}
+        env:
+          METHOD: ${{ matrix.method }}
         run: |
           python - <<'PY'
+          import os
           from faultdiag.engine_v2 import BayesEngineV2
           from faultdiag.engine_v3 import BayesEngineV3Residual
           from faultdiag.harness import run_all
 
+          name = os.environ["METHOD"]
+          if name == "v2_adequacy":
+              engine = BayesEngineV2(
+                  min_confirm_score=1.0,
+                  challenge_complex_hypothesis=True,
+                  aggregate_misfit_z=2.0,
+              )
+          else:
+              engine = BayesEngineV3Residual(
+                  min_confirm_score=1.0,
+                  challenge_complex_hypothesis=True,
+                  aggregate_misfit_z=2.0,
+              )
+
           scenarios = [
-              "healthy","F1","F2","F3","F4","F5@motor","F5@lamp","F5@load",
+              "healthy","F1","F1b","F2","F3","F4","F5@motor","F5@lamp","F5@load",
               "C1","C2","H1","H2",
           ]
-          v2 = BayesEngineV2(min_confirm_score=1.0, challenge_complex_hypothesis=True)
-          v3 = BayesEngineV3Residual(min_confirm_score=1.0, challenge_complex_hypothesis=True)
-          records = run_all(
-              {"v2_compound": v2.run, "v3_residual": v3.run},
-              scenarios,
-              trials=10,
-              seed0=0,
-          )
+          records = run_all({name: engine.run}, scenarios, trials=10, seed0=40_000)
 
-          print("\nRESIDUAL LOCALISATION BENCHMARK")
-          print("| Scenario | Method | Correct | OOD | Mean cost |")
-          print("|---|---|---:|---:|---:|")
+          known = [r for r in records if r["set"] in ("single","compound")]
+          h1 = [r for r in records if r["scenario"]=="H1"]
+          h2 = [r for r in records if r["scenario"]=="H2"]
+          print("\nCOMBINED FRESH-SEED VALIDATION (seed0=40000)")
+          print({
+              "method": name,
+              "known_correct": f'{sum(r["correct"] for r in known)}/{len(known)}',
+              "known_wrong": sum(r["status"]=="diagnosed" and not r["correct"] for r in known),
+              "known_false_ood": sum(r["status"]=="out_of_model" for r in known),
+              "H1_correct": f'{sum(r["correct"] for r in h1)}/{len(h1)}',
+              "H1_ood": sum(r["status"]=="out_of_model" for r in h1),
+              "H2_correct": f'{sum(r["correct"] for r in h2)}/{len(h2)}',
+              "H2_ood": sum(r["status"]=="out_of_model" for r in h2),
+              "mean_cost": round(sum(r["cost"] for r in records)/len(records),3),
+          })
+
+          print("\nPER-SCENARIO")
           for scenario in scenarios:
-              for method in ("v2_compound","v3_residual"):
-                  rs=[r for r in records if r["scenario"]==scenario and r["method"]==method]
-                  print(
-                      f'| {scenario} | {method} | {sum(r["correct"] for r in rs)}/{len(rs)} | '
-                      f'{sum(r["status"]=="out_of_model" for r in rs)}/{len(rs)} | '
-                      f'{sum(r["cost"] for r in rs)/len(rs):.1f} |'
-                  )
-
-          print("\nPHYSICS INVESTIGATIONS")
-          for r in records:
-              if r["method"]=="v3_residual" and r["scenario"] in ("H1","H2"):
-                  print(r["scenario"], r["seed"], {
-                      "status": r["status"],
-                      "elements": r["elements"],
-                      "cost": r["cost"],
-                      "physics": r["diagnosis"].get("physics_investigation"),
-                  })
+              rs=[r for r in records if r["scenario"]==scenario]
+              print(scenario, {
+                  "correct": sum(r["correct"] for r in rs),
+                  "ood": sum(r["status"]=="out_of_model" for r in rs),
+                  "mean_cost": round(sum(r["cost"] for r in rs)/len(rs),2),
+                  "physics": [r["diagnosis"].get("physics_investigation") for r in rs
+                              if r["diagnosis"].get("physics_investigation")],
+              })
           PY
