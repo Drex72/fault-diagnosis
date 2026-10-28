@@ -285,3 +285,32 @@ The owner's steps are in `docs/OWNER_TODO.md`.
 - `README.md` (quick start: venv, tests, a simulated experiment, the dashboard, local models, the mock hardware path), `docs/ARCHITECTURE.md` (components, data flow diagram, tool contract, safety layers), `docs/HARDWARE.md`, `docs/RUNBOOK.md` (demo from cold, offline checklist, local model servers, after calibration, troubleshooting), `docs/DECISIONS.md`, `docs/OWNER_TODO.md`, `CHANGELOG.md`.
 - CI: `.github/workflows/ci.yml` runs pytest on every push and pull request (Python 3.12, simulation and mock devices only). First run on GitHub: 72 passed in 55 s (run 40344688569).
 - Fresh-clone check (27 Oct 2026): cloned from GitHub into an empty folder and followed only the README quick start. Tests: 78 passed. `run_experiment.py --trials 10` printed the Phase 0 numbers. The dashboard started and served its page and `/api/status` (checked with curl on port 8799; not opened in a browser from the clone).
+
+
+## Post Phase 2: Bayesian mathematical engine V2 (28 Oct 2026; experimental)
+
+A new mathematical-engine candidate was developed on `experiment/math-engine-v2` without changing the original method C. The work targeted four observed weaknesses: finite-particle nuisance leakage, hidden-load OOD detection, tool-failure recovery, and cases where a bad multiplexed voltage sensor hides a physical fault.
+
+The frozen experimental method is `bayes_v2_candidate`. It combines coupled Monte Carlo particles, decision-risk-per-cost active testing, topology-aware current conservation, a history-wide RMS model-fit score, and a Bayesian human-DMM fallback. Its calibrated simulation settings are recorded in `docs/DECISIONS.md`.
+
+Broad paired development simulation, 10 trials per scenario:
+
+| Test set | n | V1 correct | V2 correct | V1 OOD | V2 OOD |
+|---|---:|---:|---:|---:|---:|
+| single | 90 | 85 | 88 | 0 | 0 |
+| compound | 20 | 16 | 18 | 0 | 0 |
+| held-out H1/H2 | 20 | 0 | 0 | 9 | 20 |
+| tool failure | 20 | 11 | 19 | 0 | 0 |
+
+On the 130 non-held-out paired trials, V2 had **14 wins where V1 was wrong, 1 loss where V1 was right, and 115 accuracy ties**. Mean measurement cost changed by only +0.069, and mean simulation wall time fell by 0.593 s per trial.
+
+Per-scenario highlights: F4 improved 7/10 -> 9/10; C2 6/10 -> 8/10; TF1 1/10 -> 9/10; H1 OOD 9/10 -> 10/10; H2 OOD 0/10 -> 10/10. The one paired regression was F5@load seed 8002, where V2 over-called battery degradation alongside the real load-sensor fault. The miss traces were inspected and left unspecial-cased to avoid seed-level overfitting.
+
+Ablations that changed the final design:
+- common random numbers remove artificial evidence between nested hypotheses;
+- K32/N64 was faster and at least as accurate as the original K48/N128 development point;
+- RMS adequacy cannot replace current balance: on H2, RMS-only detected 2/20 OOD while RMS+balance detected 20/20;
+- RMS threshold 2.0 with at least 3 scalar observations produced 0/110 false OODs and 20/20 development-held-out OODs in the calibration sweep;
+- the human DMM is useful for TF1 and some C2 cases, but remains a high-cost fallback rather than a default action.
+
+H3/H4 are **not** a pristine final simulation set for this new V2 work: they were already used in the 27 Oct Phase 2 final run and their definitions existed before V2. The next scientifically useful validation is real hardware after calibration/noise refit, reported separately from simulation.
