@@ -21,7 +21,7 @@ jobs:
   math-benchmark:
     if: github.event_name == 'push' && github.ref_name == 'experiment/math-engine-v2'
     runs-on: ubuntu-latest
-    timeout-minutes: 10
+    timeout-minutes: 15
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-python@v5
@@ -29,57 +29,85 @@ jobs:
           python-version: "3.12"
           cache: pip
       - run: pip install -r requirements.txt
-      - name: Ablate current-balance layer after RMS rejection
+      - name: Broad paired validation of frozen V2 candidate
+        env:
+          FAULTDIAG_RESULTS_DIR: /tmp/faultdiag-v2-final-dev
         run: |
+          python scripts/run_experiment.py \
+            --methods bayes,bayes_v2_candidate \
+            --scenarios healthy,F1,F1b,F2,F3,F4,F5@motor,F5@lamp,F5@load,C1,C2,H1,H2,TF1,TF2 \
+            --trials 10
           python - <<'PY'
+          import json
           from collections import defaultdict
-          from faultdiag.engine_v2_coupled import BayesEngineV2HumanCoupled
-          from faultdiag.guard import PolicyGuard
-          from faultdiag.harness import make_bench, SCENARIOS, truth_elements
+          from pathlib import Path
 
-          class NoBalance(BayesEngineV2HumanCoupled):
-              def _should_balance_probe(self, hi):
-                  return False
+          path=sorted(Path("/tmp/faultdiag-v2-final-dev").glob("*/sessions.jsonl"))[-1]
+          rows=[json.loads(x) for x in path.read_text().splitlines()]
+          methods=("bayes","bayes_v2_candidate")
+          sets=("single","compound","heldout","toolfail")
 
-          common=dict(
-              n_samples=32, n_eig_samples=64,
-              balance_z=6.0, cross_branch_only=True,
-              allow_sensor_ambiguity=True,
-              min_human_score=0.006,
-              min_sensor_human_score=0.006,
-              sensor_fault_mass_threshold=0.50,
-              rms_misfit_z=2.0,
-              rms_misfit_min_dof=3,
-          )
-          engines={
-              "rms_plus_balance": BayesEngineV2HumanCoupled(**common),
-              "rms_only": NoBalance(**common),
-          }
-          scenarios=("H1","H2","C1","C2","TF1","F4")
-          stats=defaultdict(lambda:{"n":0,"ok":0,"wrong":0,"ood":0,"inc":0,"cost":0,"balance":0})
-          for scenario in scenarios:
-              truth=truth_elements(SCENARIOS[scenario])
-              for trial in range(20):
-                  seed=list(SCENARIOS).index(scenario)*1000+trial
-                  for name,e in engines.items():
-                      g=PolicyGuard(make_bench(scenario,seed))
-                      d=e.run(g,seed=seed)
-                      s=stats[(name,scenario)]
-                      s["n"]+=1
-                      correct=d["status"]=="diagnosed" and sorted(d.get("elements",[]))==truth
-                      s["ok"]+=correct
-                      s["wrong"]+=d["status"]=="diagnosed" and not correct
-                      s["ood"]+=d["status"]=="out_of_model"
-                      s["inc"]+=d["status"]=="inconclusive"
-                      s["cost"]+=g.spent
-                      s["balance"]+=bool(d.get("current_balance_probe"))
+          print("\nFROZEN V2 DEVELOPMENT VALIDATION")
+          print("| Set | Method | N | Correct | Wrong | Inconc | OOD | Mean cost | Mean wall s | Human probes |")
+          print("|---|---|---:|---:|---:|---:|---:|---:|---:|---:|")
+          for st in sets:
+              for m in methods:
+                  rs=[r for r in rows if r["set"]==st and r["method"]==m]
+                  n=len(rs)
+                  correct=sum(r["correct"] for r in rs)
+                  wrong=sum(r["status"]=="diagnosed" and not r["correct"] for r in rs)
+                  inc=sum(r["status"]=="inconclusive" for r in rs)
+                  ood=sum(r["status"]=="out_of_model" for r in rs)
+                  cost=sum(r["cost"] for r in rs)/n
+                  wall=sum(r["wall_s"] for r in rs)/n
+                  hp=sum(len(r["diagnosis"].get("human_measurements") or []) for r in rs)
+                  print(f"| {st} | {m} | {n} | {correct}/{n} | {wrong}/{n} | {inc}/{n} | {ood}/{n} | {cost:.2f} | {wall:.3f} | {hp} |")
 
-          print("\nRMS / BALANCE ABLATION")
-          print("| Scenario | Variant | Correct | Wrong | Inconc | OOD | Mean cost | Balance used |")
+          print("\nPER-SCENARIO")
+          print("| Scenario | Method | Correct | Wrong | Inconc | OOD | Mean cost | Human |")
           print("|---|---|---:|---:|---:|---:|---:|---:|")
-          for scenario in scenarios:
-              for name in engines:
-                  s=stats[(name,scenario)]
-                  print(f'| {scenario} | {name} | {s["ok"]}/{s["n"]} | {s["wrong"]}/{s["n"]} | '
-                        f'{s["inc"]}/{s["n"]} | {s["ood"]}/{s["n"]} | {s["cost"]/s["n"]:.2f} | {s["balance"]} |')
+          scenarios=list(dict.fromkeys(r["scenario"] for r in rows))
+          for s in scenarios:
+              for m in methods:
+                  rs=[r for r in rows if r["scenario"]==s and r["method"]==m]
+                  n=len(rs)
+                  hp=sum(len(r["diagnosis"].get("human_measurements") or []) for r in rs)
+                  print(f"| {s} | {m} | {sum(r['correct'] for r in rs)}/{n} | "
+                        f"{sum(r['status']=='diagnosed' and not r['correct'] for r in rs)}/{n} | "
+                        f"{sum(r['status']=='inconclusive' for r in rs)}/{n} | "
+                        f"{sum(r['status']=='out_of_model' for r in rs)}/{n} | "
+                        f"{sum(r['cost'] for r in rs)/n:.2f} | {hp} |")
+
+          by={(r["scenario"],r["seed"],r["method"]):r for r in rows}
+          wins=losses=ties=0
+          cost_delta=wall_delta=0.0
+          paired=0
+          for s in scenarios:
+              if s in ("H1","H2"):
+                  continue
+              seeds=sorted({r["seed"] for r in rows if r["scenario"]==s})
+              for seed in seeds:
+                  a=by[(s,seed,"bayes")]
+                  b=by[(s,seed,"bayes_v2_candidate")]
+                  wins += bool(b["correct"]) and not bool(a["correct"])
+                  losses += bool(a["correct"]) and not bool(b["correct"])
+                  ties += bool(a["correct"]) == bool(b["correct"])
+                  cost_delta += b["cost"]-a["cost"]
+                  wall_delta += b["wall_s"]-a["wall_s"]
+                  paired += 1
+          print("\nPAIRED NON-HELDOUT VS V1",{
+              "wins_where_v1_wrong":wins,
+              "losses_where_v1_right":losses,
+              "accuracy_ties":ties,
+              "mean_cost_delta":round(cost_delta/paired,3),
+              "mean_wall_delta_s":round(wall_delta/paired,3),
+          })
+
+          for m in methods:
+              held=[r for r in rows if r["set"]=="heldout" and r["method"]==m]
+              print("HELDOUT OOD",m,{
+                  "ood":sum(r["status"]=="out_of_model" for r in held),
+                  "n":len(held),
+                  "mean_cost":round(sum(r["cost"] for r in held)/len(held),2),
+              })
           PY
