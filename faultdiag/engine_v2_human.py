@@ -42,6 +42,7 @@ class BayesEngineV2Human(BayesEngineV2Balance):
         *args,
         seed: int = 0,
         min_human_score: float = 0.006,
+        min_sensor_human_score: float | None = None,
         max_human_probes: int = 2,
         allow_sensor_ambiguity: bool = False,
         sensor_fault_mass_threshold: float = 0.50,
@@ -50,6 +51,9 @@ class BayesEngineV2Human(BayesEngineV2Balance):
         self._model_seed = seed
         super().__init__(*args, seed=seed, **kwargs)
         self.min_human_score = min_human_score
+        self.min_sensor_human_score = (
+            min_human_score if min_sensor_human_score is None else min_sensor_human_score
+        )
         self.max_human_probes = max_human_probes
         self.allow_sensor_ambiguity = allow_sensor_ambiguity
         self.sensor_fault_mass_threshold = sensor_fault_mass_threshold
@@ -132,12 +136,15 @@ class BayesEngineV2Human(BayesEngineV2Balance):
         ))
 
     def human_suggest(self, guard) -> dict | None:
+        instrument_failure = bool(self.failed)
         inferred_bad_sensor = (
             self.allow_sensor_ambiguity
             and self._sensor_fault_mass() >= self.sensor_fault_mass_threshold
         )
-        if (not self.failed and not inferred_bad_sensor) or len(self.human_probes_used) >= self.max_human_probes:
+        if (not instrument_failure and not inferred_bad_sensor) or len(self.human_probes_used) >= self.max_human_probes:
             return None
+        trigger = "failed_tool" if instrument_failure else "sensor_ambiguity"
+        threshold = self.min_human_score if instrument_failure else self.min_sensor_human_score
         ranked = []
         for pair in HUMAN_PROBES:
             if pair in self.human_probes_used:
@@ -155,11 +162,12 @@ class BayesEngineV2Human(BayesEngineV2Balance):
                 "eig_bits": eig,
                 "cost": cost,
                 "score": gain / cost,
+                "trigger": trigger,
             })
         if not ranked:
             return None
         best = max(ranked, key=lambda x: (x["score"], x["eig_bits"]))
-        return best if best["score"] >= self.min_human_score else None
+        return best if best["score"] >= threshold else None
 
     def _human_update(self, pair: tuple[str, str], volts: float):
         mix, zbest = self._human_loglik(pair, float(volts))
@@ -173,6 +181,11 @@ class BayesEngineV2Human(BayesEngineV2Balance):
         if res["status"] != "ok":
             return False
         self._human_update(option["pair"], res["data"]["volts"])
+        self.human_obs[-1].update({
+            "trigger": option.get("trigger", "unknown"),
+            "decision_score": round(float(option.get("score", 0.0)), 5),
+            "risk_reduction": round(float(option.get("risk_reduction", 0.0)), 5),
+        })
         return True
 
     def diagnosis(self) -> dict:
