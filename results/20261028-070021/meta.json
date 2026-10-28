@@ -1,0 +1,32 @@
+{
+  "source": "sim",
+  "commit": "dd934bd2ce3ff1744d8471e9e49af3e1dd645847",
+  "policy_hash": "88b28c1f4c8a",
+  "started": "2026-10-28T07:00:21+01:00",
+  "methods": [
+    "fixed",
+    "tree",
+    "bayes"
+  ],
+  "scenarios": [
+    "healthy",
+    "F1",
+    "F1b",
+    "F2",
+    "F3",
+    "F4",
+    "F5@motor",
+    "F5@lamp",
+    "F5@load",
+    "C1",
+    "C2",
+    "H1",
+    "H2",
+    "TF1",
+    "TF2"
+  ],
+  "trials": 2,
+  "seed0": 0,
+  "method_meta": {},
+  "final": false
+}
