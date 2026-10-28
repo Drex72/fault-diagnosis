@@ -200,7 +200,7 @@ class BayesEngineV2Human(BayesEngineV2Balance):
                     continue
 
                 top_i = int(np.argmax(post))
-                if len(self.hyps[top_i]) >= 2 and not self.balance_done:
+                if self._should_balance_probe(top_i) and not self.balance_done:
                     self.balance_done = True
                     if self._collect(guard):
                         z, observed, nearest = self._balance_z()
