@@ -9,7 +9,7 @@ from . import gemini, jev, openrouter
 from .agent import Agent, OpenAICompatLLM
 from .baselines import run_fixed, run_tree
 from .engine import BayesEngine
-from .engine_v2 import BayesEngineV2
+from .engine_v2 import BayesEngineV2, BayesEngineV2Probe
 from .logsetup import get_logger
 from .runmeta import ollama_model_version
 
@@ -18,7 +18,7 @@ log = get_logger("methods")
 METHODS = ("fixed", "tree", "bayes", "llm", "hybrid")
 EXPERIMENTAL_METHODS = (
     "bayes_v2", "bayes_v2_loose", "bayes_v2_strict", "bayes_v2_xstrict",
-    "bayes_v2_hard", "bayes_v2_verify", "bayes_v2_compound",
+    "bayes_v2_hard", "bayes_v2_verify", "bayes_v2_compound", "bayes_v2_probe",
 )
 DEFAULT_URL = {"ollama": "http://localhost:11434/v1", "llamacpp": "http://localhost:8080/v1", "jev": jev.DEFAULT_URL,
                "openrouter": openrouter.DEFAULT_URL, "gemini": gemini.DEFAULT_URL}
@@ -70,6 +70,7 @@ def build_methods(names, model: str | None = None, server: str = "ollama", base_
     engine_v2_hard = BayesEngineV2(min_confirm_score=1.0)
     engine_v2_verify = BayesEngineV2(min_confirm_score=1.0, verify_signatures=True)
     engine_v2_compound = BayesEngineV2(min_confirm_score=1.0, challenge_complex_hypothesis=True)
+    engine_v2_probe = BayesEngineV2Probe(min_confirm_score=1.0, challenge_complex_hypothesis=True)
     methods, meta = {}, {}
     jev_llm = cloud = None
     for m in names:
@@ -93,6 +94,8 @@ def build_methods(names, model: str | None = None, server: str = "ollama", base_
             methods[m] = engine_v2_verify.run
         elif m == "bayes_v2_compound":
             methods[m] = engine_v2_compound.run
+        elif m == "bayes_v2_probe":
+            methods[m] = engine_v2_probe.run
         elif m in ("llm", "hybrid"):
             if not model:
                 raise ValueError(f"a model name is needed for method {m}")
