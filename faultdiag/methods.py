@@ -59,7 +59,9 @@ def build_methods(names, model: str | None = None, server: str = "ollama", base_
     requests per minute, for a cloud chat server's rate limit (Gemini's free tier by default)."""
     base_url = base_url or DEFAULT_URL[server]
     engine = BayesEngine()
-    engine_v2 = BayesEngineV2()
+    engine_v2 = BayesEngineV2(min_confirm_score=0.005)
+    engine_v2_loose = BayesEngineV2(min_confirm_score=0.002)
+    engine_v2_strict = BayesEngineV2(min_confirm_score=0.010)
     methods, meta = {}, {}
     jev_llm = cloud = None
     for m in names:
@@ -71,6 +73,10 @@ def build_methods(names, model: str | None = None, server: str = "ollama", base_
             methods[m] = engine.run
         elif m == "bayes_v2":
             methods[m] = engine_v2.run
+        elif m == "bayes_v2_loose":
+            methods[m] = engine_v2_loose.run
+        elif m == "bayes_v2_strict":
+            methods[m] = engine_v2_strict.run
         elif m in ("llm", "hybrid"):
             if not model:
                 raise ValueError(f"a model name is needed for method {m}")
