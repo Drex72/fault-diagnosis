@@ -23,7 +23,7 @@ jobs:
         env:
           FAULTDIAG_RESULTS_DIR: /tmp/faultdiag-bench
         run: |
-          python scripts/run_experiment.py --methods bayes,bayes_v2 --trials 5
+          python scripts/run_experiment.py --methods bayes,bayes_v2_loose,bayes_v2,bayes_v2_strict --scenarios healthy,F1,F2,F3,F5@motor,C2,H1,H2,TF1,TF2 --trials 5
           python - <<'PY'
           import json
           from collections import defaultdict
@@ -34,9 +34,9 @@ jobs:
           rows = [json.loads(x) for x in path.read_text().splitlines()]
           stats = defaultdict(lambda: {"n": 0, "ok": 0, "cost": 0, "wall": 0.0, "challenges": [], "suspects": 0})
           for r in rows:
-              if r["method"] != "bayes_v2":
+              if not r["method"].startswith("bayes_v2"):
                   continue
-              s = stats[r["scenario"]]
+              s = stats[(r["method"], r["scenario"])]
               s["n"] += 1
               s["ok"] += int(r["correct"])
               s["cost"] += r["cost"]
@@ -46,9 +46,9 @@ jobs:
                   s["challenges"].append(d.get("challenge_info"))
               s["suspects"] += len(d.get("suspect_current_sensors") or [])
           print("\nV2 MECHANISM DIAGNOSTICS")
-          for name, s in stats.items():
+          for (method, name), s in stats.items():
               challenge = [(x["tool"], x["args"], x["score"]) for x in s["challenges"] if x]
-              print(name, {"correct": f'{s["ok"]}/{s["n"]}', "mean_cost": round(s["cost"]/s["n"],2),
+              print(method, name, {"correct": f'{s["ok"]}/{s["n"]}', "mean_cost": round(s["cost"]/s["n"],2),
                            "mean_wall_s": round(s["wall"]/s["n"],3), "challenge": challenge,
                            "sensor_suspects": s["suspects"]})
           PY
