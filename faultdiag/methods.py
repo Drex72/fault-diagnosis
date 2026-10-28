@@ -13,6 +13,7 @@ from .engine_v2 import BayesEngineV2
 from .engine_v2_consistency import BayesEngineV2Consistency
 from .engine_v2_balance import BayesEngineV2Balance
 from .engine_v2_human import BayesEngineV2Human
+from .engine_v2_coupled import BayesEngineV2Coupled, BayesEngineV2HumanCoupled
 from .logsetup import get_logger
 from .runmeta import ollama_model_version
 
@@ -25,6 +26,7 @@ EXPERIMENTAL_METHODS = (
     "bayes_v2_kcl4", "bayes_v2_kcl5", "bayes_v2_kcl6",
     "bayes_v2_bal4", "bayes_v2_bal5", "bayes_v2_bal6",
     "bayes_v2_human3", "bayes_v2_human6", "bayes_v2_human10",
+    "bayes_v2_coupled", "bayes_v2_human_coupled",
 )
 DEFAULT_URL = {"ollama": "http://localhost:11434/v1", "llamacpp": "http://localhost:8080/v1", "jev": jev.DEFAULT_URL,
                "openrouter": openrouter.DEFAULT_URL, "gemini": gemini.DEFAULT_URL}
@@ -73,6 +75,7 @@ def build_methods(names, model: str | None = None, server: str = "ollama", base_
     kcl_cache = {}
     balance_cache = {}
     human_cache = {}
+    coupled_cache = {}
 
     def v2(name):
         if name not in v2_cache:
@@ -106,6 +109,16 @@ def build_methods(names, model: str | None = None, server: str = "ollama", base_
             human_cache[name] = BayesEngineV2Human(balance_z=6.0, min_human_score=score)
         return human_cache[name]
 
+    def coupled(name):
+        if name not in coupled_cache:
+            if name == "bayes_v2_coupled":
+                coupled_cache[name] = BayesEngineV2Coupled(balance_z=6.0)
+            else:
+                coupled_cache[name] = BayesEngineV2HumanCoupled(
+                    balance_z=6.0, min_human_score=0.006
+                )
+        return coupled_cache[name]
+
     methods, meta = {}, {}
     jev_llm = cloud = None
     for m in names:
@@ -135,6 +148,8 @@ def build_methods(names, model: str | None = None, server: str = "ollama", base_
             methods[m] = balance(m).run
         elif m in ("bayes_v2_human3", "bayes_v2_human6", "bayes_v2_human10"):
             methods[m] = human(m).run
+        elif m in ("bayes_v2_coupled", "bayes_v2_human_coupled"):
+            methods[m] = coupled(m).run
         elif m in ("llm", "hybrid"):
             if not model:
                 raise ValueError(f"a model name is needed for method {m}")
