@@ -27,6 +27,7 @@ EXPERIMENTAL_METHODS = (
     "bayes_v2_bal4", "bayes_v2_bal5", "bayes_v2_bal6",
     "bayes_v2_human3", "bayes_v2_human6", "bayes_v2_human10",
     "bayes_v2_coupled", "bayes_v2_human_coupled",
+    "bayes_v2_coupled_topo", "bayes_v2_human_coupled_topo",
 )
 DEFAULT_URL = {"ollama": "http://localhost:11434/v1", "llamacpp": "http://localhost:8080/v1", "jev": jev.DEFAULT_URL,
                "openrouter": openrouter.DEFAULT_URL, "gemini": gemini.DEFAULT_URL}
@@ -113,6 +114,12 @@ def build_methods(names, model: str | None = None, server: str = "ollama", base_
         if name not in coupled_cache:
             if name == "bayes_v2_coupled":
                 coupled_cache[name] = BayesEngineV2Coupled(balance_z=6.0)
+            elif name == "bayes_v2_coupled_topo":
+                coupled_cache[name] = BayesEngineV2Coupled(balance_z=6.0, cross_branch_only=True)
+            elif name == "bayes_v2_human_coupled_topo":
+                coupled_cache[name] = BayesEngineV2HumanCoupled(
+                    balance_z=6.0, min_human_score=0.006, cross_branch_only=True
+                )
             else:
                 coupled_cache[name] = BayesEngineV2HumanCoupled(
                     balance_z=6.0, min_human_score=0.006
@@ -148,7 +155,7 @@ def build_methods(names, model: str | None = None, server: str = "ollama", base_
             methods[m] = balance(m).run
         elif m in ("bayes_v2_human3", "bayes_v2_human6", "bayes_v2_human10"):
             methods[m] = human(m).run
-        elif m in ("bayes_v2_coupled", "bayes_v2_human_coupled"):
+        elif m in ("bayes_v2_coupled", "bayes_v2_human_coupled", "bayes_v2_coupled_topo", "bayes_v2_human_coupled_topo"):
             methods[m] = coupled(m).run
         elif m in ("llm", "hybrid"):
             if not model:
