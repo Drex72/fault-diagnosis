@@ -21,7 +21,7 @@ jobs:
   math-benchmark:
     if: github.event_name == 'push' && github.ref_name == 'experiment/math-engine-v2'
     runs-on: ubuntu-latest
-    timeout-minutes: 15
+    timeout-minutes: 12
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-python@v5
@@ -29,85 +29,43 @@ jobs:
           python-version: "3.12"
           cache: pip
       - run: pip install -r requirements.txt
-      - name: Broad paired validation of frozen V2 candidate
+      - name: Trace remaining frozen-candidate misses
         env:
-          FAULTDIAG_RESULTS_DIR: /tmp/faultdiag-v2-final-dev
+          FAULTDIAG_RESULTS_DIR: /tmp/faultdiag-v2-misses
         run: |
           python scripts/run_experiment.py \
             --methods bayes,bayes_v2_candidate \
-            --scenarios healthy,F1,F1b,F2,F3,F4,F5@motor,F5@lamp,F5@load,C1,C2,H1,H2,TF1,TF2 \
+            --scenarios F4,F5@load,C2,TF1 \
             --trials 10
           python - <<'PY'
           import json
-          from collections import defaultdict
           from pathlib import Path
-
-          path=sorted(Path("/tmp/faultdiag-v2-final-dev").glob("*/sessions.jsonl"))[-1]
+          path=sorted(Path("/tmp/faultdiag-v2-misses").glob("*/sessions.jsonl"))[-1]
           rows=[json.loads(x) for x in path.read_text().splitlines()]
-          methods=("bayes","bayes_v2_candidate")
-          sets=("single","compound","heldout","toolfail")
-
-          print("\nFROZEN V2 DEVELOPMENT VALIDATION")
-          print("| Set | Method | N | Correct | Wrong | Inconc | OOD | Mean cost | Mean wall s | Human probes |")
-          print("|---|---|---:|---:|---:|---:|---:|---:|---:|---:|")
-          for st in sets:
-              for m in methods:
-                  rs=[r for r in rows if r["set"]==st and r["method"]==m]
-                  n=len(rs)
-                  correct=sum(r["correct"] for r in rs)
-                  wrong=sum(r["status"]=="diagnosed" and not r["correct"] for r in rs)
-                  inc=sum(r["status"]=="inconclusive" for r in rs)
-                  ood=sum(r["status"]=="out_of_model" for r in rs)
-                  cost=sum(r["cost"] for r in rs)/n
-                  wall=sum(r["wall_s"] for r in rs)/n
-                  hp=sum(len(r["diagnosis"].get("human_measurements") or []) for r in rs)
-                  print(f"| {st} | {m} | {n} | {correct}/{n} | {wrong}/{n} | {inc}/{n} | {ood}/{n} | {cost:.2f} | {wall:.3f} | {hp} |")
-
-          print("\nPER-SCENARIO")
-          print("| Scenario | Method | Correct | Wrong | Inconc | OOD | Mean cost | Human |")
-          print("|---|---|---:|---:|---:|---:|---:|---:|")
-          scenarios=list(dict.fromkeys(r["scenario"] for r in rows))
-          for s in scenarios:
-              for m in methods:
-                  rs=[r for r in rows if r["scenario"]==s and r["method"]==m]
-                  n=len(rs)
-                  hp=sum(len(r["diagnosis"].get("human_measurements") or []) for r in rs)
-                  print(f"| {s} | {m} | {sum(r['correct'] for r in rs)}/{n} | "
-                        f"{sum(r['status']=='diagnosed' and not r['correct'] for r in rs)}/{n} | "
-                        f"{sum(r['status']=='inconclusive' for r in rs)}/{n} | "
-                        f"{sum(r['status']=='out_of_model' for r in rs)}/{n} | "
-                        f"{sum(r['cost'] for r in rs)/n:.2f} | {hp} |")
-
-          by={(r["scenario"],r["seed"],r["method"]):r for r in rows}
-          wins=losses=ties=0
-          cost_delta=wall_delta=0.0
-          paired=0
-          for s in scenarios:
-              if s in ("H1","H2"):
+          print("\nREMAINING MISS TRACES")
+          for r in rows:
+              if r["method"]!="bayes_v2_candidate" or r["correct"]:
                   continue
-              seeds=sorted({r["seed"] for r in rows if r["scenario"]==s})
-              for seed in seeds:
+              d=r["diagnosis"]
+              print({
+                  "scenario":r["scenario"],"seed":r["seed"],"status":r["status"],
+                  "truth":r["truth"],"elements":r["elements"],"cost":r["cost"],
+                  "top":d.get("top"),"rms":d.get("model_fit_rms_z"),"dof":d.get("model_fit_dof"),
+                  "balance":d.get("current_balance_probe"),
+                  "human":d.get("human_measurements"),
+                  "suspect_current":d.get("suspect_current_sensors"),
+                  "history":[
+                      (h["tool"],h["args"],h["status"],h.get("data"))
+                      for h in r["history"]
+                  ],
+              })
+          print("\nPAIRED LOSSES WHERE V1 RIGHT")
+          by={(r["scenario"],r["seed"],r["method"]):r for r in rows}
+          for s in ("F4","F5@load","C2","TF1"):
+              for seed in sorted({r["seed"] for r in rows if r["scenario"]==s}):
                   a=by[(s,seed,"bayes")]
                   b=by[(s,seed,"bayes_v2_candidate")]
-                  wins += bool(b["correct"]) and not bool(a["correct"])
-                  losses += bool(a["correct"]) and not bool(b["correct"])
-                  ties += bool(a["correct"]) == bool(b["correct"])
-                  cost_delta += b["cost"]-a["cost"]
-                  wall_delta += b["wall_s"]-a["wall_s"]
-                  paired += 1
-          print("\nPAIRED NON-HELDOUT VS V1",{
-              "wins_where_v1_wrong":wins,
-              "losses_where_v1_right":losses,
-              "accuracy_ties":ties,
-              "mean_cost_delta":round(cost_delta/paired,3),
-              "mean_wall_delta_s":round(wall_delta/paired,3),
-          })
-
-          for m in methods:
-              held=[r for r in rows if r["set"]=="heldout" and r["method"]==m]
-              print("HELDOUT OOD",m,{
-                  "ood":sum(r["status"]=="out_of_model" for r in held),
-                  "n":len(held),
-                  "mean_cost":round(sum(r["cost"] for r in held)/len(held),2),
-              })
+                  if a["correct"] and not b["correct"]:
+                      print(s,seed,{"v1":(a["status"],a["elements"],a["cost"]),
+                                    "v2":(b["status"],b["elements"],b["cost"],b["diagnosis"].get("top"))})
           PY
