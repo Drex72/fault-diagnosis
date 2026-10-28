@@ -30,12 +30,14 @@ class BayesEngineV3Residual(BayesEngineV2):
         *args,
         return_ratio_threshold: float = 4.0,
         hidden_sigma_threshold: float = 6.0,
+        audit_compound: bool = False,
         **kwargs,
     ):
         particle_seed = kwargs.get("seed", args[1] if len(args) > 1 else 0)
         super().__init__(*args, **kwargs)
         self.return_ratio_threshold = return_ratio_threshold
         self.hidden_sigma_threshold = hidden_sigma_threshold
+        self.audit_compound = audit_compound
 
         # Replay the engine's exact particle-generation RNG so we can recover
         # the component values belonging to every (hypothesis, particle).
@@ -169,15 +171,31 @@ class BayesEngineV3Residual(BayesEngineV2):
     def run(self, guard, seed: int = 0, max_steps: int = 30) -> dict:
         d = super().run(guard, seed=seed, max_steps=max_steps)
 
-        if d["status"] == "out_of_model":
+        # A model rejection always deserves a physical residual investigation.
+        # Optionally audit a confident compound explanation too: two-fault MAP
+        # explanations are exactly where an unmodelled single mechanism can be
+        # "explained away" by combining familiar faults.
+        should_audit = d["status"] == "out_of_model"
+        if (
+            self.audit_compound
+            and d["status"] == "diagnosed"
+            and len(d.get("elements", [])) >= 2
+        ):
+            should_audit = True
+
+        if should_audit:
             self.physics_investigation = self.investigate_physics(guard)
             if self.physics_investigation["status"] == "diagnosed":
-                # Keep the Bayesian report/residuals, but replace the terminal
-                # answer with the physical residual localisation.
+                # Keep Bayesian evidence in the report but let a conservation-
+                # law explanation override a catalogue explanation when it
+                # directly closes the residual.
                 d = self.diagnosis()
                 d["status"] = "diagnosed"
                 d["elements"] = list(self.physics_investigation["elements"])
             else:
+                # The audit measurements are real evidence. Recompute the
+                # Bayesian diagnosis after adding them instead of throwing them
+                # away.
                 d = self.diagnosis()
 
         return {"method": "bayes_v3_residual", **d}
