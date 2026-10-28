@@ -1,5 +1,3 @@
-# Runs the production test suite unchanged, plus a branch-only paired
-# mathematical-engine benchmark. No hardware, model server or frozen H3/H4.
 name: tests
 
 on:
@@ -19,75 +17,7 @@ jobs:
       - run: pip install -r requirements.txt
       - run: python -m pytest -q
 
-  math-benchmark:
-    if: github.head_ref == 'experiment/math-engine-v2' || github.ref_name == 'experiment/math-engine-v2'
-    runs-on: ubuntu-latest
-    timeout-minutes: 20
-    steps:
-      - uses: actions/checkout@v4
-      - uses: actions/setup-python@v5
-        with:
-          python-version: "3.12"
-          cache: pip
-      - run: pip install -r requirements.txt
-      - name: Full development benchmark — V1 vs V2 candidates
-        env:
-          FAULTDIAG_RESULTS_DIR: /tmp/faultdiag-bench
-        run: |
-          python scripts/run_experiment.py --methods bayes,bayes_v2_hard,bayes_v2_compound --trials 10
-          python - <<'PY'
-          import json
-          from collections import defaultdict
-          from pathlib import Path
-
-          path = sorted(Path("/tmp/faultdiag-bench").glob("*/sessions.jsonl"))[-1]
-          rows = [json.loads(x) for x in path.read_text().splitlines()]
-          methods = ("bayes", "bayes_v2_hard", "bayes_v2_compound")
-          scenarios = list(dict.fromkeys(r["scenario"] for r in rows))
-          by = {(r["scenario"], r["seed"], r["method"]): r for r in rows}
-
-          print("\nPER-SCENARIO PAIRED RESULTS")
-          print("| Scenario | Method | Correct | OOD | Mean cost |")
-          print("|---|---|---:|---:|---:|")
-          for scenario in scenarios:
-              for method in methods:
-                  rs = [r for r in rows if r["scenario"] == scenario and r["method"] == method]
-                  print(f'| {scenario} | {method} | {sum(r["correct"] for r in rs)}/{len(rs)} | '
-                        f'{sum(r["status"] == "out_of_model" for r in rs)}/{len(rs)} | '
-                        f'{sum(r["cost"] for r in rs)/len(rs):.1f} |')
-
-          print("\nPAIRED DELTAS AGAINST V1")
-          for method in methods[1:]:
-              wins = losses = ties = 0
-              cost_delta = 0.0
-              n = 0
-              for scenario in scenarios:
-                  seeds = sorted({r["seed"] for r in rows if r["scenario"] == scenario})
-                  for seed in seeds:
-                      a = by[(scenario, seed, "bayes")]
-                      b = by[(scenario, seed, method)]
-                      wins += bool(b["correct"]) and not bool(a["correct"])
-                      losses += bool(a["correct"]) and not bool(b["correct"])
-                      ties += bool(a["correct"]) == bool(b["correct"])
-                      cost_delta += b["cost"] - a["cost"]
-                      n += 1
-              print(method, {
-                  "wins_where_v1_wrong": wins,
-                  "losses_where_v1_right": losses,
-                  "accuracy_ties": ties,
-                  "mean_cost_delta": round(cost_delta/n, 3),
-              })
-
-          print("\nMECHANISM COUNTS")
-          for method in methods[1:]:
-              rs = [r for r in rows if r["method"] == method]
-              print(method, {
-                  "challenges": sum(bool(r["diagnosis"].get("challenge_performed")) for r in rs),
-                  "suspect_current_readings": sum(len(r["diagnosis"].get("suspect_current_sensors") or []) for r in rs),
-              })
-          PY
-
-  probe-benchmark:
+  probe-variants:
     if: github.ref_name == 'experiment/math-engine-v2-probe'
     runs-on: ubuntu-latest
     timeout-minutes: 20
@@ -98,11 +28,13 @@ jobs:
           python-version: "3.12"
           cache: pip
       - run: pip install -r requirements.txt
-      - name: Probe-value benchmark
+      - name: Probe count and marginal-decision sweep
         env:
           FAULTDIAG_RESULTS_DIR: /tmp/faultdiag-probe
         run: |
-          python scripts/run_experiment.py --methods bayes,bayes_v2_compound,bayes_v2_probe --scenarios healthy,F2,F5@motor,C1,C2,TF1,TF2 --trials 10
+          python scripts/run_experiment.py \
+            --methods bayes_v2_compound,bayes_v2_probe,bayes_v2_probe1,bayes_v2_probe1_m50,bayes_v2_probe1_m60 \
+            --scenarios healthy,F2,F5@motor,C1,C2,TF1,TF2 --trials 10
           python - <<'PY'
           import json
           import statistics
@@ -110,15 +42,37 @@ jobs:
 
           path = sorted(Path("/tmp/faultdiag-probe").glob("*/sessions.jsonl"))[-1]
           rows = [json.loads(x) for x in path.read_text().splitlines()]
-          methods = ("bayes", "bayes_v2_compound", "bayes_v2_probe")
-          scenarios = list(dict.fromkeys(r["scenario"] for r in rows))
-          print("\nPROBE BENCHMARK")
-          print("| Scenario | Method | Correct | Mean cost | Human probes |")
-          print("|---|---|---:|---:|---:|")
+          methods = [
+              "bayes_v2_compound",
+              "bayes_v2_probe",
+              "bayes_v2_probe1",
+              "bayes_v2_probe1_m50",
+              "bayes_v2_probe1_m60",
+          ]
+          scenarios = ["healthy","F2","F5@motor","C1","C2","TF1","TF2"]
+
+          print("\nPROBE VARIANT SWEEP")
+          print("| Scenario | Method | Correct | Mean cost | Probes | Wrong | Inconclusive |")
+          print("|---|---|---:|---:|---:|---:|---:|")
           for scenario in scenarios:
               for method in methods:
                   rs = [r for r in rows if r["scenario"] == scenario and r["method"] == method]
                   probes = sum(len(r["diagnosis"].get("human_probes") or []) for r in rs)
-                  print(f'| {scenario} | {method} | {sum(r["correct"] for r in rs)}/{len(rs)} | '
-                        f'{statistics.mean(r["cost"] for r in rs):.1f} | {probes} |')
+                  print(
+                      f'| {scenario} | {method} | {sum(r["correct"] for r in rs)}/{len(rs)} | '
+                      f'{statistics.mean(r["cost"] for r in rs):.1f} | {probes} | '
+                      f'{sum(r["status"] == "diagnosed" and not r["correct"] for r in rs)} | '
+                      f'{sum(r["status"] == "inconclusive" for r in rs)} |'
+                  )
+
+          print("\nTF1 DETAILS")
+          for method in methods:
+              for r in [x for x in rows if x["scenario"] == "TF1" and x["method"] == method]:
+                  print(method, r["seed"], {
+                      "status": r["status"],
+                      "elements": r["elements"],
+                      "cost": r["cost"],
+                      "probes": r["diagnosis"].get("human_probes"),
+                      "marginals": r["diagnosis"].get("fault_marginals"),
+                  })
           PY
