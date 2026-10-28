@@ -205,6 +205,19 @@ class BayesEngineV2Human(BayesEngineV2Balance):
         })
         return True
 
+    def _model_fit_q(self) -> tuple[np.ndarray, int]:
+        q, dof = super()._model_fit_q()
+        for obs in self.human_obs:
+            pair = tuple(obs["pair"])
+            y = float(obs["volts"])
+            P = self.human_pred[pair]
+            sig = self._human_sigma(P)
+            z2 = ((y - P) / sig) ** 2
+            best_state = np.where(self.p_open > 0, z2.min(-1), z2[..., 0])
+            q += best_state
+            dof += 1
+        return q, dof
+
     def diagnosis(self) -> dict:
         d = super().diagnosis()
         d["human_measurements"] = list(self.human_obs)
