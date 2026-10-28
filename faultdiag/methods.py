@@ -10,6 +10,7 @@ from .agent import Agent, OpenAICompatLLM
 from .baselines import run_fixed, run_tree
 from .engine import BayesEngine
 from .engine_v2 import BayesEngineV2
+from .engine_robust import BayesEngineRobust
 from .logsetup import get_logger
 from .runmeta import ollama_model_version
 
@@ -18,7 +19,7 @@ log = get_logger("methods")
 METHODS = ("fixed", "tree", "bayes", "llm", "hybrid")
 EXPERIMENTAL_METHODS = (
     "bayes_v2", "bayes_v2_loose", "bayes_v2_strict", "bayes_v2_xstrict",
-    "bayes_v2_hard", "bayes_v2_verify", "bayes_v2_compound",
+    "bayes_v2_hard", "bayes_v2_verify", "bayes_v2_compound", "bayes_robust",
 )
 DEFAULT_URL = {"ollama": "http://localhost:11434/v1", "llamacpp": "http://localhost:8080/v1", "jev": jev.DEFAULT_URL,
                "openrouter": openrouter.DEFAULT_URL, "gemini": gemini.DEFAULT_URL}
@@ -64,6 +65,7 @@ def build_methods(names, model: str | None = None, server: str = "ollama", base_
     base_url = base_url or DEFAULT_URL[server]
     engine = BayesEngine()
     v2_cache = {}
+    robust_engine = None
 
     def v2(name):
         if name not in v2_cache:
@@ -102,6 +104,10 @@ def build_methods(names, model: str | None = None, server: str = "ollama", base_
             methods[m] = v2("bayes_v2_verify").run
         elif m == "bayes_v2_compound":
             methods[m] = v2("bayes_v2_compound").run
+        elif m == "bayes_robust":
+            if robust_engine is None:
+                robust_engine = BayesEngineRobust()
+            methods[m] = robust_engine.run
         elif m in ("llm", "hybrid"):
             if not model:
                 raise ValueError(f"a model name is needed for method {m}")
